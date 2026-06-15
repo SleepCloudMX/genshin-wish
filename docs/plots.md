@@ -15,12 +15,17 @@ python scripts/plot_all.py
 ```
 output/
 ├── character/
-│   ├── cdf/             # n1-miss0.png ~ n7-stable.png, nN-heatmap.png, nN-table.md
+│   ├── cdf/
+│   │   ├── n=1/{n=1-table.md, n=1-heatmap.png, n=1,miss=0..3.png}
+│   │   ├── ...
+│   │   └── n=7/{n=7-table.md, n=7-heatmap.png, n=7,miss=0..3.png}
 │   ├── fan-3interval/   # miss0.png ~ stable.png (三区间扇形图)
 │   ├── fan-5interval/   # miss0.png ~ stable.png (五区间扇形图)
 │   ├── column/          # miss0.png ~ stable.png (渐变柱状图)
-│   ├── stack/           # miss0.png ~ stable.png (堆叠面积图)
-│   └── staircase/       # miss0.png ~ stable.png (阶梯扇形图)
+│   └── rolls2gold/
+│       ├── multi-cdf/    # miss0.png ~ stable.png (多命座 CDF 线图)
+│       ├── stack/        # miss0.png ~ stable.png (堆叠面积图)
+│       └── staircase/    # miss0.png ~ stable.png (阶梯扇形图)
 ├── weapon/
 │   ├── pdf.png          # 多金 PDF 对比
 │   ├── cdf-gold1~4.png  # 1-4 金 CDF
