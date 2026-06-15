@@ -41,7 +41,10 @@ def plot_staircase_luck_fan(
         Optional list of (pulls, up_count) tuples for user markers.
     """
     save_path = _ensure_dir(save_path)
-    cdfs_dict = dists
+    cdfs_dict = dict(dists)
+    # CDF for 0 UP is always 1
+    if 0 not in cdfs_dict:
+        cdfs_dict[0] = np.ones(max_pulls)
     pulls = np.arange(max_pulls)
 
     # 1. 计算分位点与期望

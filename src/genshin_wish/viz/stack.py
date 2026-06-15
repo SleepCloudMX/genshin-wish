@@ -33,6 +33,11 @@ def plot_stacked_up_probabilities(
     save_path = _ensure_dir(save_path)
     max_n_up = max(dists.keys())
 
+    # CDF for 0 UP is always 1 (everyone has at least 0 UPs)
+    if 0 not in dists:
+        dists = dict(dists)
+        dists[0] = np.ones(max_pulls)
+
     # Convert CDFs to independent probabilities:
     #   dist_matrix[n] = P(exactly n UP) = CDF(n) - CDF(n+1)   for n < max_n_up
     #   dist_matrix[max_n_up] = P(>= max_n_up UP) = CDF(max_n_up)
