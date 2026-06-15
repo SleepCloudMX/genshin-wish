@@ -45,6 +45,8 @@ def plot_staircase_luck_fan(
     # CDF for 0 UP is always 1
     if 0 not in cdfs_dict:
         cdfs_dict[0] = np.ones(max_pulls)
+    # Cap calc_n_limit to what's actually available
+    calc_n_limit = min(calc_n_limit, max(dists.keys()))
     pulls = np.arange(max_pulls)
 
     # 1. 计算分位点与期望

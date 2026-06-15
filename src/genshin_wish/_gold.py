@@ -57,10 +57,10 @@ def build_gold_pdf(pool: PoolConfig) -> np.ndarray:
     return np.array(arr, dtype=np.float64)
 
 
-def _compute_pdf_cdf(pool: PoolConfig) -> tuple[list[np.ndarray], list[np.ndarray]]:
-    """Compute multi-gold PDFs and CDFs by convolution."""
+def _compute_pdf_cdf(pool: PoolConfig, min_gold: int = 0) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    """Compute multi-gold PDFs and CDFs by convolution, at least up to *min_gold*."""
     p_single = build_gold_pdf(pool)
-    max_gold = pool.max_gold_cache
+    max_gold = max(pool.max_gold_cache, min_gold)
 
     pdfs: list[np.ndarray] = [np.array([1.0], dtype=np.float64), np.zeros(len(p_single), dtype=np.float64)]
 
@@ -78,14 +78,24 @@ def _compute_pdf_cdf(pool: PoolConfig) -> tuple[list[np.ndarray], list[np.ndarra
     return pdfs, cdfs
 
 
-def get_gold_pdfs(pool: PoolConfig) -> list[np.ndarray]:
-    """Load cached multi-gold PDFs, computing and caching on first call."""
+def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
+    """Load cached multi-gold PDFs, computing and caching on first call.
+
+    If *min_gold* > 0, ensures at least that many gold levels are available,
+    recomputing and updating the cache if necessary.
+    """
     path = _cache_path(pool, "pdfs")
+    pdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
-            return pickle.load(f)
+            pdfs = pickle.load(f)
 
-    pdfs, cdfs = _compute_pdf_cdf(pool)
+    need = max(pool.max_gold_cache, min_gold)
+    if pdfs is not None and len(pdfs) > need:
+        return pdfs
+
+    # Compute fresh and update cache
+    pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         pickle.dump(pdfs, f)
@@ -95,14 +105,19 @@ def get_gold_pdfs(pool: PoolConfig) -> list[np.ndarray]:
     return pdfs
 
 
-def get_gold_cdfs(pool: PoolConfig) -> list[np.ndarray]:
+def get_gold_cdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
     """Load cached multi-gold CDFs, computing and caching on first call."""
     path = _cache_path(pool, "cdfs")
+    cdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
-            return pickle.load(f)
+            cdfs = pickle.load(f)
 
-    pdfs, cdfs = _compute_pdf_cdf(pool)
+    need = max(pool.max_gold_cache, min_gold)
+    if cdfs is not None and len(cdfs) > need:
+        return cdfs
+
+    pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         pickle.dump(cdfs, f)

@@ -87,7 +87,10 @@ def up_distribution(state: CharacterState, n_up: int) -> UpDistribution:
         raise ValueError(f"n_up must be >= 0, got {n_up}")
 
     n_uncertain = n_up - state.guaranteed
-    pdfs = get_gold_pdfs(CHARACTER_POOL)
+    # Worst-case golds: alternating (loss*3, win) groups → ~1.75n.
+    # Use 2n as a safe upper bound (all-loss scenario).
+    min_gold_needed = n_uncertain * 2 + 3
+    pdfs = get_gold_pdfs(CHARACTER_POOL, min_gold=min_gold_needed)
 
     if n_uncertain == 0:
         # Only the guaranteed gold (or n_up=0 → immediate success)
