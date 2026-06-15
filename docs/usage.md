@@ -25,7 +25,7 @@ pip install -e .
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 下一个金是否大保底 |
 | `--pity` | INT | 0 | 已垫抽数，范围 0~89 |
 | `--loss` | INT | 0 | 连续歪次数，范围 0~3，驱动捕获明光概率 |
-| `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布（按稳态概率加权所有 `loss` 状态） |
+| `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布。**与 `--loss`、`--guaranteed`、`--pity` 互斥**——指定 `--stable` 后这些参数被忽略 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点，如 `0.5` = 中位数 |
 | `--quantiles` | STR | — | 多个分位点，逗号分隔，如 `"0.1,0.5,0.9"` |

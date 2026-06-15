@@ -24,10 +24,12 @@ pip install -e .
 | `--guaranteed` | 下一个金是否大保底 |
 | `--pity N` | 已垫抽数 (0~89) |
 | `--loss N` | 连续歪次数 (0~3)，驱动捕获明光 |
-| `--stable` | 使用稳态分布 |
+| `--stable` | 使用稳态分布（与 `--loss`、`--guaranteed`、`--pity` 互斥） |
 | `--pulls N` | 查询 N 抽内的达成概率 |
 | `--quantile Q` | 查询分位点对应抽数 |
 | `--format json` | JSON 输出 |
+
+`--stable` 与 `--loss` / `--guaranteed` / `--pity` 互斥——稳态下这些参数无意义，指定 `--stable` 后会被忽略。
 
 ```bash
 # 满命 (--n-up 7)：期望抽数与 800 抽达成概率
