@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genshin-wish"
+version = "0.1.0"
+description = "Genshin Impact gacha probability calculator"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "click>=8.1",
+]
+
+[project.scripts]
+genshin-wish = "genshin_wish.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
