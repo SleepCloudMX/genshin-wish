@@ -78,6 +78,30 @@ genshin-wish weapon --count-a 1 --ep 1 --pity 45 --pulls 100
 genshin-wish weapon --format json
 ```
 
+### `genshin-wish std` — 常驻池
+
+纯出金，无 UP 机制。计算获得指定数量五星的总抽数分布。
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-gold` | INT | 必填 | 目标五星数 |
+| `--pity` | INT | 0 | 已垫抽数，范围 0~89 |
+| `--pulls` | INT | — | 查询给定抽数内的达成概率 |
+| `--quantile` | FLOAT | — | 查询给定概率的分位点 |
+| `--format` | `text`\|`json` | `text` | 输出格式 |
+
+n_gold ≤ 7 精确卷积，> 7 则首金精确处理 pity 后对剩余金数用 CLT 近似。
+
+**示例：**
+
+```bash
+# 5 个五星，371 抽
+genshin-wish std --n-gold 5 --pulls 371
+
+# 30 个五星，带垫抽，查中位数
+genshin-wish std --n-gold 30 --pity 10 --quantile 0.5
+```
+
 ### `genshin-wish joint` — 联合计算
 
 角色池和武器池同时开抽的总消耗分布（两个池子独立，做卷积）。
@@ -173,6 +197,23 @@ dist.probability(200)
 dist.gold_weights    # dict, 各出金数分支的概率权重
 ```
 
+### 常驻池
+
+```python
+from genshin_wish import StandardState, standard_distribution
+
+state = StandardState(pity=0)   # 已垫抽数，0~89
+
+dist = standard_distribution(state, n_gold=5)
+
+dist.expected        # 期望抽数
+dist.quantile(0.5)   # 中位数
+dist.probability(371)
+dist.method          # "exact" (n_gold <= 7) 或 "clt"
+```
+
+n_gold ≤ 7 精确卷积，> 7 首金精确处理 pity + 剩余金数 CLT 近似。
+
 ### 联合计算
 
 ```python
@@ -219,4 +260,5 @@ JSON 输出中的字段因命令而异：
 
 - `char`: `expected`, `probability`, `quantile` / `quantiles`（如有指定）
 - `weapon`: `expected`, `probability`, `gold_weights`
+- `std`: `expected`, `probability`, `method`
 - `joint`: `expected`, `probability`, `char_expected`, `weapon_expected`

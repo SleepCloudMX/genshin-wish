@@ -9,13 +9,13 @@
 ```
 CLI (cli/main.py)
  ↓
-Joint (joint.py)
- ↓
-Character (character.py)    Weapon (weapon.py)
- ↓                           ↓
-Capture Radiance             金数权重 (_single_copy_weights)
-(_capture_radiance.py)       (weapon_target_weights)
- ↓                           ↓
+Joint (joint.py)          Standard (standard.py)
+ ↓                         ↓
+Character (character.py)  Weapon (weapon.py)
+ ↓                         ↓
+Capture Radiance           金数权重 (_single_copy_weights)
+(_capture_radiance.py)     (weapon_target_weights)
+ ↓                         ↓
 Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)
 ```
 
@@ -28,6 +28,7 @@ Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)
 | `_capture_radiance.py` | 捕获明光的状态转移枚举（win/loss 序列空间） | `_constants.py` |
 | `character.py` | 角色池 UP 分布：三部分分解 + CLT 近似 | `_constants.py`, `_capture_radiance.py`, `_gold.py` |
 | `weapon.py` | 武器池定轨分布：金数权重枚举 + 加权 PDF 合成 | `_constants.py`, `_gold.py` |
+| `standard.py` | 常驻池纯出金分布：精确卷积 + CLT 近似 | `_constants.py`, `_gold.py` |
 | `joint.py` | 独立卷积角色和武器分布，得到联合分布 | `character.py`, `weapon.py` |
 | `viz/` | 纯绘图，不包含计算逻辑 | `character.py`, `weapon.py`, `matplotlib` |
 | `cli/main.py` | click 命令行封装，暴露 `char` / `weapon` / `joint` 三个子命令 | `character.py`, `weapon.py`, `joint.py`, `click` |

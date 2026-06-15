@@ -27,6 +27,9 @@ genshin-wish char --n-up 2 --guaranteed --pity 32 --loss 0 --pulls 200
 # 武器池
 genshin-wish weapon --count-a 1 --pulls 200
 
+# 常驻池
+genshin-wish std --n-gold 5 --pulls 371
+
 # 联合计算
 genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500
 ```
