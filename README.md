@@ -17,40 +17,40 @@ pip install -e .
 #### （1）角色池
 
 ```bash
-# 满命期望抽数 + 800 抽达成概率
+# 满命 (n_up=7)：期望抽数与 800 抽达成概率
 genshin-wish char --n-up 7 --pulls 800
 
-# 大小保底、垫抽、捕获明光
+# 2 限定，已垫 32 抽，连歪 0 次：期望抽数与 200 抽达成概率
 genshin-wish char --n-up 2 --guaranteed --pity 32 --loss 0 --pulls 200
 
-# 中位数
+# 满命：中位数
 genshin-wish char --n-up 7 --quantile 0.5
 
-# 稳态（不指定 loss 时的平均情况）
+# 稳态 (不指定具体 loss 状态时的平均情况)
 genshin-wish char --stable --n-up 7 --pulls 800
 ```
 
 #### （2）武器池
 
 ```bash
-# 1 把定轨武器，期望 + 200 抽概率
+# 1 把定轨武器：期望抽数与 200 抽达成概率
 genshin-wish weapon --count-a 1 --pulls 200
 
-# 已垫 45 抽、命定值 1
+# 已垫 45 抽、命定值 1：期望抽数与 100 抽达成概率
 genshin-wish weapon --count-a 1 --ep 1 --pity 45 --pulls 100
 ```
 
 #### （3）常驻池
 
 ```bash
-# 5 个五星，371 抽概率
+# 5 个五星：期望抽数与 371 抽达成概率
 genshin-wish std --n-gold 5 --pulls 371
 ```
 
 #### （4）联合计算
 
 ```bash
-# C1 + R1 总消耗
+# C1 + R1：期望抽数与 500 抽达成概率
 genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500
 ```
 
