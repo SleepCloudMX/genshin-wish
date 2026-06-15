@@ -1,4 +1,6 @@
-# genshin-wish 架构与设计决策
+<h1>genshin-wish 架构与设计决策</h1>
+
+[TOC]
 
 > 版本：与 `src/` 代码同步更新。
 

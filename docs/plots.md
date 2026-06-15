@@ -1,4 +1,6 @@
-# 图表系统
+<h1>图表系统</h1>
+
+[TOC]
 
 genshin-wish 使用 matplotlib 生成全部统计图表。所有绘图函数定义在 `src/genshin_wish/viz/` 下，统一由 `scripts/plot_all.py` 驱动输出。
 
