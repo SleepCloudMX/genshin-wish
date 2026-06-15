@@ -1,0 +1,8 @@
+__pycache__
+
+ref/
+output/
+temp/
+
+.claude
+.vscode
