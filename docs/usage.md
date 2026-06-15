@@ -1,4 +1,6 @@
-# genshin-wish 使用指南
+<h1>genshin-wish 使用指南</h1>
+
+[TOC]
 
 ## 安装
 
