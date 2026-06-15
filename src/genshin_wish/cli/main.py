@@ -13,6 +13,7 @@ from genshin_wish.character import (
     stable_up_distribution,
     up_distribution,
 )
+from genshin_wish.standard import StandardState, standard_distribution
 from genshin_wish.weapon import (
     WeaponState,
     WeaponTarget,
@@ -136,6 +137,39 @@ def weapon(
         "probability": dist.probability(pulls) if pulls is not None else None,
         "gold_weights": dist.gold_weights,
     }
+    _output(result, fmt)
+
+
+@main.command()
+@click.option("--n-gold", type=int, required=True, help="目标五星数")
+@click.option("--pity", type=int, default=0, help="已垫抽数 (0~89)")
+@click.option("--pulls", type=int, default=None, help="抽数 (查询概率)")
+@click.option("--quantile", type=float, default=None, help="分位点")
+@click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
+def std(
+    n_gold: int,
+    pity: int,
+    pulls: int | None,
+    quantile: float | None,
+    fmt: str,
+) -> None:
+    """常驻池概率查询 (纯出金，无 UP 机制)"""
+    state = StandardState(pity=pity)
+    dist = standard_distribution(state, n_gold)
+
+    text_parts = [_format_dist("常驻池", dist, pulls)]
+    if quantile is not None:
+        text_parts.append(f"  分位点 {quantile}: {dist.quantile(quantile)} 抽")
+
+    result: dict = {
+        "text": "\n".join(text_parts),
+        "expected": dist.expected,
+        "probability": dist.probability(pulls) if pulls is not None else None,
+        "method": dist.method,
+    }
+    if quantile is not None:
+        result["quantile"] = {quantile: dist.quantile(quantile)}
+
     _output(result, fmt)
 
 

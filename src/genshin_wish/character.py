@@ -181,9 +181,10 @@ def up_distribution_clt(
     std_n = np.sqrt(n_up * var_1)
 
     # Build PDF/CDF on a grid covering ±6σ (~99.9999%)
+    # For each integer k in [lo, hi]: P(k) ≈ Φ(k+0.5) - Φ(k-0.5)
     lo = max(0, int(mu_n - 6 * std_n))
-    hi = int(mu_n + 6 * std_n) + 1
-    edges = np.arange(lo - 0.5, hi + 0.5, dtype=np.float64)
+    hi = int(mu_n + 6 * std_n)
+    edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
     pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
     cdf = np.cumsum(pdf)
 
