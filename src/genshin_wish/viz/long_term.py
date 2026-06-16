@@ -45,6 +45,13 @@ def _render_long_term_3(
     lo_last, hi_last = raw_data[mid_a][-1]
     mu_single = float((lo_last + hi_last) / 2 / total)
 
+    # --- adaptive Y range from visible data ---
+    y_lo = min(min(v) for v in all_bounds_avg.values())
+    y_hi = max(max(v) for v in all_bounds_avg.values())
+    y_pad = max(5.0, (y_hi - y_lo) * 0.25)
+    y_lo, y_hi = max(0, y_lo - y_pad), y_hi + y_pad
+    overlap_gap = max(0.3, (y_hi - y_lo) * 0.015)
+
     plt.figure(figsize=(18, 11))
 
     # --- shadow bands ---
@@ -72,7 +79,7 @@ def _render_long_term_3(
     for i in label_indices:
         n = up_axis[i]
         top_y = all_bounds_avg[0.99][i]
-        plt.vlines(n, ymin=0, ymax=top_y, colors='gray', linestyles=':',
+        plt.vlines(n, ymin=y_lo, ymax=top_y, colors='gray', linestyles=':',
                    alpha=0.4, zorder=1)
 
         curr_vals = [
@@ -89,15 +96,15 @@ def _render_long_term_3(
         last_y = 9999.0
         for _idx, (val, label, col) in enumerate(curr_vals):
             if label == 'Avg':
-                x_off, ha, y_pos = 0.002 * N, 'left', val + 1.2
+                x_off, ha, y_pos = 0.002 * N, 'left', val + y_pad * 0.15
                 weight = 'extra bold'
             else:
                 x_off = 0.002 * N
                 ha = 'left'
                 y_pos, weight = val, 'bold'
 
-            if last_y - y_pos < 1:
-                y_pos = last_y - 1
+            if last_y - y_pos < overlap_gap:
+                y_pos = last_y - overlap_gap
 
             plt.text(n + x_off, y_pos, f"{val:.1f}", color=col, ha=ha,
                      va='center', fontsize=7, fontweight=weight, zorder=15)
@@ -107,8 +114,9 @@ def _render_long_term_3(
     plt.title(title, fontsize=20, pad=30)
     plt.xlabel("获取 UP 角色总数 (n)", fontsize=14)
     plt.ylabel("单位平均消耗 (总抽数/n)", fontsize=14)
-    plt.yticks(np.arange(0, 201, 10))
-    plt.ylim(mu_single - 40, mu_single + 50)
+    y_step = max(1, round((y_hi - y_lo) / 8))
+    plt.yticks(np.arange(np.floor(y_lo / y_step) * y_step, y_hi + y_step, y_step))
+    plt.ylim(y_lo, y_hi)
     plt.xlim(n_start, total + (0.05 * N))
     plt.grid(axis='y', linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=11, ncol=2)
@@ -150,6 +158,13 @@ def _render_long_term_5(
                 val = raw_data[round(1 - a, 2)][idx][1] / n
             all_bounds_avg[a].append(val)
         expectations_avg.append(mu_single)
+
+    # --- adaptive Y range from visible data ---
+    y_lo = min(min(v) for v in all_bounds_avg.values())
+    y_hi = max(max(v) for v in all_bounds_avg.values())
+    y_pad = max(5.0, (y_hi - y_lo) * 0.25)
+    y_lo, y_hi = max(0, y_lo - y_pad), y_hi + y_pad
+    overlap_gap = max(0.3, (y_hi - y_lo) * 0.015)
 
     plt.figure(figsize=(16, 11))
 
@@ -194,7 +209,7 @@ def _render_long_term_5(
         for idx, (val, label, alpha_val) in enumerate(vals):
             if label == 'Avg':
                 color, font_weight, z_order = '#000000', 'extra bold', 15
-                x_offset, ha, y_pos = 0.01 * N, 'left', val + 1.2
+                x_offset, ha, y_pos = 0.01 * N, 'left', val + y_pad * 0.15
             else:
                 color = 'black'
                 for cfg in alpha_configs:
@@ -206,8 +221,8 @@ def _render_long_term_5(
                 ha = 'left' if idx % 2 == 0 else 'right'
                 y_pos = val
 
-            if last_y - y_pos < 3.5:
-                y_pos = last_y - 3.5
+            if last_y - y_pos < overlap_gap:
+                y_pos = last_y - overlap_gap
 
             plt.text(n + x_offset, y_pos, f"{val:.1f}",
                      color=color, ha=ha, va='center',
@@ -222,8 +237,9 @@ def _render_long_term_5(
     plt.title(title, fontsize=18, pad=30)
     plt.xlabel("获取 UP 角色总数 (n)", fontsize=12)
     plt.ylabel("平均每个UP消耗抽数 (总数/n)", fontsize=12)
-    plt.yticks(np.arange(0, 201, 20))
-    plt.ylim(max(0, mu_single - 60), min(200, mu_single + 80))
+    y_step = max(1, round((y_hi - y_lo) / 8))
+    plt.yticks(np.arange(np.floor(y_lo / y_step) * y_step, y_hi + y_step, y_step))
+    plt.ylim(y_lo, y_hi)
     plt.xlim(n_start, total + (0.05 * N))
     plt.grid(linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=9, ncol=2)
