@@ -129,34 +129,41 @@ exact_q = exact_quantiles(MAX_N)
 print("Computing CLT approximations...")
 clt_q = clt_quantiles(MAX_N)
 
-# ---- Plot: error in average pulls per UP ----
-
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12))
+# ---- Plot: two separate figures ----
 
 ns = np.arange(1, MAX_N + 1)
-plot_ns = ns[START_N - 1:]  # N = 5..20 for plotting
+plot_ns = ns[START_N - 1:]
 
-for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
-    # Per-UP values: total pulls / N
+# Pre-compute errors
+abs_err_data: dict[float, np.ndarray] = {}
+rel_err_data: dict[float, np.ndarray] = {}
+for q in QUANTILES:
     exact_per_up = np.array([exact_q[n][q] / n for n in ns])
     clt_per_up = np.array([clt_q[n][q] / n for n in ns])
+    abs_err_data[q] = np.abs(exact_per_up - clt_per_up)
+    rel_err_data[q] = abs_err_data[q] / np.maximum(exact_per_up, 1.0) * 100
 
-    abs_err = np.abs(exact_per_up - clt_per_up)
-    rel_err = abs_err / np.maximum(exact_per_up, 1.0) * 100
-
+# --- Figure 1: Absolute error ---
+fig1, ax1 = plt.subplots(figsize=(14, 7))
+for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
     ls = ":" if q in (0.01, 0.99) else "--" if q in (0.10, 0.90) else "-"
-
-    ax1.plot(plot_ns, abs_err[START_N - 1:], color=color, linestyle=ls, linewidth=2, label=label)
-    ax2.plot(plot_ns, rel_err[START_N - 1:], color=color, linestyle=ls, linewidth=2, label=label)
-
-# Upper panel: absolute error (pulls per UP)
+    ax1.plot(plot_ns, abs_err_data[q][START_N - 1:], color=color, linestyle=ls, linewidth=2, label=label)
 ax1.set_title("绝对误差 |exact - CLT| (抽 / UP)", fontsize=14)
+ax1.set_xlabel("UP 数 N", fontsize=12)
 ax1.set_ylabel("误差 (抽 / UP)", fontsize=12)
 ax1.legend(loc="upper right", ncol=4, fontsize=9)
 ax1.grid(True, alpha=0.3)
 ax1.set_xticks(plot_ns)
+fig1.tight_layout()
+fig1.savefig(OUTPUT / "clt-error-abs.png", dpi=200)
+plt.close(fig1)
+print(f"Saved {OUTPUT / 'clt-error-abs.png'}")
 
-# Lower panel: relative error (%)
+# --- Figure 2: Relative error ---
+fig2, ax2 = plt.subplots(figsize=(14, 7))
+for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
+    ls = ":" if q in (0.01, 0.99) else "--" if q in (0.10, 0.90) else "-"
+    ax2.plot(plot_ns, rel_err_data[q][START_N - 1:], color=color, linestyle=ls, linewidth=2, label=label)
 ax2.set_title("相对误差 |exact - CLT| / exact (%)", fontsize=14)
 ax2.set_xlabel("UP 数 N", fontsize=12)
 ax2.set_ylabel("相对误差 (%)", fontsize=12)
@@ -165,28 +172,24 @@ ax2.text(MAX_N * 0.95, 2.2, "2%", ha="right", fontsize=9, color="gray")
 ax2.legend(loc="upper right", ncol=4, fontsize=9)
 ax2.grid(True, alpha=0.3)
 ax2.set_xticks(plot_ns)
-
-fig.suptitle("捕获明光 4 状态模型: 精确解 vs CLT 近似 (平均抽数 / UP)", fontsize=16, y=1.01)
-plt.tight_layout()
-plt.savefig(OUTPUT / "clt-error.png", dpi=200)
-plt.close()
-
-print(f"Saved {OUTPUT / 'clt-error.png'}")
+fig2.tight_layout()
+fig2.savefig(OUTPUT / "clt-error-rel.png", dpi=200)
+plt.close(fig2)
+print(f"Saved {OUTPUT / 'clt-error-rel.png'}")
 
 # ---- Generate README ----
 
-# Convergence points
-convergence: dict[str, str] = {}
-for qi, (q, label) in enumerate(zip(QUANTILES, QLABELS)):
+# Convergence points (where rel error < 2%)
+convergence: dict[str, tuple[str, str]] = {}
+for q, label in zip(QUANTILES, QLABELS):
     for n in ns:
-        exact_per = exact_q[n][q] / n
-        clt_per = clt_q[n][q] / n
-        err = abs(exact_per - clt_per) / max(exact_per, 1.0) * 100
-        if err < 2.0:
-            convergence[label] = f"N >= {n} ({err:.1f}%)"
+        rel = rel_err_data[q][n - 1]
+        if rel < 2.0:
+            abs_n = abs_err_data[q][n - 1]
+            convergence[label] = (f"N >= {n}", f"{rel:.1f}%", f"{abs_n:.1f} 抽/UP")
             break
     else:
-        convergence[label] = f"N=20 仍 >2% ({err:.1f}%)"
+        convergence[label] = (f"N=20 仍 >2%", f"{rel:.1f}%", f"{abs_err_data[q][-1]:.1f} 抽/UP")
 
 lines = [
     "# CLT 误差分析",
@@ -194,15 +197,18 @@ lines = [
     "捕获明光 4 状态模型下，精确解 vs CLT 近似的误差。",
     "误差以 **平均每 UP 消耗抽数**（总抽数 / N）计。",
     "",
-    "![误差曲线](clt-error.png)",
+    "![绝对误差](clt-error-abs.png)",
+    "",
+    "![相对误差](clt-error-rel.png)",
     "",
     "## 收敛情况（相对误差 < 2%）",
     "",
-    "| 分位点 | 收敛点 |",
-    "|--------|--------|",
+    "| 分位点 | 收敛点 | 相对误差 | 绝对误差 |",
+    "|--------|--------|----------|----------|",
 ]
 for q, label in zip(QUANTILES, QLABELS):
-    lines.append(f"| {label} ({q:.0%}) | {convergence[label]} |")
+    conv, rel, abs_ = convergence[label]
+    lines.append(f"| {label} ({q:.0%}) | {conv} | {rel} | {abs_} |")
 
 lines += [
     "",
@@ -216,14 +222,16 @@ lines += [
     "",
     "## 逐 N 数据 (每 UP 平均抽数)",
     "",
-    "| N | " + " | ".join(f"exact {l}" for l in QLABELS) + " | " + " | ".join(f"CLT {l}" for l in QLABELS) + " |",
-    "|--:|" + ":--:|" * (len(QUANTILES) * 2),
+    "| N | " + " | ".join(f"{l} exact|{l} CLT" for l in QLABELS) + " |",
+    "|--:|" + ":--:|:--:|" * len(QUANTILES),
 ]
 
 for n in ns:
-    vals = [f"{exact_q[n][q] / n:.1f}" for q in QUANTILES]
-    clt_vals = [f"{clt_q[n][q] / n:.1f}" for q in QUANTILES]
-    lines.append(f"| {n:2d} | " + " | ".join(vals) + " | " + " | ".join(clt_vals) + " |")
+    cells: list[str] = []
+    for q in QUANTILES:
+        cells.append(f"{exact_q[n][q] / n:.1f}")
+        cells.append(f"{clt_q[n][q] / n:.1f}")
+    lines.append(f"| {n:2d} | " + " | ".join(cells) + " |")
 
 lines += [
     "",
