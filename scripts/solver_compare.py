@@ -3,11 +3,12 @@
 
 Solves:
   A — 55/45 naive convolution
-  B — 55/45 2-state matrix convolution
   C — 55/45 FFT iteration
   D — 55/45 CLT
   E — 4-state capture radiance exact (ground truth)
   F — 4-state capture radiance CLT
+
+(B — 55/45 2-state matrix — removed: structurally biased, see plan doc.)
 """
 
 import time
@@ -63,26 +64,6 @@ def solve_naive_conv(N):
     for n in range(1, N + 1):
         pdf = np.convolve(pdf, p_up_single)
         result[n] = _quantiles(np.cumsum(pdf))
-    return result
-
-
-# ---- B: 55/45 2-state matrix ----
-
-def solve_matrix_conv(N):
-    s0 = np.array([1.0], dtype=np.float64)
-    s1 = np.array([0.0], dtype=np.float64)
-    result = {}
-    for n in range(1, N + 1):
-        c0 = np.convolve(s0, p_gold) * 0.55   # s0 win  → s0
-        c1 = np.convolve(s1, p_gold)            # s1 guaranteed win → s0
-        c2 = np.convolve(s0, p_gold) * 0.45    # s0 loss → s1
-        m01 = max(len(c0), len(c1))
-        new_s0 = _pad(c0, m01) + _pad(c1, m01)
-        new_s1 = c2
-        s0, s1 = new_s0, new_s1
-        mlen = max(len(s0), len(s1))
-        total = _pad(s0, mlen) + _pad(s1, mlen)
-        result[n] = _quantiles(np.cumsum(total))
     return result
 
 
@@ -178,7 +159,6 @@ def solve_clt_4state(N):
 print("Computing all solvers (N=1..20)...")
 solvers = {
     "A": solve_naive_conv,
-    "B": solve_matrix_conv,
     "C": solve_fft_iter,
     "D": solve_clt_55,
     "E": solve_4state_exact,
@@ -194,32 +174,25 @@ for name, fn in solvers.items():
 
 exact_q = all_data["E"]
 
-# ---- Figure 1: Accuracy (A vs E and B vs E) ----
+# ---- Figure 1: Accuracy (A vs E) ----
 
 ns = np.arange(1, MAX_N + 1)
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12))
+fig, ax = plt.subplots(figsize=(14, 7))
 
 for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
     ls = ":" if q in (0.01, 0.99) else "--" if q in (0.10, 0.90) else "-"
-    for ax, solver_name in [(ax1, "A"), (ax2, "B")]:
-        err = np.array([
-            abs(all_data[solver_name][n][q] / n - exact_q[n][q] / n)
-            for n in ns
-        ])
-        ax.plot(ns[4:], err[4:], color=color, linestyle=ls, linewidth=2, label=label)
+    err = np.array([
+        abs(all_data["A"][n][q] / n - exact_q[n][q] / n)
+        for n in ns
+    ])
+    ax.plot(ns[4:], err[4:], color=color, linestyle=ls, linewidth=2, label=label)
 
-ax1.set_title("A (55/45 naive) vs E (4-state exact)", fontsize=14)
-ax1.set_ylabel("绝对误差 (抽 / UP)", fontsize=12)
-ax1.legend(loc="upper right", ncol=4, fontsize=9)
-ax1.grid(True, alpha=0.3)
-ax1.set_xticks(range(5, MAX_N + 1))
-
-ax2.set_title("B (55/45 matrix) vs E (4-state exact)", fontsize=14)
-ax2.set_xlabel("UP 数 N", fontsize=12)
-ax2.set_ylabel("绝对误差 (抽 / UP)", fontsize=12)
-ax2.legend(loc="upper right", ncol=4, fontsize=9)
-ax2.grid(True, alpha=0.3)
-ax2.set_xticks(range(5, MAX_N + 1))
+ax.set_title("A (55/45 naive) vs E (4-state exact)", fontsize=14)
+ax.set_xlabel("UP 数 N", fontsize=12)
+ax.set_ylabel("绝对误差 (抽 / UP)", fontsize=12)
+ax.legend(loc="upper right", ncol=4, fontsize=9)
+ax.grid(True, alpha=0.3)
+ax.set_xticks(range(5, MAX_N + 1))
 
 plt.tight_layout()
 fig.savefig(OUTPUT / "accuracy-model.png", dpi=200)
@@ -240,8 +213,8 @@ for n in speed_ns:
         speed_data[name].append(np.median(runs) * 1000)  # ms
 
 fig, ax = plt.subplots(figsize=(14, 8))
-styles = {"A": "o-", "B": "s--", "C": "^-", "D": "d:", "E": "p-", "F": "h--"}
-for name in ["A", "B", "C", "D", "E", "F"]:
+styles = {"A": "o-", "C": "^-", "D": "d:", "E": "p-", "F": "h--"}
+for name in ["A", "C", "D", "E", "F"]:
     ax.plot(speed_ns, speed_data[name], styles[name], linewidth=2, markersize=8, label=name)
 
 ax.set_xscale("log")
@@ -264,46 +237,44 @@ print(f"Saved {OUTPUT / 'speed-comparison.png'}")
 lines = [
     "# Solver 对比",
     "",
-    "## 精度：模型误差 vs 参考标准 E",
+    "## 精度：A (55/45 naive) vs E (4-state exact)",
     "",
     "![精度对比](accuracy-model.png)",
     "",
-    "**A (55/45 naive)**：独立同分布，每 UP 期望 90.3 抽（与稳态一致）。小 N 时分布误差",
-    "最大（忽略 loss->guarantee 的依赖），但均值无偏。N=20 时 99% 分位误差约 +2.4 抽/UP。",
+    "A 使用 55/45 固定 win rate + 独立同分布卷积，E 使用捕获明光 4 状态迭代。",
+    "A 的稳态均值与 E 一致（90.3 抽/UP），但分布有偏差：",
+    "- 极欧（1%）：A 低估 ~1.5 抽/UP（55% 高估 win rate → 分布偏乐观）",
+    "- 极非（99%）：A 高估 ~2.4 抽/UP（独立模型忽略 loss→guarantee 的负相关）",
+    "- 中部（30%~70%）：N ≥ 5 时误差 < 1 抽/UP",
     "",
-    "**B (55/45 matrix)**：反而比 A 差很多——系统性低估每 UP ~28 抽。根因是 55% 高估了",
-    "k_miss=0 的 win rate（实际 50.0%），导致稳态分布过度偏向状态 0（pi_0=0.69 vs 实际",
-    "0.55），且状态 0 的期望金数被低估（1.45 vs 实际 1.50）。两个偏差叠加，",
-    "使 B 在所有分位点和所有 N 都严重偏低。",
+    "**结论**：55/45 模型在 N ≥ 10 时误差可接受（< 2 抽/UP），但不如 4-state 精确。",
+    "如需精确尾部（1%/99%），必须用 4-state。",
     "",
-    "随 N 增大，所有模型向各自的稳态均值收敛，但 B 的稳态均值本身就错了 ~9 抽/UP。",
+    "> B（55/45 matrix）已从此对比中移除。其 2 状态结构无法表示捕获明光的渐进性，",
+    "> 稳态分布畸变导致系统性低估 ~9 抽/UP，属于结构性错误，不可修复。",
     "",
     "## 速度",
     "",
     "![速度对比](speed-comparison.png)",
     "",
-    "| N | A (naive ms) | B (matrix ms) | C (FFT ms) | D (CLT ms) | E (4-state ms) | F (4s CLT ms) |",
-    "|---|-------------|--------------|------------|------------|---------------|--------------|",
+    "| N | A (naive ms) | C (FFT ms) | D (CLT ms) | E (4-state ms) | F (4s CLT ms) |",
+    "|---|-------------|------------|------------|---------------|--------------|",
 ]
 for ni, n in enumerate(speed_ns):
-    cells = [str(n)]
-    for name in ["A", "B", "C", "D", "E", "F"]:
-        cells.append(f"{speed_data[name][ni]:.1f}")
+    cells = [str(n)] + [f"{speed_data[name][ni]:.1f}" for name in ["A", "C", "D", "E", "F"]]
     lines.append("| " + " | ".join(cells) + " |")
 
 lines += [
     "",
-    "D/F（CLT）在大 N 时几乎免费。A/B 在小 N 时可用，N>10 后快速变慢。",
-    "C（FFT）在中等 N 最快，但初始 L=180N 预分配需额外内存。",
+    "所有方案在 N ≤ 20 时均 < 5ms，速度不是决定因素。",
+    "D/F（CLT）在任意 N 几乎免费。C（FFT）在中等 N 最快。",
     "",
     "## 推荐",
     "",
     "| N 范围 | 推荐 | 理由 |",
     "|--------|------|------|",
-    "| 1 ~ 20 | E（4-state exact） | 精度最高，N=20 时 ~2s 可接受 |",
+    "| 1 ~ 20 | E（4-state exact） | 精度最高，N=20 时 < 5ms |",
     "| > 20 | F（4-state CLT） | 正态近似已验证收敛，~0.1ms/步 |",
-    "",
-    "55/45 模型（A~D）不推荐——精度损失不必要，且速度优势已被 F 覆盖。",
     "",
     "> 生成脚本: `python scripts/solver_compare.py`",
 ]
