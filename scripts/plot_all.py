@@ -22,6 +22,8 @@ from genshin_wish.viz.stack import plot_stacked_up_probabilities
 from genshin_wish.viz.staircase import plot_staircase_luck_fan
 from genshin_wish.viz.multi_gold import plot_multi_gold
 from genshin_wish.viz.pdf import plot_base_pdfs
+from genshin_wish.viz.long_term import plot_long_term_luck
+from genshin_wish.long_term import LongTermState, make_long_solver
 
 setup_style()
 
@@ -271,6 +273,29 @@ def plot_multi_gold_viz() -> None:
     print("  Multi-gold done")
 
 
+# --- Long-term luck ---
+
+def plot_long_term_charts() -> None:
+    """Long-term luck fan charts: pre-5.0 vs post-5.0, N=500."""
+    base = OUTPUT / "character" / "long-term"
+    scenarios = [
+        ("N1=0,N2=500", LongTermState(n_pre_50=0, n_post_50=500), "捕获明光后"),
+        ("N1=500,N2=0", LongTermState(n_pre_50=500, n_post_50=0), "纯 50/50"),
+    ]
+    for dirname, state, label in scenarios:
+        out_dir = base / dirname
+        out_dir.mkdir(parents=True, exist_ok=True)
+        solver = make_long_solver(state)
+        N = state.n_pre_50 + state.n_post_50
+        plot_long_term_luck(
+            solver, N=N,
+            save_path=out_dir / "long-term.png",
+            interval_set=5,
+            title=f"{label} 长期欧非分布 (N={N})",
+        )
+        print(f"  Long-term {dirname} done")
+
+
 # --- Main ---
 
 def main() -> None:
@@ -282,6 +307,7 @@ def main() -> None:
     plot_character_rolls2gold()
     plot_weapon()
     plot_multi_gold_viz()
+    plot_long_term_charts()
 
     print("\nAll plots generated in output/")
 

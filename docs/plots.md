@@ -28,6 +28,9 @@ output/
 │       ├── multi-cdf/    # miss0.png ~ stable.png (多命座 CDF 线图)
 │       ├── stack/        # miss0.png ~ stable.png (堆叠面积图)
 │       └── staircase/    # miss0.png ~ stable.png (阶梯扇形图)
+│   └── long-term/
+│       ├── N1=0,N2=500/  # long-term.png (捕获明光后 500 UP)
+│       └── N1=500,N2=0/  # long-term.png (纯 50/50 500 UP)
 ├── weapon/
 │   ├── pdf.png          # 多金 PDF 对比
 │   ├── cdf-gold1~4.png  # 1-4 金 CDF
@@ -324,6 +327,20 @@ def plot_long_term_luck(
 - `plot_luck_fan` 展示不同命座（1~7 次获取）的单位平均成本
 - `plot_long_term_luck` 展示长期（N 可达数百次获取）的趋势收敛，Y 轴 = 单位平均消耗
 
+`solver_func` 由 `genshin_wish.long_term.make_long_solver` 创建：
+
+```python
+from genshin_wish.long_term import LongTermState, make_long_solver
+
+# 捕获明光后 500 UP（默认 exact）
+state = LongTermState(n_pre_50=0, n_post_50=500)
+solver = make_long_solver(state)
+
+# 纯 50/50 500 UP，CLT 快速预览
+state = LongTermState(n_pre_50=500, n_post_50=0)
+solver = make_long_solver(state, method="clt")
+```
+
 图表内容：
 - 同扇形图的分位带体系（3 或 5 层）
 - 黑色虚线 = 理论均值
@@ -402,6 +419,7 @@ plot_annotated_cdf(dist.cdf, "标题", "output/custom.png")
 | `viz.stack` | `plot_stacked_up_probabilities` | 堆叠面积图 |
 | `viz.staircase` | `plot_staircase_luck_fan` | 阶梯扇形图 |
 | `viz.long_term` | `plot_long_term_luck` | 长期欧非演变 |
+| `long_term` | `make_long_solver` | 创建 long-term solver |
 | `viz.multi_gold` | `plot_multi_gold` | 十连多金概率 |
 | `viz.pdf` | `plot_base_pdfs` | 多金 PDF 对比 |
 
