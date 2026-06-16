@@ -6,7 +6,6 @@ ref/
 output/
 temp/
 .cache/
-cache/
 
 .claude
 .vscode
