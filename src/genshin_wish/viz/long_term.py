@@ -21,29 +21,29 @@ def _build_configs(interval_set: int) -> list[dict]:
 # 3-interval rendering  (plot_long_term_luck)
 # ---------------------------------------------------------------------------
 def _render_long_term_3(
-    solver_func, N: int, save_path: Path, title: str
+    solver_func, N: int, n_start: int, save_path: Path, title: str
 ) -> None:
     alpha_configs = _build_configs(3)
 
     target_alphas = [0.01, 0.1, 0.3, 0.7, 0.9, 0.99]
     solver_alphas = [0.3, 0.1, 0.01]
 
-    raw_data = solver_func(N, solver_alphas)
-    up_axis = np.arange(1, N + 1)
+    total = n_start + N
+    raw_data = solver_func(total, solver_alphas)
+    up_axis = np.arange(n_start + 1, total + 1)
 
     # --- data transform: cumulative → per-UP average ---
     all_bounds_avg: dict[float, list[float]] = {a: [] for a in target_alphas}
     for i, n in enumerate(up_axis):
         for a_base in solver_alphas:
-            low, high = raw_data[a_base][i]
+            low, high = raw_data[a_base][n_start + i]
             all_bounds_avg[a_base].append(low / n)
             all_bounds_avg[round(1 - a_base, 2)].append(high / n)
 
     # approximate mu from middle-quantile midpoint at max N
     mid_a = 0.3
     lo_last, hi_last = raw_data[mid_a][-1]
-    mu_single = float((lo_last + hi_last) / 2 / N)
-    expectations_avg = np.full(N, mu_single)
+    mu_single = float((lo_last + hi_last) / 2 / total)
 
     plt.figure(figsize=(18, 11))
 
@@ -65,7 +65,7 @@ def _render_long_term_3(
 
     # --- sampled annotations with vertical guides ---
     label_indices = [i for i in range(len(up_axis))
-                     if (i + 1) >= 10 and (i + 1) % 10 == 0]
+                     if (n_start + i + 1) >= 10 and (n_start + i + 1) % 10 == 0]
     if (N - 1) not in label_indices:
         label_indices.append(N - 1)
 
@@ -109,7 +109,7 @@ def _render_long_term_3(
     plt.ylabel("单位平均消耗 (总抽数/n)", fontsize=14)
     plt.yticks(np.arange(0, 201, 10))
     plt.ylim(mu_single - 40, mu_single + 50)
-    plt.xlim(0, N + (0.05 * N))
+    plt.xlim(n_start, total + (0.05 * N))
     plt.grid(axis='y', linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=11, ncol=2)
 
@@ -122,14 +122,15 @@ def _render_long_term_3(
 # 5-interval rendering  (plot_long_term_luck_5)
 # ---------------------------------------------------------------------------
 def _render_long_term_5(
-    solver_func, N: int, save_path: Path, title: str
+    solver_func, N: int, n_start: int, save_path: Path, title: str
 ) -> None:
     alpha_configs = _build_configs(5)  # sorted inner→outer: 0.40,0.30,0.20,0.10,0.01
 
     target_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 0.99]
 
-    raw_data = solver_func(N, target_alphas)
-    up_axis = np.arange(1, N + 1)
+    total = n_start + N
+    raw_data = solver_func(total, target_alphas)
+    up_axis = np.arange(n_start + 1, total + 1)
 
     # --- data transform: cumulative → per-UP average ---
     all_bounds_avg: dict[float, list[float]] = {a: [] for a in target_alphas}
@@ -138,14 +139,15 @@ def _render_long_term_5(
     # approximate mu from middle-quantile midpoint at max N
     mid_a = 0.4
     lo_last, hi_last = raw_data[mid_a][-1]
-    mu_single = float((lo_last + hi_last) / 2 / N)
+    mu_single = float((lo_last + hi_last) / 2 / total)
 
     for i, n in enumerate(up_axis):
+        idx = n_start + i
         for a in target_alphas:
             if a < 0.5:
-                val = raw_data[a][i][0] / n
+                val = raw_data[a][idx][0] / n
             else:
-                val = raw_data[round(1 - a, 2)][i][1] / n
+                val = raw_data[round(1 - a, 2)][idx][1] / n
             all_bounds_avg[a].append(val)
         expectations_avg.append(mu_single)
 
@@ -176,8 +178,8 @@ def _render_long_term_5(
     if N <= 10:
         label_indices = list(range(len(up_axis)))
     else:
-        sample_pts = [1, 5, 10, 20, 50, 100, 200, 500, N]
-        label_indices = [i - 1 for i in sample_pts if i <= N]
+        sample_pts = [1, 5, 10, 20, 50, 100, 200, 500, total]
+        label_indices = [i - 1 - n_start for i in sample_pts if n_start < i <= total]
         if (N - 1) not in label_indices:
             label_indices.append(N - 1)
 
@@ -222,6 +224,7 @@ def _render_long_term_5(
     plt.ylabel("平均每个UP消耗抽数 (总数/n)", fontsize=12)
     plt.yticks(np.arange(0, 201, 20))
     plt.ylim(max(0, mu_single - 60), min(200, mu_single + 80))
+    plt.xlim(n_start, total + (0.05 * N))
     plt.grid(linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=9, ncol=2)
 
@@ -240,6 +243,7 @@ def plot_long_term_luck(
     *,
     interval_set: int = 5,
     title: str | None = None,
+    n_start: int = 0,
 ) -> None:
     """Plot a long-term luck-distribution fan chart.
 
@@ -251,20 +255,24 @@ def plot_long_term_luck(
         tuple is the raw cumulative pull count at quantile *alpha* and
         *1-alpha* for the *n*-th UP.
     N : int
-        Total number of UPs to model.
+        Number of UPs to show in this chart.
     save_path : str or Path
         Output image path (PNG).
     interval_set : int
         Number of probability bands: 3 or 5 (default 5).
     title : str, optional
         Chart title.  Falls back to a sensible default when *None*.
+    n_start : int
+        Starting UP index (0-based).  The chart shows UPs
+        n_start+1 … n_start+N.  Default 0 (show from the first UP).
     """
     sp = Path(save_path)
     if title is None:
-        title = (f"估算 {N} 次获取UP角色长期欧非分布"
+        total = n_start + N
+        title = (f"估算 {total} 次获取UP角色长期欧非分布"
                  if interval_set == 5 else "长期欧非演变")
 
     if interval_set == 3:
-        _render_long_term_3(solver_func, N, sp, title)
+        _render_long_term_3(solver_func, N, n_start, sp, title)
     else:
-        _render_long_term_5(solver_func, N, sp, title)
+        _render_long_term_5(solver_func, N, n_start, sp, title)

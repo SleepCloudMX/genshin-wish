@@ -29,8 +29,8 @@ output/
 │       ├── stack/        # miss0.png ~ stable.png (堆叠面积图)
 │       └── staircase/    # miss0.png ~ stable.png (阶梯扇形图)
 │   └── long-term/
-│       ├── N1=0,N2=500/  # long-term.png (捕获明光后 500 UP)
-│       └── N1=500,N2=0/  # long-term.png (纯 50/50 500 UP)
+│       ├── N1=0,N2=500/  # long-term.png + 100/200/300/400/500.png (捕获明光后)
+│       └── N1=500,N2=0/  # long-term.png + 100/200/300/400/500.png (纯 50/50)
 ├── weapon/
 │   ├── pdf.png          # 多金 PDF 对比
 │   ├── cdf-gold1~4.png  # 1-4 金 CDF
@@ -318,10 +318,11 @@ def plot_long_term_luck(
 | 参数 | 说明 |
 |------|------|
 | `solver_func` | `(N, alphas) -> dict[float, list[(low, high)]]`，返回各 alpha 在 1..N 步的累积抽数上下界 |
-| `N` | 总 UP 获取次数 |
+| `N` | 图表中展示的 UP 数量 |
 | `save_path` | 输出路径 |
 | `interval_set` | `3` 或 `5`（默认 5） |
 | `title` | 图表标题 |
+| `n_start` | 起始 UP 索引（0-based），默认 0。`n_start=100, N=100` 展示第 101~200 个 UP |
 
 与 `plot_luck_fan` 的区别：
 - `plot_luck_fan` 展示不同命座（1~7 次获取）的单位平均成本
