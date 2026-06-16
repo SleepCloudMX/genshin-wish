@@ -75,7 +75,7 @@ print(f"800 抽达成概率: {dist.probability(800) * 100:.1f}%")
 python scripts/plot_all.py
 ```
 
-图表输出到 `output/`。
+图表输出到 `output/`。`scripts/` 下还有其他分析工具，详见 [分析与验证](docs/analysis.md)。
 
 ## 文档
 
