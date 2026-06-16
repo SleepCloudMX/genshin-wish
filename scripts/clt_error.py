@@ -111,9 +111,13 @@ MU_1, VAR_1 = clt_moments()
 
 
 def clt_quantiles(max_n: int) -> dict[int, dict[float, float]]:
-    """CLT quantiles for n=1..max_n."""
+    """CLT quantiles for n=1..max_n (absolute pulls)."""
+    STD_1 = np.sqrt(VAR_1)
     return {
-        n: {q: float(norm.ppf(q, n * MU_1, np.sqrt(n * VAR_1))) for q in QUANTILES}
+        n: {
+            q: float(n * MU_1 + np.sqrt(n) * STD_1 * norm.ppf(q))
+            for q in QUANTILES
+        }
         for n in range(1, max_n + 1)
     }
 
@@ -135,7 +139,7 @@ plot_ns = ns[START_N - 1:]  # N = 5..20 for plotting
 for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
     # Per-UP values: total pulls / N
     exact_per_up = np.array([exact_q[n][q] / n for n in ns])
-    clt_per_up = np.full(MAX_N, MU_1)  # CLT mean per UP is constant
+    clt_per_up = np.array([clt_q[n][q] / n for n in ns])
 
     abs_err = np.abs(exact_per_up - clt_per_up)
     rel_err = abs_err / np.maximum(exact_per_up, 1.0) * 100
@@ -176,7 +180,8 @@ convergence: dict[str, str] = {}
 for qi, (q, label) in enumerate(zip(QUANTILES, QLABELS)):
     for n in ns:
         exact_per = exact_q[n][q] / n
-        err = abs(exact_per - MU_1) / max(exact_per, 1.0) * 100
+        clt_per = clt_q[n][q] / n
+        err = abs(exact_per - clt_per) / max(exact_per, 1.0) * 100
         if err < 2.0:
             convergence[label] = f"N >= {n} ({err:.1f}%)"
             break
@@ -211,13 +216,14 @@ lines += [
     "",
     "## 逐 N 数据 (每 UP 平均抽数)",
     "",
-    "| N | " + " | ".join(f"exact {l}" for l in QLABELS) + " | CLT |",
-    "|--:|" + ":--:|" * (len(QUANTILES) + 1),
+    "| N | " + " | ".join(f"exact {l}" for l in QLABELS) + " | " + " | ".join(f"CLT {l}" for l in QLABELS) + " |",
+    "|--:|" + ":--:|" * (len(QUANTILES) * 2),
 ]
 
 for n in ns:
     vals = [f"{exact_q[n][q] / n:.1f}" for q in QUANTILES]
-    lines.append(f"| {n:2d} | " + " | ".join(vals) + f" | {MU_1:.1f} |")
+    clt_vals = [f"{clt_q[n][q] / n:.1f}" for q in QUANTILES]
+    lines.append(f"| {n:2d} | " + " | ".join(vals) + " | " + " | ".join(clt_vals) + " |")
 
 lines += [
     "",
