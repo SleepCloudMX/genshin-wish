@@ -58,7 +58,7 @@ python scripts/plot_all.py
 - **概率计算不 import matplotlib**。`character.py`、`weapon.py`、`joint.py` 不依赖任何绘图库。
 - **解析解优先**。蒙特卡洛仅用于测试验证。CLT 在 `n_up > CLT_THRESHOLD (7)` 时使用，`method` 字段标注。
 - **PDF 使用 float64**。卷积精度敏感。
-- **临时输出放 `temp/`**（已 gitignore）。测试、验证、调试时产生的程序输出（如图片、pickle）写到 `temp/`，不要放到 `output/` 或 `docs/`。
+- **程序输出放 `output/`**（已 gitignore）。图表、分析结果等程序生成的文件统一放到 `output/` 下按用途分子目录。不要放到 `docs/`。
 - **PoolConfig 参数含义**：`soft_pity_start` 是概率首次超过 `base_rate` 的 1-indexed 抽数。如角色池 pulls 1~73 恒定 0.6%，soft pity 从 pull 74 开始。
 - **`prev_standard` 不影响 `character.py`**，仅 `weapon.py` 使用。
 - **Capture Radiance**：`p_up[k] = 0.5 + 0.5 * capture_radiance[k]`。稳态概率 `STABLE_P` 由 `guarantee_seq` 转移矩阵解析导出。
