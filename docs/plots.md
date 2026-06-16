@@ -407,24 +407,35 @@ plot_annotated_cdf(dist.cdf, "标题", "output/custom.png")
 
 ---
 
-## 附录：CLT 误差分析
+## 附录 A：CLT 误差分析
 
-精确解（4 状态捕获明光迭代卷积）与 CLT 近似的误差分析。
+4 状态捕获明光精确解 vs CLT 近似的误差，N=1..100。
 
 ```bash
 python scripts/clt_error.py
 ```
 
-输出到 `output/analysis/clt-error/`，包含误差曲线图和结论摘要。
+输出到 `output/analysis/clt-error/`：`clt-error-abs.png`、`clt-error-rel.png`、`data.json`、`README.md`。
 
-核心结论：
+误差以每 UP 平均抽数衡量。CLT 分位点公式：$\mu_1 + \sigma_1 \cdot \Phi^{-1}(q) / \sqrt{N}$。
 
-| 分位点 | N ≥ 7 误差 | N ≥ 10 误差 | N ≥ 15 误差 |
-|--------|-----------|------------|------------|
-| 1% (极欧) | — | ~5% | ~3% |
-| 10% (偏欧) | < 2% | < 1% | < 1% |
-| 30%~70% (中部) | < 1% | < 1% | < 1% |
-| 90% (偏非) | < 2% | < 1% | < 1% |
-| 99% (极非) | ~10% | ~8% | ~5% |
+**收敛点（相对误差 < 2%）：**
 
-CLT 在中部收敛极快（N ≥ 3 即 < 1%），尾部极值收敛较慢（N=20 时 99% 分位仍有 ~8% 相对误差）。**建议 CLT 阈值 N ≥ 7**，此时 10%~90% 区间完全可靠；极值场景可适当提高阈值到 N ≥ 15。
+| 分位点 | 收敛 N | 说明 |
+|--------|--------|------|
+| 1% | N=31 | 收敛最慢，CLT 在 N<30 时可能为负 |
+| 10%/30%/50%/70%/90%/99% | N ≤ 3 | 快速收敛 |
+
+N=100 时所有分位 CLT 误差 < 1.1 抽/UP，中部 < 0.2 抽/UP。**CLT 在 N ≥ 7 时完全可靠。**
+
+## 附录 B：Solver 对比
+
+5 种 long-term solver 的精度、收敛性、速度对比，N=1..100。
+
+```bash
+python scripts/solver_compare.py
+```
+
+输出到 `output/analysis/solver-compare/`：`accuracy-model.png`、`convergence.png`、`speed-comparison.png`、`data.json`、`README.md`。
+
+**结论：** N ≤ 500 推荐 E（4-state exact，N=100 仅 ~100ms），N > 500 用 F（4-state CLT）。55/45 模型不推荐——精度不如 4-state，速度优势无实际意义。
