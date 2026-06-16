@@ -26,8 +26,7 @@ setup_style()
 OUTPUT = Path("output/analysis/solver-compare")
 OUTPUT.mkdir(parents=True, exist_ok=True)
 
-ACC_N = 20       # exact accuracy comparison range
-CONV_N = 100     # convergence range (exact up to ACC_N, CLT beyond)
+ACC_N = 100      # accuracy and convergence range
 SPEED_NS = [1, 5, 10, 20, 50, 100]
 QUANTILES = [0.01, 0.10, 0.30, 0.50, 0.70, 0.90, 0.99]
 QLABELS = ["1%", "10%", "30%", "50%", "70%", "90%", "99%"]
@@ -156,22 +155,13 @@ def solve_clt_4state(N):
 solvers = {"A": solve_naive_conv, "C": solve_fft_iter, "D": solve_clt_55,
            "E": solve_4state_exact, "F": solve_clt_4state}
 
-# --- Accuracy data (N=1..20) ---
-print(f"Accuracy: computing A/E exact (N=1..{ACC_N})...")
+# --- Full data (N=1..100, all solvers) ---
+print(f"Computing all solvers (N=1..{ACC_N})...")
 acc_data = {}
-for name in ["A", "E"]:
-    t0 = time.perf_counter()
-    acc_data[name] = solvers[name](ACC_N)
-    print(f"  {name}: {time.perf_counter()-t0:.2f}s")
-
-# --- Convergence data (N=1..100, all solvers) ---
-print(f"Convergence: computing all solvers (N=1..{CONV_N})...")
-conv_data = {}
 for name, fn in solvers.items():
     t0 = time.perf_counter()
-    conv_data[name] = fn(CONV_N)
-    dt = time.perf_counter() - t0
-    print(f"  {name}: {dt:.2f}s")
+    acc_data[name] = fn(ACC_N)
+    print(f"  {name}: {time.perf_counter()-t0:.2f}s")
 
 # --- Speed benchmarks ---
 print(f"Speed: benchmarking N={SPEED_NS}...")
@@ -187,22 +177,24 @@ for n in SPEED_NS:
 
 exact_q = acc_data["E"]
 
-# ============ Figure 1: Accuracy (A vs E, N=5..20) ============
+# ============ Figure 1: Accuracy A vs E (N=5..100) ============
 
-ns20 = np.arange(1, ACC_N + 1)
+ns = np.arange(1, ACC_N + 1)
+tick_ns = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
 fig, ax = plt.subplots(figsize=(14, 7))
 
 for qi, (q, label, color) in enumerate(zip(QUANTILES, QLABELS, COLORS)):
     ls = ":" if q in (0.01, 0.99) else "--" if q in (0.10, 0.90) else "-"
-    err = np.array([abs(acc_data["A"][n][q] / n - exact_q[n][q] / n) for n in ns20])
-    ax.plot(ns20[4:], err[4:], color=color, linestyle=ls, linewidth=2, label=label)
+    err = np.array([abs(acc_data["A"][n][q] / n - exact_q[n][q] / n) for n in ns])
+    ax.plot(ns[4:], err[4:], color=color, linestyle=ls, linewidth=2, label=label)
 
-ax.set_title("A (55/45 naive) vs E (4-state exact)", fontsize=14)
+ax.set_title("A (55/45 naive) vs E (4-state exact), N=5..100", fontsize=14)
 ax.set_xlabel("UP 数 N", fontsize=12)
 ax.set_ylabel("绝对误差 (抽 / UP)", fontsize=12)
 ax.legend(loc="upper right", ncol=4, fontsize=9)
 ax.grid(True, alpha=0.3)
-ax.set_xticks(range(5, ACC_N + 1))
+ax.set_xticks(tick_ns)
 fig.tight_layout()
 fig.savefig(OUTPUT / "accuracy-model.png", dpi=200)
 plt.close(fig)
@@ -210,26 +202,21 @@ print(f"Saved {OUTPUT / 'accuracy-model.png'}")
 
 # ============ Figure 2: Convergence (median per UP, N=1..100) ============
 
-ns100 = np.arange(1, CONV_N + 1)
 fig, ax = plt.subplots(figsize=(14, 7))
-
-# Reference: E (exact, N<=20) + F (CLT, all N) for the 50% median
-ref_med = [exact_q[n][0.50] / n for n in ns20] + [conv_data["F"][n][0.50] / n for n in ns20[19:]]
-ref_ns  = list(ns20) + list(ns20[19:])
 
 styles = {"A": ("#ff7f0e", "--"), "C": ("#2ca02c", "-."), "D": ("#d62728", ":"),
           "F": ("#1f77b4", "-")}
 
 for name, (color, ls) in styles.items():
-    med = [conv_data[name][n][0.50] / n for n in ns100]
-    ax.plot(ns100, med, color=color, linestyle=ls, linewidth=1.5, label=name)
+    med = [acc_data[name][n][0.50] / n for n in ns]
+    ax.plot(ns, med, color=color, linestyle=ls, linewidth=1.5, label=name)
 
-# ground truth dots for E (exact, N<=20)
-e_med = [exact_q[n][0.50] / n for n in ns20]
-ax.scatter(ns20, e_med, color="#1f77b4", s=25, zorder=10, label="E (exact)")
+# E (exact) as scatter overlay
+e_med = [exact_q[n][0.50] / n for n in ns]
+ax.scatter(ns, e_med, color="#1f77b4", s=15, zorder=10, label="E (exact)")
 
 ax.axhline(MU_4, color="gray", linestyle=":", alpha=0.5, linewidth=1)
-ax.text(CONV_N * 0.95, MU_4 + 0.3, f"{MU_4:.1f}", ha="right", fontsize=9, color="gray")
+ax.text(ACC_N * 0.95, MU_4 + 0.3, f"{MU_4:.1f}", ha="right", fontsize=9, color="gray")
 
 ax.set_title("各方案中位数收敛 (每 UP 平均抽数 vs N)", fontsize=14)
 ax.set_xlabel("UP 数 N", fontsize=12)
@@ -266,21 +253,21 @@ print(f"Saved {OUTPUT / 'speed-comparison.png'}")
 lines = [
     "# Solver 对比",
     "",
-    "## 1. 精度：A (55/45 naive) vs E (4-state exact), N=5..20",
+    "## 1. 精度：A (55/45 naive) vs E (4-state exact), N=5..100",
     "",
     "![精度](accuracy-model.png)",
     "",
     "A 使用 55/45 固定 win rate + 独立同分布卷积。稳态均值与 E 一致（90.3 抽/UP），",
-    "但分布有偏差：极欧（1%）低估 ~1.5 抽/UP，极非（99%）高估 ~2.4 抽/UP。",
-    "中部（30%~70%）N ≥ 5 时误差 < 1 抽/UP。",
+    "但分布有偏差：极欧（1%）低估 ~2 抽/UP，极非（99%）高估 ~2 抽/UP。",
+    "中部（30%~70%）N ≥ 5 时误差 < 0.5 抽/UP，N ≥ 50 时 < 0.2 抽/UP。",
+    "误差随 N 增大趋近于零——两种模型在稳态下等价。",
     "",
     "## 2. 收敛：各方案中位数 vs N, N=1..100",
     "",
     "![收敛](convergence.png)",
     "",
-    "以 E（蓝点，N≤20）为 ground truth。F（4-state CLT）是所有方案的渐近极限。",
-    "A/C/D（55/45 模型）收敛到同一稳态均值但路径不同。",
-    "E（4-state exact）在 N=20 时已与 F 几乎重合。",
+    "E（蓝点）为 ground truth，F（4-state CLT，蓝线）是渐近极限。",
+    "A/C/D（55/45 模型）从不同初值收敛到同一稳态均值。",
     "",
     "## 3. 速度",
     "",
