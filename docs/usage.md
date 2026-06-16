@@ -233,6 +233,39 @@ jd.probability(500)  # float, 500 抽内达成概率
 jd.quantile(0.5)     # int, 中位数
 ```
 
+### 长期 UP 分布
+
+计算 pre/post-5.0 两阶段的长期 UP 分布，用于 `plot_long_term_luck` 生成欧非演变图。
+
+```python
+from genshin_wish.long_term import LongTermState, make_long_solver
+from genshin_wish.viz.long_term import plot_long_term_luck
+
+# 捕获明光后 500 UP（默认 exact）
+state = LongTermState(n_pre_50=0, n_post_50=500)
+solver = make_long_solver(state)
+
+# 直接查询分位点
+data = solver(N=100, alphas=[0.5])
+# data[0.5] = [(lo_n1, hi_n1), ..., (lo_n100, hi_n100)]
+
+# 绘制图表
+plot_long_term_luck(solver, N=500, save_path="output/long-term-500.png")
+
+# 分段放大：仅显示第 101~200 个 UP
+plot_long_term_luck(solver, N=100, n_start=100, save_path="output/long-term-200.png")
+
+# 纯 50/50（pre-5.0）对比
+pre_state = LongTermState(n_pre_50=500, n_post_50=0)
+pre_solver = make_long_solver(pre_state)
+plot_long_term_luck(pre_solver, N=500, save_path="output/long-term-pre.png")
+
+# CLT 快速预览
+solver_fast = make_long_solver(state, method="clt")
+```
+
+`solver(N, alphas)` 返回 `{alpha: [(lo, hi), ...]}`，长度为 N，每个 tuple 是该 alpha 分位点下的累计抽数上下界。默认用迭代卷积 exact，精度最高（N=500 约 1.2s）；CLT 约 20ms 但极欧分位（1%）在 N<30 时有偏差。
+
 ### 生成图表
 
 ```python

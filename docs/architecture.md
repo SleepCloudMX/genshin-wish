@@ -11,12 +11,12 @@ CLI (cli/main.py)
  ↓
 Joint (joint.py)          Standard (standard.py)
  ↓                         ↓
-Character (character.py)  Weapon (weapon.py)
- ↓                         ↓
-Capture Radiance           金数权重 (_single_copy_weights)
-(_capture_radiance.py)     (weapon_target_weights)
- ↓                         ↓
-Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)
+Character (character.py)  Weapon (weapon.py)       LongTerm (long_term.py)
+ ↓                         ↓                         ↓
+Capture Radiance           金数权重 (_single_copy_weights)     Gold PDF/CDF
+(_capture_radiance.py)     (weapon_target_weights)            (_gold.py)
+ ↓                         ↓                                   ↑
+Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)  ──────┘
 ```
 
 各模块职责：
@@ -30,7 +30,8 @@ Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)
 | `weapon.py` | 武器池定轨分布：金数权重枚举 + 加权 PDF 合成 | `_constants.py`, `_gold.py` |
 | `standard.py` | 常驻池纯出金分布：精确卷积 + CLT 近似 | `_constants.py`, `_gold.py` |
 | `joint.py` | 独立卷积角色和武器分布，得到联合分布 | `character.py`, `weapon.py` |
-| `viz/` | 纯绘图，不包含计算逻辑 | `character.py`, `weapon.py`, `matplotlib` |
+| `long_term.py` | 长期 UP 分布（pre/post-5.0 混合），exact 迭代卷积 + CLT 近似，供 `viz/long_term.py` 调用 | `_constants.py`, `_gold.py` |
+| `viz/` | 纯绘图，不包含计算逻辑 | `character.py`, `weapon.py`, `long_term.py` |
 | `cli/main.py` | click 命令行封装，暴露 `char` / `weapon` / `joint` 三个子命令 | `character.py`, `weapon.py`, `joint.py`, `click` |
 
 ---
@@ -130,7 +131,20 @@ class PoolConfig:
 
 首次计算约 0.1s（12 次卷积），缓存命中后加载 < 1ms。缓存文件随 Python 版本和 pickle 协议变化自动失效重建。
 
-### 8. 模块导入设计
+### 8. long-term 双模型解耦
+
+`long_term.py` 用一个通用迭代卷积函数 `_solve_exact(n_states, p_up, max_n, p_gold, p_gold2)` 同时支持：
+
+- **Pre-5.0**（2 状态，p_up=[0.5, 1.0]）：纯 50/50 + 大保底，稳态每 UP ~93.75 抽
+- **Post-5.0**（4 状态，p_up=CAPTURE_RADIANCE_WIN_RATE）：捕获明光，稳态每 UP ~90.3 抽
+
+`LongTermState(n_pre_50, n_post_50)` 指定两段 UP 数量。工厂函数 `make_long_solver(state, method)` 预计算 1..N 的 PDF 并返回标准 solver callable，直接喂给 `viz/long_term.py` 的 `plot_long_term_luck`。
+
+混合场景（N1>0, N2>0）通过卷积连接：总分布 = conv(pre_N1_pdf, post_N2_pdf)。CLT 方法下直接矩相加。
+
+默认 exact，N=500 约 1.2s。CLT 方法 ~20ms，仅用于快速预览或 N>500。
+
+### 9. 模块导入设计
 
 - `import genshin_wish` 不应触发 matplotlib 导入。`viz/` 模块按需加载，不在 `__init__.py` 中引用。
 - 计算模块（`character.py`、`weapon.py`、`joint.py`、`_gold.py`）不 import 任何绘图库。
