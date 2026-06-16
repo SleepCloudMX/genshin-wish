@@ -65,3 +65,4 @@ python scripts/plot_all.py
 - **武器池仅支持「定轨不取消」**。同时要两把不同限定武器列入后续需求。
 - **提交前运行 `python -m pytest tests/ -v`** 确保 26 个测试全绿。
 - **CLI 入口**：`pyproject.toml` 的 `[project.scripts]` 注册，启动 `genshin_wish.cli.main:main`。
+- **`scripts/` 约定**：见 `scripts/CLAUDE.md`。分析脚本只输出图表 + data.json，不嵌入分析文本。

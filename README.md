@@ -82,6 +82,7 @@ python scripts/plot_all.py
 - [使用指南](docs/usage.md) — CLI 完整选项 / Python API 所有方法
 - [概率机制说明](docs/mechanism.md) — 模型假设与验证
 - [图表说明](docs/plots.md) — 图表类型与自定义绘图
+- [分析与验证](docs/analysis.md) — CLT 误差、Solver 对比
 - [架构与设计决策](docs/architecture.md) — 模块分层与设计理由
 
 ## 许可
