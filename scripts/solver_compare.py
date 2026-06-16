@@ -248,87 +248,39 @@ fig.savefig(OUTPUT / "speed-comparison.png", dpi=200)
 plt.close(fig)
 print(f"Saved {OUTPUT / 'speed-comparison.png'}")
 
-# ============ README ============
+# ============ Export data.json ============
 
-lines = [
-    "# Solver 对比",
-    "",
-    "## 1. 精度：A (55/45 naive) vs E (4-state exact), N=5..100",
-    "",
-    "![精度](accuracy-model.png)",
-    "",
-    "以 E（捕获明光 4 状态迭代卷积）为 ground truth，比较 A（55/45 独立同分布卷积）。",
-    "",
-    f"- 中部 (30%~70%): N >= 5 时误差 < 0.5 抽/UP, N >= 50 时 < 0.2 抽/UP",
-    f"- 极欧 (1%): A 低估 (55% 高估 win rate, 分布偏乐观), N=100 时 ~0.5 抽/UP",
-    f"- 极非 (99%): A 高估 (忽略 loss->guarantee 负相关), N=100 时 ~0.7 抽/UP",
-    "- 误差随 N 增大趋近于零, 两种模型在稳态下等价",
-    "",
-    "## 2. 收敛：各方案中位数 vs N, N=1..100",
-    "",
-    "![收敛](convergence.png)",
-    "",
-    "E (蓝点, ground truth) 和 F (蓝线, 4-state CLT) 在 N >= 10 后几乎完全重合。",
-    "A/C/D (55/45 模型, 橙/绿/红) 从不同初值收敛到同一稳态均值 90.3 抽/UP。",
-    "C (FFT) 在小 N 时有震荡 (FFT 离散化 artifact), A/D 单调收敛。",
-    "",
-    "## 3. 速度",
-    "",
-    "![速度](speed-comparison.png)",
-    "",
-    "| N | A (naive ms) | C (FFT ms) | D (CLT ms) | E (4-state ms) | F (4s CLT ms) |",
-    "|---|-------------|------------|------------|---------------|--------------|",
-]
-for ni, n in enumerate(SPEED_NS):
-    cells = [str(n)] + [f"{speed_data[name][ni]:.1f}" for name in ["A", "C", "D", "E", "F"]]
-    lines.append("| " + " | ".join(cells) + " |")
+import json as _json
 
-lines += [
-    "",
-    f"- A (55/45 naive): N=100 仅 {speed_data['A'][-1]:.0f}ms, numpy 自动 FFT 加速",
-    f"- C (55/45 FFT): N=100 时 {speed_data['C'][-1]:.0f}ms, 每步 IFFT 开销超预期",
-    f"- D/F (CLT): N=100 约 {speed_data['F'][-1]:.0f}ms, 时间几乎全在 scipy norm.ppf",
-    f"- E (4-state exact): N=100 时 {speed_data['E'][-1]:.0f}ms, 每步 7 次卷积",
-    "",
-    "## 各方案评价",
-    "",
-    "### E -- 4-state exact (推荐)",
-    "- 精度: ground truth, 捕获明光完整建模",
-    "- 速度: N=100 时 ~100ms, N=500 估算 ~1.2s",
-    "- 适用: 所有需要精确结果的场景, N <= 500 均可行",
-    "",
-    "### F -- 4-state CLT",
-    "- 精度: N >= 10 时与 E 几乎一致, N >= 3 时中部 < 2% 误差",
-    "- 速度: 约 0.2ms/N (主要是 scipy.ppf 开销, 方法本身 O(1))",
-    "- 适用: N > 500 的超大规模分析",
-    "- 局限: 小 N (< 5) 时极值分位偏差较大 (1% 分位可能为负)",
-    "",
-    "### A -- 55/45 naive",
-    "- 精度: 稳态均值正确, 小 N 分布有偏差 (尾部 +-2 抽/UP), 大 N 收敛到与 E 一致",
-    "- 速度: N=100 时 ~20ms, 比 E 快 5x",
-    "- 适用: 对精度要求不高的快速估算",
-    "",
-    "### C -- 55/45 FFT",
-    "- 精度: 与 A 相同 (同一底层模型), 但小 N 时有 FFT 离散化震荡",
-    "- 速度: 在大 N 时反而不如 A (每步 IFFT 开销), 不推荐使用",
-    "",
-    "### D -- 55/45 CLT",
-    "- 精度: 大 N 时与 A 一致, 小 N 时正态近似有偏差",
-    "- 速度: 与 F 相当",
-    "- 与 F 相比无优势: F 使用正确稳态矩, D 使用 55/45 近似矩",
-    "",
-    "## 结论与推荐",
-    "",
-    "| N 范围 | 推荐 | 理由 |",
-    "|--------|------|------|",
-    f"| 1 ~ 500 | E (4-state exact) | 精度最高, N=100 < 0.1s, N=500 ~1s |",
-    f"| > 500 | F (4-state CLT) | 正态近似已充分收敛 |",
-    "",
-    "55/45 模型 (A/C/D) 不推荐: 精度不如 E, 速度优势在 N <= 500 时无实际意义",
-    "(E 本身足够快)。仅在需要超快速粗略估算时可用 A。",
-    "",
-    "> 生成脚本: `python scripts/solver_compare.py`",
-]
+# Per-UP quantile values for A and E at N=5,10,20,50,100
+export_ns = [5, 10, 20, 50, 100]
+per_up = {}
+for n in export_ns:
+    per_up[str(n)] = {
+        "A": {f"{q:.0%}": round(acc_data["A"][n][q] / n, 1) for q in QUANTILES},
+        "E": {f"{q:.0%}": round(exact_q[n][q] / n, 1) for q in QUANTILES},
+    }
 
-(OUTPUT / "README.md").write_text("\n".join(lines), encoding="utf-8")
-print(f"Saved {OUTPUT / 'README.md'}")
+speed_export = {str(n): {name: round(speed_data[name][ni], 1) for name in ["A", "C", "D", "E", "F"]}
+                for ni, n in enumerate(SPEED_NS)}
+
+data = {
+    "steady_state": {"per_up_expected": round(MU_4, 1), "per_up_std": round(np.sqrt(VAR_4), 1)},
+    "speed_ms": speed_export,
+    "per_up_quantiles": per_up,
+    "models": {
+        "A": "55/45 naive convolution",
+        "C": "55/45 FFT iteration",
+        "D": "55/45 CLT (normal approx)",
+        "E": "4-state capture radiance exact",
+        "F": "4-state capture radiance CLT",
+    },
+    "parameters": {
+        "character_pool": {"base_rate": 0.006, "soft_pity_start": 74, "hard_pity": 90, "step": 0.06},
+        "capture_radiance_win_rates": [0.50009, 0.54800, 0.59150, 1.0],
+        "stable_p": [0.550404, 0.274707, 0.124167, 0.0507224],
+    },
+}
+
+(OUTPUT / "data.json").write_text(_json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+print(f"Saved {OUTPUT / 'data.json'}")
