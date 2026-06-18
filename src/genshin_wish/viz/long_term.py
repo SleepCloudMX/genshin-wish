@@ -46,6 +46,15 @@ def _render_long_term_3(
         mu_single = float((lo_last + hi_last) / 2 / total)
     expectations_avg = np.full(N, mu_single)
 
+    # Effective Y range for proportional Avg offset
+    if n_start == 0:
+        _yr = 90  # mu+50 - (mu-40)
+    else:
+        _yd_lo = min(min(v) for v in all_bounds_avg.values())
+        _yd_hi = max(max(v) for v in all_bounds_avg.values())
+        _yr = (np.ceil(_yd_hi / 2) * 2 + 2) - (max(0, np.floor(_yd_lo / 2) * 2 - 2))
+    avg_offset = max(0.2, _yr * 0.015)
+
     plt.figure(figsize=(18, 11))
 
     # --- shadow bands ---
@@ -93,7 +102,7 @@ def _render_long_term_3(
         last_y = 9999.0
         for _idx, (val, label, col) in enumerate(curr_vals):
             if label == 'Avg':
-                y_pos = val + 1.2
+                y_pos = val + avg_offset
                 plt.text(n + 0.002 * N, y_pos, f"{val:.1f}", color='black',
                          ha='left', va='center', fontsize=7,
                          fontweight='extra bold', zorder=15)
@@ -165,6 +174,15 @@ def _render_long_term_5(
             all_bounds_avg[a].append(val)
         expectations_avg.append(mu_single)
 
+    # Effective Y range for proportional Avg offset
+    if n_start == 0:
+        _yr = 140  # mu+80 - max(0, mu-60) ≈ 140
+    else:
+        _yd_lo = min(min(v) for v in all_bounds_avg.values())
+        _yd_hi = max(max(v) for v in all_bounds_avg.values())
+        _yr = (np.ceil(_yd_hi / 5) * 5 + 5) - (max(0, np.floor(_yd_lo / 5) * 5 - 5))
+    avg_offset = max(0.3, _yr * 0.015)
+
     plt.figure(figsize=(16, 11))
 
     # --- shadow bands ---
@@ -208,7 +226,7 @@ def _render_long_term_5(
         last_y = 9999.0
         for idx, (val, label, alpha_val) in enumerate(vals):
             if label == 'Avg':
-                plt.text(n + 0.01 * N, val + 1.2, f"{val:.1f}",
+                plt.text(n + 0.01 * N, val + avg_offset, f"{val:.1f}",
                          color='#000000', ha='left', va='center',
                          fontsize=8 if N < 50 else 7,
                          fontweight='extra bold', zorder=15)
