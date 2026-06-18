@@ -23,7 +23,7 @@ from genshin_wish.viz._base import setup_style
 
 setup_style()
 
-OUTPUT = Path("output/analysis/method-compare")
+OUTPUT = Path("output/analysis/up_dist_methods")
 QUANTILES = [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
 EPSILONS = [1e-12, 1e-15, 1e-18]
 
