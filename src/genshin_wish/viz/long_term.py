@@ -93,19 +93,18 @@ def _render_long_term_3(
         last_y = 9999.0
         for _idx, (val, label, col) in enumerate(curr_vals):
             if label == 'Avg':
-                x_off, ha, y_pos = 0.002 * N, 'left', val + 1.2
-                weight = 'extra bold'
+                y_pos = val + 1.2
+                plt.text(n + 0.002 * N, y_pos, f"{val:.1f}", color='black',
+                         ha='left', va='center', fontsize=7,
+                         fontweight='extra bold', zorder=15)
             else:
-                x_off = 0.002 * N
-                ha = 'left'
-                y_pos, weight = val, 'bold'
-
-            if last_y - y_pos < 1.0:
-                y_pos = last_y - 1.0
-
-            plt.text(n + x_off, y_pos, f"{val:.1f}", color=col, ha=ha,
-                     va='center', fontsize=7, fontweight=weight, zorder=15)
-            last_y = y_pos
+                y_pos = val
+                if last_y - y_pos < 1.0:
+                    y_pos = last_y - 1.0
+                plt.text(n + 0.002 * N, y_pos, f"{val:.1f}", color=col,
+                         ha='left', va='center', fontsize=7,
+                         fontweight='bold', zorder=15)
+                last_y = y_pos
 
     # --- styling ---
     plt.title(title, fontsize=20, pad=30)
@@ -209,27 +208,26 @@ def _render_long_term_5(
         last_y = 9999.0
         for idx, (val, label, alpha_val) in enumerate(vals):
             if label == 'Avg':
-                color, font_weight, z_order = '#000000', 'extra bold', 15
-                x_offset, ha, y_pos = 0.01 * N, 'left', val + 1.2
+                plt.text(n + 0.01 * N, val + 1.2, f"{val:.1f}",
+                         color='#000000', ha='left', va='center',
+                         fontsize=8 if N < 50 else 7,
+                         fontweight='extra bold', zorder=15)
             else:
                 color = 'black'
                 for cfg in alpha_configs:
                     if (abs(alpha_val - cfg['a']) < 0.001
                             or abs((1 - alpha_val) - cfg['a']) < 0.001):
                         color = cfg['color']
-                font_weight, z_order = 'bold', 12
+                y_pos = val
+                if last_y - y_pos < 3.5:
+                    y_pos = last_y - 3.5
                 x_offset = (0.005 * N) if idx % 2 == 0 else (-0.005 * N)
                 ha = 'left' if idx % 2 == 0 else 'right'
-                y_pos = val
-
-            if last_y - y_pos < 3.5:
-                y_pos = last_y - 3.5
-
-            plt.text(n + x_offset, y_pos, f"{val:.1f}",
-                     color=color, ha=ha, va='center',
-                     fontsize=8 if N < 50 else 7,
-                     fontweight=font_weight, zorder=z_order)
-            last_y = y_pos
+                plt.text(n + x_offset, y_pos, f"{val:.1f}",
+                         color=color, ha=ha, va='center',
+                         fontsize=8 if N < 50 else 7,
+                         fontweight='bold', zorder=12)
+                last_y = y_pos
 
     # --- styling ---
     if N <= 20:
