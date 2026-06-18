@@ -62,9 +62,10 @@ def _render_long_term_3(
     plt.axhline(mu_single, color='black', linewidth=1.5, linestyle='--',
                 label=f'理论均值 ({mu_single:.1f})', zorder=10)
 
-    # --- sampled annotations (every 10th, from 10) ---
+    # --- sampled annotations ---
+    step = 5 if n_start > 0 else 10
     label_indices = [i for i in range(len(up_axis))
-                     if (n_start + i + 1) >= 10 and (n_start + i + 1) % 10 == 0]
+                     if (n_start + i + 1) >= step and (n_start + i + 1) % step == 0]
     if (N - 1) not in label_indices:
         label_indices.append(N - 1)
 
@@ -188,8 +189,9 @@ def _render_long_term_5(
     if N <= 10:
         label_indices = list(range(len(up_axis)))
     else:
-        sample_pts = [1, 5, 10, 20, 50, 100, 200, 500, total]
-        label_indices = [i - 1 - n_start for i in sample_pts if n_start < i <= total]
+        step = 5 if n_start > 0 else 10
+        label_indices = [i for i in range(len(up_axis))
+                         if (n_start + i + 1) >= step and (n_start + i + 1) % step == 0]
         if (N - 1) not in label_indices:
             label_indices.append(N - 1)
 
