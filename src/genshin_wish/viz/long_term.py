@@ -109,8 +109,17 @@ def _render_long_term_3(
     plt.xlabel("获取 UP 角色总数 (n)", fontsize=14)
     plt.ylabel("单位平均消耗 (总抽数/n)", fontsize=14)
 
-    plt.yticks(np.arange(0, 201, 10))
-    plt.ylim(mu_single - 40, mu_single + 50)
+    if n_start == 0:
+        plt.yticks(np.arange(0, 201, 10))
+        plt.ylim(mu_single - 40, mu_single + 50)
+    else:
+        y_lo = min(min(v) for v in all_bounds_avg.values())
+        y_hi = max(max(v) for v in all_bounds_avg.values())
+        y_lo = max(0, np.floor(y_lo / 2) * 2 - 2)
+        y_hi = np.ceil(y_hi / 2) * 2 + 2
+        plt.yticks(np.arange(y_lo, y_hi + 0.1, 2))
+        plt.ylim(y_lo, y_hi)
+
     plt.xlim(n_start, total + (0.05 * N))
 
     plt.grid(axis='y', linestyle=':', alpha=0.5)
@@ -224,8 +233,17 @@ def _render_long_term_5(
     plt.xlabel("获取 UP 角色总数 (n)", fontsize=12)
     plt.ylabel("平均每个UP消耗抽数 (总数/n)", fontsize=12)
 
-    plt.yticks(np.arange(0, 201, 20))
-    plt.ylim(max(0, mu_single - 60), min(200, mu_single + 80))
+    if n_start == 0:
+        plt.yticks(np.arange(0, 201, 20))
+        plt.ylim(max(0, mu_single - 60), min(200, mu_single + 80))
+    else:
+        y_lo = min(min(v) for v in all_bounds_avg.values())
+        y_hi = max(max(v) for v in all_bounds_avg.values())
+        y_lo = max(0, np.floor(y_lo / 5) * 5 - 5)
+        y_hi = np.ceil(y_hi / 5) * 5 + 5
+        plt.yticks(np.arange(y_lo, y_hi + 0.1, 5))
+        plt.ylim(y_lo, y_hi)
+
     plt.xlim(n_start, total + (0.05 * N))
 
     plt.legend(loc='upper right', frameon=True, fontsize=9, ncol=2)
