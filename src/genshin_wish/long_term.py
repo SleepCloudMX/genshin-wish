@@ -165,6 +165,16 @@ def make_long_solver(
     N1 = state.n_pre_50
     N2 = state.n_post_50
 
+    # Theoretical steady-state per-UP mu (not N-dependent)
+    if N1 > 0 and N2 > 0:
+        mu_pre, _ = _pre50_moments(p_gold, p_gold2)
+        mu_post, _ = _post50_moments(p_gold)
+        mu_single = (N1 * mu_pre + N2 * mu_post) / total
+    elif N1 > 0:
+        mu_single, _ = _pre50_moments(p_gold, p_gold2)
+    else:
+        mu_single, _ = _post50_moments(p_gold)
+
     # ---- exact path ----
     if method == "exact":
         pre_pdfs: dict[int, np.ndarray] = {}
@@ -198,6 +208,7 @@ def make_long_solver(
                     result[a].append((lo, hi))
             return result
 
+        solver.mu_single = mu_single
         return solver
 
     # ---- CLT path ----
@@ -224,4 +235,5 @@ def make_long_solver(
                 result[a].append((lo, hi))
         return result
 
+    solver_clt.mu_single = mu_single
     return solver_clt

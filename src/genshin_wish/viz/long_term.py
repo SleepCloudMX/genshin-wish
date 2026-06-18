@@ -39,9 +39,11 @@ def _render_long_term_3(
             all_bounds_avg[a_base].append(low / n)
             all_bounds_avg[round(1 - a_base, 2)].append(high / n)
 
-    mid_a = 0.3
-    lo_last, hi_last = raw_data[mid_a][-1]
-    mu_single = float((lo_last + hi_last) / 2 / total)
+    mu_single = getattr(solver_func, 'mu_single', None)
+    if mu_single is None:
+        mid_a = 0.3
+        lo_last, hi_last = raw_data[mid_a][-1]
+        mu_single = float((lo_last + hi_last) / 2 / total)
     expectations_avg = np.full(N, mu_single)
 
     plt.figure(figsize=(18, 11))
@@ -60,10 +62,10 @@ def _render_long_term_3(
 
     # --- expectation reference ---
     plt.axhline(mu_single, color='black', linewidth=1.5, linestyle='--',
-                label=f'理论均值 ({mu_single:.1f})', zorder=10)
+                label=f'理论均值 ({mu_single:.2f})', zorder=10)
 
     # --- sampled annotations ---
-    step = 5 if n_start > 0 else 10
+    step = 5 if N <= 200 else 10
     label_indices = [i for i in range(len(up_axis))
                      if (n_start + i + 1) >= step and (n_start + i + 1) % step == 0]
     if (N - 1) not in label_indices:
@@ -148,9 +150,11 @@ def _render_long_term_5(
     all_bounds_avg: dict[float, list[float]] = {a: [] for a in target_alphas}
     expectations_avg: list[float] = []
 
-    mid_a = 0.4
-    lo_last, hi_last = raw_data[mid_a][-1]
-    mu_single = float((lo_last + hi_last) / 2 / total)
+    mu_single = getattr(solver_func, 'mu_single', None)
+    if mu_single is None:
+        mid_a = 0.4
+        lo_last, hi_last = raw_data[mid_a][-1]
+        mu_single = float((lo_last + hi_last) / 2 / total)
 
     for i, n in enumerate(up_axis):
         idx = n_start + i
@@ -189,7 +193,7 @@ def _render_long_term_5(
     if N <= 10:
         label_indices = list(range(len(up_axis)))
     else:
-        step = 5 if n_start > 0 else 10
+        step = 5 if N <= 200 else 10
         label_indices = [i for i in range(len(up_axis))
                          if (n_start + i + 1) >= step and (n_start + i + 1) % step == 0]
         if (N - 1) not in label_indices:
