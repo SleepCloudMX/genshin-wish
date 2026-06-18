@@ -9,7 +9,7 @@
 4 状态捕获明光精确解 vs CLT 近似的误差，N=1..100。
 
 ```bash
-python scripts/clt_error.py
+python scripts/analysis/clt_error.py
 ```
 
 输出：`output/analysis/clt-error/` — 误差曲线图 + 数据 + 结论。
@@ -30,7 +30,7 @@ N=100 时所有分位 CLT 误差 < 1.1 抽/UP，中部 < 0.2 抽/UP。**CLT 在 
 5 种 long-term solver 的精度、收敛性、速度对比，N=1..100。
 
 ```bash
-python scripts/solver_compare.py
+python scripts/analysis/solver_compare.py
 ```
 
 输出：`output/analysis/solver-compare/` — 精度图、收敛图、速度图 + 数据 + 结论。
