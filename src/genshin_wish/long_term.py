@@ -46,22 +46,24 @@ def _solve_exact(
     p_up: list[float],
     p_gold: np.ndarray,
     p_gold2: np.ndarray,
+    start_state: int = 0,
 ) -> dict[int, np.ndarray]:
     """Generic exact iterative convolution over *n_states*.
 
     Args:
-        max_n: Number of UPs to compute (1..max_n).
-        p_up:  Win probability per state.  State ``s`` (s < n_states-1) can
-               lose; the last state always has p_up = 1.0.
-        p_gold:  Single-gold PDF.
-        p_gold2: Two-gold PDF (``np.convolve(p_gold, p_gold)``).
+        max_n:       Number of UPs to compute (1..max_n).
+        p_up:        Win probability per state.  State ``s`` (s < n_states-1)
+                     can lose; the last state always has p_up = 1.0.
+        p_gold:      Single-gold PDF.
+        p_gold2:     Two-gold PDF (``np.convolve(p_gold, p_gold)``).
+        start_state: Initial k_miss (0..n_states-1).  Default 0.
 
     Returns:
         ``{n: pdf}`` where pdf[i] = P(exactly *i* pulls for *n* UPs).
     """
     n_states = len(p_up)
     pdf_state: list[np.ndarray | None] = [None] * n_states
-    pdf_state[0] = np.array([1.0], dtype=np.float64)
+    pdf_state[start_state] = np.array([1.0], dtype=np.float64)
     result: dict[int, np.ndarray] = {}
 
     for n in range(1, max_n + 1):
