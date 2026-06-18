@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 """Generate all standard plots for genshin-wish.
 
-Run once after installing the package:
-    python scripts/plot_all.py
+Usage:
+    python scripts/plot_all.py                 # all plots
+    python scripts/plot_all.py -l              # only long-term
+    python scripts/plot_all.py -c -w           # character + weapon
 """
 
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -311,17 +314,37 @@ def plot_long_term_charts() -> None:
 # --- Main ---
 
 def main() -> None:
-    print("Generating all plots...")
+    p = argparse.ArgumentParser()
+    p.add_argument("-c", "--character", action="store_true", help="Character banner charts")
+    p.add_argument("-w", "--weapon", action="store_true", help="Weapon banner charts")
+    p.add_argument("-m", "--multi-gold", action="store_true", help="Ten-pull multi-gold charts")
+    p.add_argument("-l", "--long-term", action="store_true", help="Long-term luck fan charts")
+    args = p.parse_args()
 
-    plot_character_cdf()
-    plot_character_fan()
-    plot_character_column()
-    plot_character_rolls2gold()
-    plot_weapon()
-    plot_multi_gold_viz()
-    plot_long_term_charts()
+    run_all = not (args.character or args.weapon or args.multi_gold or args.long_term)
+    if run_all:
+        print("Generating all plots...")
+    else:
+        labels = []
+        if args.character: labels.append("character")
+        if args.weapon: labels.append("weapon")
+        if args.multi_gold: labels.append("multi-gold")
+        if args.long_term: labels.append("long-term")
+        print(f"Generating: {', '.join(labels)}")
 
-    print("\nAll plots generated in output/")
+    if run_all or args.character:
+        plot_character_cdf()
+        plot_character_fan()
+        plot_character_column()
+        plot_character_rolls2gold()
+    if run_all or args.weapon:
+        plot_weapon()
+    if run_all or args.multi_gold:
+        plot_multi_gold_viz()
+    if run_all or args.long_term:
+        plot_long_term_charts()
+
+    print("\nDone")
 
 
 if __name__ == "__main__":
