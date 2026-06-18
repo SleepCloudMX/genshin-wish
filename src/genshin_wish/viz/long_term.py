@@ -18,7 +18,7 @@ def _build_configs(interval_set: int) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# 3-interval rendering  (plot_long_term_luck)
+# 3-interval rendering
 # ---------------------------------------------------------------------------
 def _render_long_term_3(
     solver_func, N: int, n_start: int, save_path: Path, title: str
@@ -40,17 +40,15 @@ def _render_long_term_3(
             all_bounds_avg[a_base].append(low / n)
             all_bounds_avg[round(1 - a_base, 2)].append(high / n)
 
-    # approximate mu from middle-quantile midpoint at max N
     mid_a = 0.3
     lo_last, hi_last = raw_data[mid_a][-1]
     mu_single = float((lo_last + hi_last) / 2 / total)
 
-    # --- adaptive Y range from visible data ---
+    # --- adaptive Y range ---
     y_lo = min(min(v) for v in all_bounds_avg.values())
     y_hi = max(max(v) for v in all_bounds_avg.values())
     y_pad = max(5.0, (y_hi - y_lo) * 0.25)
     y_lo, y_hi = max(0, y_lo - y_pad), y_hi + y_pad
-    overlap_gap = max(0.3, (y_hi - y_lo) * 0.015)
 
     plt.figure(figsize=(18, 11))
 
@@ -67,20 +65,23 @@ def _render_long_term_3(
                      color='#d62728', alpha=0.15, label='1%-99% 区间', zorder=0)
 
     # --- expectation reference ---
-    plt.axhline(mu_single, color='black', linewidth=1.5, linestyle='--',
+    plt.axhline(mu_single, color='black', linewidth=1.5, linestyle=(0, (6, 4)),
                 label=f'理论均值 ({mu_single:.1f})', zorder=10)
 
-    # --- sampled annotations with vertical guides ---
-    label_indices = [i for i in range(len(up_axis))
-                     if (n_start + i + 1) >= 10 and (n_start + i + 1) % 10 == 0]
-    if (N - 1) not in label_indices:
-        label_indices.append(N - 1)
+    # --- evenly-spaced annotations ---
+    if N <= 10:
+        label_indices = list(range(len(up_axis)))
+    else:
+        step = max(1, N // 10)
+        label_indices = list(range(step - 1, N, step))
+        if (N - 1) not in label_indices:
+            label_indices.append(N - 1)
 
     for i in label_indices:
         n = up_axis[i]
         top_y = all_bounds_avg[0.99][i]
-        plt.vlines(n, ymin=y_lo, ymax=top_y, colors='gray', linestyles=':',
-                   alpha=0.4, zorder=1)
+        plt.vlines(n, ymin=y_lo, ymax=top_y, colors='gray',
+                   linestyles=(0, (3, 5)), alpha=0.35, zorder=1)
 
         curr_vals = [
             (all_bounds_avg[0.99][i], '99%', '#d62728'),
@@ -96,15 +97,15 @@ def _render_long_term_3(
         last_y = 9999.0
         for _idx, (val, label, col) in enumerate(curr_vals):
             if label == 'Avg':
-                x_off, ha, y_pos = 0.002 * N, 'left', val + y_pad * 0.15
+                x_off, ha, y_pos = 0.003 * N, 'left', val + y_pad * 0.15
                 weight = 'extra bold'
             else:
-                x_off = 0.002 * N
+                x_off = 0.003 * N
                 ha = 'left'
                 y_pos, weight = val, 'bold'
 
-            if last_y - y_pos < overlap_gap:
-                y_pos = last_y - overlap_gap
+            if last_y - y_pos < 1.0:
+                y_pos = last_y - 1.0
 
             plt.text(n + x_off, y_pos, f"{val:.1f}", color=col, ha=ha,
                      va='center', fontsize=7, fontweight=weight, zorder=15)
@@ -118,7 +119,6 @@ def _render_long_term_3(
     plt.yticks(np.arange(np.floor(y_lo / y_step) * y_step, y_hi + y_step, y_step))
     plt.ylim(y_lo, y_hi)
     plt.xlim(n_start, total + (0.05 * N))
-    plt.grid(axis='y', linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=11, ncol=2)
 
     plt.tight_layout()
@@ -127,15 +127,16 @@ def _render_long_term_3(
 
 
 # ---------------------------------------------------------------------------
-# 5-interval rendering  (plot_long_term_luck_5)
+# 5-interval rendering
 # ---------------------------------------------------------------------------
 def _render_long_term_5(
     solver_func, N: int, n_start: int, save_path: Path, title: str
 ) -> None:
-    alpha_configs = _build_configs(5)  # sorted inner→outer: 0.40,0.30,0.20,0.10,0.01
+    alpha_configs = _build_configs(5)
 
-    target_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 0.99]
-
+    target_alphas  = [0.01, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 0.99]
+    # Annotate only key boundaries; 0.3/0.7 are internal to blue bands
+    annot_alphas   = [0.01, 0.1, 0.2,        0.4, 0.6,        0.8, 0.9, 0.99]
     total = n_start + N
     raw_data = solver_func(total, target_alphas)
     up_axis = np.arange(n_start + 1, total + 1)
@@ -144,7 +145,6 @@ def _render_long_term_5(
     all_bounds_avg: dict[float, list[float]] = {a: [] for a in target_alphas}
     expectations_avg: list[float] = []
 
-    # approximate mu from middle-quantile midpoint at max N
     mid_a = 0.4
     lo_last, hi_last = raw_data[mid_a][-1]
     mu_single = float((lo_last + hi_last) / 2 / total)
@@ -159,12 +159,11 @@ def _render_long_term_5(
             all_bounds_avg[a].append(val)
         expectations_avg.append(mu_single)
 
-    # --- adaptive Y range from visible data ---
+    # --- adaptive Y range ---
     y_lo = min(min(v) for v in all_bounds_avg.values())
     y_hi = max(max(v) for v in all_bounds_avg.values())
     y_pad = max(5.0, (y_hi - y_lo) * 0.25)
     y_lo, y_hi = max(0, y_lo - y_pad), y_hi + y_pad
-    overlap_gap = max(0.3, (y_hi - y_lo) * 0.015)
 
     plt.figure(figsize=(16, 11))
 
@@ -187,21 +186,21 @@ def _render_long_term_5(
 
     # --- expectation line ---
     plt.plot(up_axis, expectations_avg, color='black', linewidth=1.5,
-             linestyle='--', label='单位理论期望', zorder=10)
+             linestyle=(0, (6, 4)), label='单位理论期望', zorder=10)
 
-    # --- sampled annotations ---
+    # --- evenly-spaced annotations ---
     if N <= 10:
         label_indices = list(range(len(up_axis)))
     else:
-        sample_pts = [1, 5, 10, 20, 50, 100, 200, 500, total]
-        label_indices = [i - 1 - n_start for i in sample_pts if n_start < i <= total]
+        step = max(1, N // 10)
+        label_indices = list(range(step - 1, N, step))
         if (N - 1) not in label_indices:
             label_indices.append(N - 1)
 
     for i in label_indices:
         n = up_axis[i]
         vals = [(all_bounds_avg[a][i], f"{int(a * 100)}%", a)
-                for a in target_alphas]
+                for a in annot_alphas]
         vals.append((expectations_avg[i], 'Avg', 0.5))
         vals.sort(key=lambda x: x[0], reverse=True)
 
@@ -217,12 +216,12 @@ def _render_long_term_5(
                             or abs((1 - alpha_val) - cfg['a']) < 0.001):
                         color = cfg['color']
                 font_weight, z_order = 'bold', 12
-                x_offset = (0.005 * N) if idx % 2 == 0 else (-0.005 * N)
-                ha = 'left' if idx % 2 == 0 else 'right'
+                x_offset = 0.006 * N
+                ha = 'left'
                 y_pos = val
 
-            if last_y - y_pos < overlap_gap:
-                y_pos = last_y - overlap_gap
+            if last_y - y_pos < 2.0:
+                y_pos = last_y - 2.0
 
             plt.text(n + x_offset, y_pos, f"{val:.1f}",
                      color=color, ha=ha, va='center',
@@ -241,7 +240,6 @@ def _render_long_term_5(
     plt.yticks(np.arange(np.floor(y_lo / y_step) * y_step, y_hi + y_step, y_step))
     plt.ylim(y_lo, y_hi)
     plt.xlim(n_start, total + (0.05 * N))
-    plt.grid(linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', frameon=True, fontsize=9, ncol=2)
 
     plt.tight_layout()
@@ -266,10 +264,7 @@ def plot_long_term_luck(
     Parameters
     ----------
     solver_func : callable
-        ``solver_func(N: int, alphas: list[float]) -> dict[float, list[tuple[float, float]]]``
-        Returns ``{alpha: [(low, high) for n = 1 … N]}`` where each
-        tuple is the raw cumulative pull count at quantile *alpha* and
-        *1-alpha* for the *n*-th UP.
+        ``solver_func(N, alphas) -> {alpha: [(low, high) for n = 1 … N]}``
     N : int
         Number of UPs to show in this chart.
     save_path : str or Path
@@ -277,10 +272,9 @@ def plot_long_term_luck(
     interval_set : int
         Number of probability bands: 3 or 5 (default 5).
     title : str, optional
-        Chart title.  Falls back to a sensible default when *None*.
+        Chart title.
     n_start : int
-        Starting UP index (0-based).  The chart shows UPs
-        n_start+1 … n_start+N.  Default 0 (show from the first UP).
+        Starting UP index (0-based).  Shows UPs n_start+1 … n_start+N.
     """
     sp = Path(save_path)
     if title is None:
