@@ -292,8 +292,7 @@ def plot_long_term_charts() -> None:
         plot_long_term_luck(
             solver, N=N,
             save_path=out_dir / "long-term.png",
-            interval_set=5,
-            title=f"{label} 长期欧非分布 (N={N})",
+            title=f"{label} 长期欧非演变 (N={N})",
         )
 
         # Per-100-block zoomed charts
@@ -303,8 +302,7 @@ def plot_long_term_charts() -> None:
             plot_long_term_luck(
                 solver, N=block_n, n_start=block_start,
                 save_path=out_dir / f"{block_end}.png",
-                interval_set=5,
-                title=f"{label} 长期欧非分布 (N={block_start + 1}~{block_end})",
+                title=f"{label} 长期欧非演变 (N={block_start + 1}~{block_end})",
             )
 
         print(f"  Long-term {dirname} done")
