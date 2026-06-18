@@ -82,69 +82,72 @@ def _compute_pdf_cdf(pool: PoolConfig, min_gold: int = 0) -> tuple[list[np.ndarr
 
 
 def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
-    """Load cached multi-gold PDFs, computing and caching on first call.
+    """Return multi-gold PDFs, at least up to *min_gold* levels.
 
-    If *min_gold* > 0, ensures at least that many gold levels are available,
-    recomputing and updating the cache if necessary.
+    Base level (``pool.max_gold_cache``) is persisted to disk (~60 KB).
+    Extensions beyond that are cached in memory only, not persisted.
     """
     path = _cache_path(pool, "pdfs")
     key = path.name
 
-    # In-memory hit (common case after first load)
+    # In-memory hit
     cached = _mem_cache.get(key)
-    need = max(pool.max_gold_cache, min_gold)
-    if cached is not None and len(cached) > need:
+    if cached is not None and len(cached) > max(pool.max_gold_cache, min_gold):
         return cached
 
     pdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
             pdfs = pickle.load(f)
+        _mem_cache[key] = pdfs
 
     need = max(pool.max_gold_cache, min_gold)
     if pdfs is not None and len(pdfs) > need:
-        _mem_cache[key] = pdfs
         return pdfs
 
-    # Compute fresh and update cache
+    # Compute full range (only save base to disk)
     pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
     _mem_cache[key] = pdfs
+    _mem_cache[_cache_path(pool, "cdfs").name] = cdfs
     path.parent.mkdir(parents=True, exist_ok=True)
+    base = pdfs[: pool.max_gold_cache + 1]
     with open(path, "wb") as f:
-        pickle.dump(pdfs, f)
+        pickle.dump(base, f)
     cdf_path = _cache_path(pool, "cdfs")
+    base_cdfs = cdfs[: pool.max_gold_cache + 1]
     with open(cdf_path, "wb") as f:
-        pickle.dump(cdfs, f)
+        pickle.dump(base_cdfs, f)
     return pdfs
 
 
 def get_gold_cdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
-    """Load cached multi-gold CDFs, computing and caching on first call."""
+    """Return multi-gold CDFs.  Mirrors ``get_gold_pdfs`` caching strategy."""
     path = _cache_path(pool, "cdfs")
     key = path.name
 
     cached = _mem_cache.get(key)
-    need = max(pool.max_gold_cache, min_gold)
-    if cached is not None and len(cached) > need:
+    if cached is not None and len(cached) > max(pool.max_gold_cache, min_gold):
         return cached
 
     cdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
             cdfs = pickle.load(f)
+        _mem_cache[key] = cdfs
 
     need = max(pool.max_gold_cache, min_gold)
     if cdfs is not None and len(cdfs) > need:
-        _mem_cache[key] = cdfs
         return cdfs
 
     pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
     _mem_cache[key] = cdfs
     _mem_cache[_cache_path(pool, "pdfs").name] = pdfs
     path.parent.mkdir(parents=True, exist_ok=True)
+    base_cdfs = cdfs[: pool.max_gold_cache + 1]
     with open(path, "wb") as f:
-        pickle.dump(cdfs, f)
+        pickle.dump(base_cdfs, f)
     pdf_path = _cache_path(pool, "pdfs")
+    base = pdfs[: pool.max_gold_cache + 1]
     with open(pdf_path, "wb") as f:
-        pickle.dump(pdfs, f)
+        pickle.dump(base, f)
     return cdfs
