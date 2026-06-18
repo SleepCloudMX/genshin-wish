@@ -53,7 +53,7 @@ def _render_long_term_3(
         _yd_lo = min(min(v) for v in all_bounds_avg.values())
         _yd_hi = max(max(v) for v in all_bounds_avg.values())
         _yr = (np.ceil(_yd_hi / 2) * 2 + 2) - (max(0, np.floor(_yd_lo / 2) * 2 - 2))
-    avg_offset = max(0.2, _yr * 0.015)
+    avg_offset = max(0.2, _yr * 0.005)
 
     plt.figure(figsize=(18, 11))
 
