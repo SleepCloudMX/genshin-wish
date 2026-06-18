@@ -177,64 +177,64 @@ def solve_conv(n_up: int, p_up: list[float], p_gold: np.ndarray, p_gold2: np.nda
 
 
 def _plot_dp_accuracy(data: dict, save_dir: Path) -> None:
-    """Error of DP-prune vs Enum, by epsilon and n_up."""
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    """Generate separate charts for DP-prune accuracy and speed."""
     eps_labels = [f"{e:.0e}" for e in EPSILONS]
     colors = ["#1f77b4", "#ff7f0e", "#d62728"]
     n_ups = data["n_ups"]
 
-    # Expected value relative error
-    ax = axes[0, 0]
+    # 1. Expected value relative error
+    fig, ax = plt.subplots(figsize=(8, 5))
     for ei, eps in enumerate(EPSILONS):
         errs = []
         for n in n_ups:
             key = f"dp-prune-{eps:.0e}"
             ref = data["enum"][str(n)]["expected"]
-            if ref == 0:
-                errs.append(0)
-            else:
-                errs.append(abs(data[key][str(n)]["expected"] - ref) / ref)
+            errs.append(abs(data[key][str(n)]["expected"] - ref) / ref if ref else 0)
         ax.plot(n_ups, errs, "o-", color=colors[ei], label=eps_labels[ei], markersize=4)
-    ax.set_title("Expected value relative error")
+    ax.set_title("DP-prune: expected value relative error vs Enum")
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("|err| / enum")
     ax.legend()
     ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(save_dir / "accuracy-expected.png", dpi=200)
+    plt.close(fig)
 
-    # Quantile absolute error (median across quantiles)
-    ax = axes[0, 1]
+    # 2. Quantile absolute error
+    fig, ax = plt.subplots(figsize=(8, 5))
     for ei, eps in enumerate(EPSILONS):
         errs = []
         for n in n_ups:
             key = f"dp-prune-{eps:.0e}"
             q_ref = data["enum"][str(n)]["quantiles"]
             q_pr = data[key][str(n)]["quantiles"]
-            avg_err = np.mean([abs(q_pr[qk] - q_ref[qk]) for qk in q_ref])
-            errs.append(avg_err)
+            errs.append(np.mean([abs(q_pr[qk] - q_ref[qk]) for qk in q_ref]))
         ax.plot(n_ups, errs, "s-", color=colors[ei], label=eps_labels[ei], markersize=4)
-    ax.set_title("Mean absolute quantile error (pulls)")
+    ax.set_title("DP-prune: mean absolute quantile error (pulls)")
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("error (pulls)")
     ax.legend()
     ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(save_dir / "accuracy-quantiles.png", dpi=200)
+    plt.close(fig)
 
-    # Prune ratio
-    ax = axes[1, 0]
+    # 3. Prune ratio
+    fig, ax = plt.subplots(figsize=(8, 5))
     for ei, eps in enumerate(EPSILONS):
-        ratios = []
-        for n in n_ups:
-            key = f"dp-prune-{eps:.0e}"
-            s = data[key][str(n)]["skip_ratio"]
-            ratios.append(s)
+        ratios = [data[f"dp-prune-{eps:.0e}"][str(n)]["skip_ratio"] for n in n_ups]
         ax.plot(n_ups, ratios, "d-", color=colors[ei], label=eps_labels[ei], markersize=4)
-    ax.set_title("Skip ratio (skipped / total ops)")
+    ax.set_title("DP-prune: skip ratio (skipped / total ops)")
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("ratio")
     ax.legend()
     ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(save_dir / "prune-ratio.png", dpi=200)
+    plt.close(fig)
 
-    # Speed comparison: DP-full, 3× DP-prune, Enum
-    ax = axes[1, 1]
+    # 4. Speed comparison
+    fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(n_ups, [data["dp-full"][str(n)]["time_ms"] for n in n_ups],
             "o-", color="black", label="DP-full", markersize=4)
     for ei, eps in enumerate(EPSILONS):
@@ -242,15 +242,14 @@ def _plot_dp_accuracy(data: dict, save_dir: Path) -> None:
                 "^-", color=colors[ei], label=f"DP-prune {eps_labels[ei]}", markersize=4)
     ax.plot(n_ups, [data["enum"][str(n)]["time_ms"] for n in n_ups],
             "s-", color="green", label="Enum", markersize=4)
-    ax.set_title("Wall time")
+    ax.set_title("Wall time comparison")
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_yscale("log")
     ax.legend()
     ax.grid(alpha=0.3)
-
     fig.tight_layout()
-    fig.savefig(save_dir / "accuracy.png", dpi=200)
+    fig.savefig(save_dir / "speed.png", dpi=200)
     plt.close(fig)
 
 
