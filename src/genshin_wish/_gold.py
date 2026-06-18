@@ -11,6 +11,9 @@ from ._constants import PoolConfig
 _CACHE_DIR = Path(__file__).resolve().parent.parent.parent / ".cache"
 _CACHE_DIR.mkdir(exist_ok=True)
 
+# In-memory cache to avoid repeated disk loads of large pickle files
+_mem_cache: dict[str, list[np.ndarray]] = {}
+
 
 def _cache_path(pool: PoolConfig, kind: str) -> Path:
     """Build cache filename from pool identity."""
@@ -85,6 +88,14 @@ def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
     recomputing and updating the cache if necessary.
     """
     path = _cache_path(pool, "pdfs")
+    key = path.name
+
+    # In-memory hit (common case after first load)
+    cached = _mem_cache.get(key)
+    need = max(pool.max_gold_cache, min_gold)
+    if cached is not None and len(cached) > need:
+        return cached
+
     pdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
@@ -92,10 +103,12 @@ def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
 
     need = max(pool.max_gold_cache, min_gold)
     if pdfs is not None and len(pdfs) > need:
+        _mem_cache[key] = pdfs
         return pdfs
 
     # Compute fresh and update cache
     pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
+    _mem_cache[key] = pdfs
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         pickle.dump(pdfs, f)
@@ -108,6 +121,13 @@ def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
 def get_gold_cdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
     """Load cached multi-gold CDFs, computing and caching on first call."""
     path = _cache_path(pool, "cdfs")
+    key = path.name
+
+    cached = _mem_cache.get(key)
+    need = max(pool.max_gold_cache, min_gold)
+    if cached is not None and len(cached) > need:
+        return cached
+
     cdfs: list[np.ndarray] | None = None
     if path.is_file():
         with open(path, "rb") as f:
@@ -115,9 +135,12 @@ def get_gold_cdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
 
     need = max(pool.max_gold_cache, min_gold)
     if cdfs is not None and len(cdfs) > need:
+        _mem_cache[key] = cdfs
         return cdfs
 
     pdfs, cdfs = _compute_pdf_cdf(pool, min_gold)
+    _mem_cache[key] = cdfs
+    _mem_cache[_cache_path(pool, "pdfs").name] = pdfs
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         pickle.dump(cdfs, f)

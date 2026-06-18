@@ -32,6 +32,7 @@ tests/                  # pytest
 scripts/plot_all.py     # 一键生成全部图表
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
+temp/                   # 临时测试缓存，已 gitignore，仅在不宜污染 .cache/ 时使用
 docs/                   # 详细文档
 ```
 
