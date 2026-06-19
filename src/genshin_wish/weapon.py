@@ -7,6 +7,7 @@ Standard guarantee (independent): after a standard 5-star, the next is
 guaranteed limited (50% A, 50% B).
 """
 
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -144,6 +145,10 @@ def weapon_up_distribution(
     convolved with the corresponding multi-gold PDF, and finally the
     current pity is applied via a shifted convolution.
     """
+    if target.count_a > 500:
+        warnings.warn(
+            f"count_a={target.count_a} exceeds 500, computation may be slow."
+        )
     weights = weapon_target_weights(
         target,
         epitomized_points=state.epitomized_points,
