@@ -36,20 +36,20 @@ def test_n5_exact():
     assert d.method == "exact"
 
 
-def test_n30_clt():
-    d = standard_distribution(StandardState(), 30)
+def test_n_clt():
+    d = standard_distribution(StandardState(), 501)
     assert abs(d.pdf.sum() - 1.0) < 1e-3
     assert d.method == "clt"
 
 
 def test_clt_self_consistent():
     """CLT result is self-consistent (quantiles monotonic, PDF ≈ 1)."""
-    d = standard_distribution(StandardState(), 30)
+    d = standard_distribution(StandardState(), 501)
     assert d.method == "clt"
     assert abs(d.pdf.sum() - 1.0) < 0.02  # discretization error
     assert d.quantile(0.1) < d.quantile(0.5) < d.quantile(0.9)
-    # Expect ~30 * 62.3 = 1869 pulls
-    assert 1800 < d.expected < 1950
+    # Expect ~501 * 62.4 ≈ 31260 pulls
+    assert 31000 < d.expected < 31500
 
 
 def test_n_gold_negative_raises():

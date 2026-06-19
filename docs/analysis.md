@@ -60,7 +60,7 @@ python scripts/analysis/solver_compare.py
 
 ## UP 分布计算方法对比
 
-三种精确求解「n_up 个 UP 所需抽数分布」的方法：3D DP、指数枚举（当前 `character.py`）、迭代卷积（当前 `long_term.py`）。原理分析见 `docs/ai-output/1-refactor/10-enum-vs-convolution.md`。
+三种精确求解「n_up 个 UP 所需抽数分布」的方法：3D DP、指数枚举（当前 `character.py`）、迭代卷积（当前 `long_term.py`）。原理分析见 `docs/ai-output/1-refactor/10-up-dist-dp-methods.md`。
 
 ```bash
 python scripts/analysis/up_dist_methods.py --dp-vs-enum     # DP vs 枚举

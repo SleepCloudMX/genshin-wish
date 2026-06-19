@@ -1,14 +1,16 @@
 """Character event banner: UP distribution for n copies of the rate-up 5-star."""
 
+import warnings
 from collections import Counter
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.stats import norm
 
-from ._constants import CHARACTER_POOL, STABLE_P, CLT_THRESHOLD
+from ._constants import CHARACTER_POOL, STABLE_P, CLT_THRESHOLD, CAPTURE_RADIANCE_WIN_RATE
 from ._capture_radiance import guarantee_seq
 from ._gold import get_gold_pdfs
+from .long_term import _solve_exact
 
 
 @dataclass
@@ -65,72 +67,122 @@ class UpDistribution:
         return self.luck(pulls)
 
 
-def up_distribution(state: CharacterState, n_up: int) -> UpDistribution:
-    """Exact distribution of pulls to obtain *n_up* rate-up characters from *state*.
+def up_distribution(
+    state: CharacterState, n_up: int, method: str = "auto"
+) -> UpDistribution:
+    """Distribution of pulls to obtain *n_up* rate-up characters from *state*.
 
     Decomposes the total pulls into three independent parts:
     1. The *first gold* — shifted by current pity (state.pity).
     2. The *uncertain golds* from n_up - state.guaranteed win/loss sequences.
     3. The *guaranteed gold* (if state.guaranteed) — one extra gold with no shift.
 
-    These parts are independent because gold timing resets after each gold
-    (the process is a renewal process). The shift for curr_pulls can be
-    applied to any term in the convolution chain (convolution is commutative),
-    so we apply it to part 1 for all cases.
+    *method* selects the algorithm for part 2:
 
-    Example (n_up=2, guaranteed=False, k_miss=0):
-      - win-win: 2 golds → pdfs[1] ⊗ pdfs[1] = pdfs[2]
-      - win-loss: 3 golds → pdfs[2] ⊗ pdfs[1] = pdfs[3]
-      The "first gold" (shifted) is the same for both paths.
+    ========== ====================================================
+    ``"auto"`` n_uncertain ≤ 10 → dp-path, ≤ 500 → dp-state, > 500 → clt + warning
+    ``"dp-path"``  enumerate all win/loss sequences (≤ 20 only)
+    ``"dp-state"`` iterative state-space convolution
+    ``"clt"``     CLT normal approximation
+    ========== ====================================================
     """
     if n_up < 0:
         raise ValueError(f"n_up must be >= 0, got {n_up}")
 
     n_uncertain = n_up - state.guaranteed
-    # Worst-case golds: alternating (loss*3, win) groups → ~1.75n.
-    # Use 2n as a safe upper bound (all-loss scenario).
-    min_gold_needed = n_uncertain * 2 + 3
+
+    # Resolve method
+    if method == "auto":
+        if n_uncertain <= 10:
+            eff_method = "dp-path"
+        elif n_uncertain <= 500:
+            eff_method = "dp-state"
+        else:
+            eff_method = "clt"
+            warnings.warn(
+                f"n_up={n_up} exceeds 500, switching to CLT approximation. "
+                f"Use method='dp-state' to force exact computation."
+            )
+    elif method == "dp-path":
+        if n_uncertain > 20:
+            raise ValueError(
+                f"dp-path limited to n_uncertain ≤ 20, got {n_uncertain}. "
+                f"Use method='dp-state' or 'clt'."
+            )
+        eff_method = "dp-path"
+    elif method in ("dp-state", "clt"):
+        eff_method = method
+    else:
+        raise ValueError(
+            f"Unknown method: {method!r}. "
+            f"Valid: 'auto', 'dp-path', 'dp-state', 'clt'."
+        )
+
+    # Gold PDFs
+    min_gold_needed = 3 if n_uncertain == 0 else n_uncertain * 2 + 3
     pdfs = get_gold_pdfs(CHARACTER_POOL, min_gold=min_gold_needed)
+    p_gold = pdfs[1]
 
     if n_uncertain == 0:
-        # Only the guaranteed gold (or n_up=0 → immediate success)
         shifted = np.insert(
-            pdfs[1][state.pity + 1:] / pdfs[1][state.pity + 1:].sum(),
-            0, 0,
+            p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
         )
         if not state.guaranteed and n_up == 0:
             return UpDistribution(pdf=np.array([1.0]), cdf=np.array([1.0]))
         cdf = np.cumsum(shifted)
         return UpDistribution(pdf=shifted, cdf=cdf)
 
-    # Enumerate win/loss sequences for the uncertain UPs
-    seq2p = guarantee_seq(state.consecutive_loss, n_uncertain)
+    # --- uncertain part ---
+    p_gold2 = np.convolve(p_gold, p_gold)
+
+    if eff_method == "dp-path":
+        result_pdf = _uncertain_pdf_path(state.consecutive_loss, n_uncertain, pdfs)
+        method_label = "exact"
+    elif eff_method == "dp-state":
+        if state.pity > 0:
+            # dp-state result is complete; can't easily replace first gold.
+            # Fall back to dp-path for accurate pity handling.
+            result_pdf = _uncertain_pdf_path(state.consecutive_loss, n_uncertain, pdfs)
+            method_label = "exact"
+        else:
+            p_up = list(CAPTURE_RADIANCE_WIN_RATE)
+            dp_result = _solve_exact(n_uncertain, p_up, p_gold, p_gold2,
+                                     start_state=state.consecutive_loss)
+            result_pdf = dp_result[n_uncertain]
+            method_label = "exact"
+    else:  # clt
+        return _up_distribution_clt_impl(state, n_up)
+
+    # --- pity shift + guaranteed gold (dp-path only; dp-state result is complete) ---
+    if eff_method == "dp-path":
+        shifted_first = np.insert(
+            p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
+        )
+        result_pdf = np.convolve(result_pdf, shifted_first)
+    if state.guaranteed:
+        result_pdf = np.convolve(result_pdf, p_gold)
+
+    cdf = np.cumsum(result_pdf)
+    return UpDistribution(pdf=result_pdf, cdf=cdf, method=method_label)
+
+
+def _uncertain_pdf_path(
+    k_miss: int, n_uncertain: int, pdfs: list[np.ndarray]
+) -> np.ndarray:
+    """dp-path: enumerate win/loss sequences, group by total golds."""
+    seq2p = guarantee_seq(k_miss, n_uncertain)
     gold2p: Counter[int] = Counter()
     for seq, (_final_miss, p) in seq2p.items():
         gold2p[sum(seq)] += p
 
-    # Weighted sum of multi-gold PDFs for the uncertain part
     max_gold = max(gold2p.keys())
-    result_pdf = np.zeros(len(pdfs[max_gold]), dtype=np.float64)
+    result = np.zeros(len(pdfs[max_gold]), dtype=np.float64)
     for gold, p in gold2p.items():
-        result_pdf[: len(pdfs[gold - 1])] += pdfs[gold - 1] * p
-
-    # Convolve with the first gold (shifted by current pity)
-    shifted_first = np.insert(
-        pdfs[1][state.pity + 1:] / pdfs[1][state.pity + 1:].sum(),
-        0, 0,
-    )
-    result_pdf = np.convolve(result_pdf, shifted_first)
-
-    # If the next gold is guaranteed, convolve with one extra gold
-    if state.guaranteed:
-        result_pdf = np.convolve(result_pdf, pdfs[1])
-
-    cdf = np.cumsum(result_pdf)
-    return UpDistribution(pdf=result_pdf, cdf=cdf)
+        result[: len(pdfs[gold - 1])] += pdfs[gold - 1] * p
+    return result
 
 
-def stable_up_distribution(n_up: int) -> UpDistribution:
+def stable_up_distribution(n_up: int, method: str = "auto") -> UpDistribution:
     """Steady-state distribution: k_miss weighted by the stationary distribution."""
     if n_up < 0:
         raise ValueError(f"n_up must be >= 0, got {n_up}")
@@ -139,7 +191,7 @@ def stable_up_distribution(n_up: int) -> UpDistribution:
     dists: list[UpDistribution] = []
     for k_miss, weight in enumerate(STABLE_P):
         state = CharacterState(guaranteed=False, pity=0, consecutive_loss=k_miss)
-        d = up_distribution(state, n_up)
+        d = up_distribution(state, n_up, method=method)
         dists.append(d)
         max_len = max(max_len, len(d.pdf))
 
@@ -147,7 +199,45 @@ def stable_up_distribution(n_up: int) -> UpDistribution:
     for d, weight in zip(dists, STABLE_P):
         stable_pdf[: len(d.pdf)] += d.pdf * weight
     stable_cdf = np.cumsum(stable_pdf)
-    return UpDistribution(pdf=stable_pdf, cdf=stable_cdf, method="exact")
+    return UpDistribution(pdf=stable_pdf, cdf=stable_cdf, method=dists[0].method)
+
+
+def _up_distribution_clt_impl(
+    state: CharacterState, n_up: int
+) -> UpDistribution:
+    """CLT approximation core — returns UpDistribution with pity + guaranteed handled."""
+    n_uncertain = n_up - state.guaranteed
+
+    # Moments via single-UP _solve_exact (no pity shift — added below)
+    pdfs = get_gold_pdfs(CHARACTER_POOL)
+    p_gold_loc = pdfs[1]
+    p_gold2_loc = np.convolve(p_gold_loc, p_gold_loc)
+    p_up = list(CAPTURE_RADIANCE_WIN_RATE)
+    dp1 = _solve_exact(1, p_up, p_gold_loc, p_gold2_loc,
+                       start_state=state.consecutive_loss)
+    d1_pdf = dp1[1]
+    mu_1 = float(np.sum(np.arange(len(d1_pdf)) * d1_pdf))
+    m2 = float(np.sum((np.arange(len(d1_pdf)) ** 2) * d1_pdf))
+    var_1 = m2 - mu_1**2
+
+    mu_n = n_uncertain * mu_1
+    std_n = np.sqrt(n_uncertain * var_1)
+
+    lo = max(0, int(mu_n - 6 * std_n))
+    hi = int(mu_n + 6 * std_n)
+    edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
+    pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
+
+    # Pity shift + guaranteed gold
+    shifted_first = np.insert(
+        p_gold_loc[state.pity + 1:] / p_gold_loc[state.pity + 1:].sum(), 0, 0,
+    )
+    result_pdf = np.convolve(pdf, shifted_first)
+    if state.guaranteed:
+        result_pdf = np.convolve(result_pdf, p_gold_loc)
+
+    cdf = np.cumsum(result_pdf)
+    return UpDistribution(pdf=result_pdf, cdf=cdf, method="clt")
 
 
 def up_distribution_clt(
@@ -165,27 +255,20 @@ def up_distribution_clt(
         m2_sum = 0.0
         for k_miss, weight in enumerate(STABLE_P):
             s = CharacterState(guaranteed=False, pity=0, consecutive_loss=k_miss)
-            d = up_distribution(s, 1)
+            d = up_distribution(s, 1, method="dp-state")
             m1 = d.expected
             m2 = float(np.sum((np.arange(len(d.pdf)) ** 2) * d.pdf))
             mu_1 += weight * m1
             m2_sum += weight * m2
         var_1 = m2_sum - mu_1**2
-    else:
-        d = up_distribution(state, 1)
-        mu_1 = d.expected
-        m2 = float(np.sum((np.arange(len(d.pdf)) ** 2) * d.pdf))
-        var_1 = m2 - mu_1**2
 
-    mu_n = n_up * mu_1
-    std_n = np.sqrt(n_up * var_1)
+        mu_n = n_up * mu_1
+        std_n = np.sqrt(n_up * var_1)
+        lo = max(0, int(mu_n - 6 * std_n))
+        hi = int(mu_n + 6 * std_n)
+        edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
+        pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
+        cdf = np.cumsum(pdf)
+        return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
 
-    # Build PDF/CDF on a grid covering ±6σ (~99.9999%)
-    # For each integer k in [lo, hi]: P(k) ≈ Φ(k+0.5) - Φ(k-0.5)
-    lo = max(0, int(mu_n - 6 * std_n))
-    hi = int(mu_n + 6 * std_n)
-    edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
-    pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
-    cdf = np.cumsum(pdf)
-
-    return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
+    return _up_distribution_clt_impl(state, n_up)

@@ -4,6 +4,7 @@ No rate-up mechanism — every 5-star is just a 5-star.
 Uses the same gold probability as the character event banner.
 """
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -44,6 +45,10 @@ def standard_distribution(state: StandardState, n_gold: int) -> UpDistribution:
         return UpDistribution(pdf=np.array([1.0]), cdf=np.array([1.0]))
 
     if n_gold > CLT_THRESHOLD:
+        warnings.warn(
+            f"n_gold={n_gold} exceeds {CLT_THRESHOLD}, "
+            f"switching to CLT approximation."
+        )
         return _standard_clt(state, n_gold)
     return _standard_exact(state, n_gold)
 

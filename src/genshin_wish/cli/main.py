@@ -61,6 +61,8 @@ def main() -> None:
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False, help="使用稳态分布")
+@click.option("--method", type=click.Choice(["auto", "dp-path", "dp-state", "clt"]),
+              default="auto", help="计算方法 (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def char(
     n_up: int,
@@ -71,14 +73,15 @@ def char(
     pity: int,
     loss: int,
     stable: bool,
+    method: str,
     fmt: str,
 ) -> None:
     """角色池概率查询"""
     if stable:
-        dist = stable_up_distribution(n_up)
+        dist = stable_up_distribution(n_up, method=method)
     else:
         state = CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=loss)
-        dist = up_distribution(state, n_up)
+        dist = up_distribution(state, n_up, method=method)
 
     text_parts = [_format_dist("角色池", dist, pulls)]
 

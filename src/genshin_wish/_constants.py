@@ -46,5 +46,5 @@ STABLE_P: list[float] = [0.550404, 0.274707, 0.124167, 0.0507224]
 # p_up[k] = 0.5 + 0.5 * capture_radiance[k]
 CAPTURE_RADIANCE_WIN_RATE: list[float] = [0.50009, 0.54800, 0.59150, 1.0]
 
-# Threshold: use CLT when n_up > CLT_THRESHOLD
-CLT_THRESHOLD: int = 7
+# Threshold: warn and use CLT when n_up > CLT_THRESHOLD
+CLT_THRESHOLD: int = 500
