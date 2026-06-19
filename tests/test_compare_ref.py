@@ -6,9 +6,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-# Import ref/ (add to path)
 sys.path.insert(0, "ref/character")
-from gold2rolls import character_up2rolls, query_luck_percentile
+
+_gold2rolls = pytest.importorskip("gold2rolls")
+character_up2rolls = _gold2rolls.character_up2rolls
+query_luck_percentile = _gold2rolls.query_luck_percentile
 
 
 def _ref_percentile(k_miss, n_up, pulls):
