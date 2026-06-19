@@ -1,5 +1,8 @@
 """Regression tests: compare new genshin_wish results against ref/."""
+import shutil
 import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -78,3 +81,16 @@ def test_guaranteed_n1_bug_fixed():
     dist = up_distribution(state, 1)
     assert 60 < dist.expected < 65, f"Expected ~62.3, got {dist.expected:.1f}"
     assert abs(dist.pdf.sum() - 1.0) < 1e-8
+
+
+# ---------------------------------------------------------------------------
+# Clean up stray cache/ created by ref/character/utils.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _cleanup_ref_cache() -> None:
+    yield
+    cache_dir = Path("cache")
+    if cache_dir.is_dir():
+        shutil.rmtree(cache_dir)
