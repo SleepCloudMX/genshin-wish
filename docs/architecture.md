@@ -85,19 +85,19 @@ class PoolConfig:
 
 **边界情况**：n_up=0 返回 `[1.0]`（0 抽必然达成）；n_uncertain=0（即 guaranteed=True 且 n_up=1）时无不确定部分，直接返回单金 PDF 的截断重归一。
 
-### 3. CLT 阈值
+### 3. 求解器自动选择
 
-`n_up ≤ 7` 使用精确解（`guarantee_seq` 枚举最多 2^7=128 条序列，完全可行）。
+`up_distribution` 默认 `method="auto"`，按 `n_uncertain = n_up - guaranteed` 自动选择：
 
-`n_up > 7` 默认使用中心极限定理近似（2^8=256 条序列起枚举代价快速增长）。
+| n_uncertain | 方法 | 算法 |
+|-------------|------|------|
+| ≤ 10 | dp-path | `guarantee_seq` 枚举所有 win/loss 序列（≤ 1024 条），金数分组后加权多金 PDF |
+| 10~500 | dp-state | 从 `long_term._solve_exact` 引入的迭代卷积，按 k_miss 状态聚合递推，N=500 约 1.2s |
+| > 500 | clt + warning | 正态近似，基于单 UP 前两阶矩 |
 
-正态近似基于单次 UP 的前两阶矩：
+三种方法原理见 `docs/ai-output/1-refactor/10-up-dist-dp-methods.md`，性能对比见 `output/analysis/up_dist_methods/`。
 
-- 中部分位（10%~90%）误差 < 1%
-- 尾部误差约 ±8 抽
-- 对于 n_up=7，精确解和 CLT 在常用分位点的相对误差 < 2%
-
-`UpDistribution.method` 字段标记使用的方法（`"exact"` 或 `"clt"`）。
+`UpDistribution.method` 字段标记 `"exact"`（dp-path 或 dp-state）或 `"clt"`。
 
 ### 4. PDF 不截断
 

@@ -26,6 +26,7 @@ pip install -e .
 | `--pity` | INT | 0 | 已垫抽数，范围 0~89 |
 | `--loss` | INT | 0 | 连续歪次数，范围 0~3，驱动捕获明光概率 |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布。**与 `--loss`、`--guaranteed`、`--pity` 互斥**——指定 `--stable` 后这些参数被忽略 |
+| `--method` | `auto`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤10 dp-path，≤500 dp-state，>500 clt+warning）。`dp-path` 限 n_up ≤ 20 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点，如 `0.5` = 中位数 |
 | `--quantiles` | STR | — | 多个分位点，逗号分隔，如 `"0.1,0.5,0.9"` |
@@ -147,8 +148,13 @@ state = CharacterState(
     consecutive_loss=0,  # 连续歪次数，0~3
 )
 
-# 计算精确分布（n_up <= 7 走 exact，> 7 自动切换 CLT）
+# 计算分布（默认 auto：≤10 dp-path，≤500 dp-state，>500 clt+warning）
 dist = up_distribution(state, n_up=7)
+
+# 指定方法
+dist = up_distribution(state, n_up=100, method="dp-state")  # 强制迭代卷积
+dist = up_distribution(state, n_up=600, method="clt")       # 强制 CLT 近似
+# method: "auto"（默认）/ "dp-path"（枚举，限 ≤20）/ "dp-state"（迭代卷积）/ "clt"
 
 # 查询
 dist.expected           # float, 期望抽数
@@ -158,21 +164,14 @@ dist.luck(800)          # float, 等价于 probability，返回百分位
 dist.pdf                # np.ndarray, 概率质量函数
 dist.cdf                # np.ndarray, 累积分布函数
 dist.method             # str, "exact" 或 "clt"
+dist.method             # str, "exact" 或 "clt"
 ```
 
-**稳态分布：** 按 `consecutive_loss` 的稳态概率 `[0.55, 0.27, 0.12, 0.05]` 加权平均各状态的分布，适用于不知道当前状态时的预估。
+**稳态分布：** 按 `consecutive_loss` 的稳态概率 `[0.55, 0.27, 0.12, 0.05]` 加权平均各状态的分布，适用于不知道当前状态时的预估。透传 `method` 参数。
 
 ```python
-dist_stable = stable_up_distribution(7)
-```
-
-**CLT 近似：** 当 n_up 较大时可直接调用，更快且精度足够。
-
-```python
-from genshin_wish.character import up_distribution_clt
-
-dist_approx = up_distribution_clt(n_up=20)            # 稳态 CLT
-dist_approx = up_distribution_clt(state, n_up=20)     # 指定状态 CLT
+dist_stable = stable_up_distribution(7)                # auto
+dist_stable = stable_up_distribution(500, method="dp-state")
 ```
 
 ### 武器池
