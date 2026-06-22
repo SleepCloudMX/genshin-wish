@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+from scipy.stats import trim_mean
 
 from genshin_wish._constants import CHARACTER_POOL, CAPTURE_RADIANCE_WIN_RATE
 from genshin_wish._gold import build_gold_pdf, get_gold_pdfs
@@ -17,6 +18,8 @@ OUTPUT = Path("output/analysis/task1-n_up-to-pulls")
 QUANTILES = [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
 DP_PULLS_MAX_N = 7
 DP_PATH_MAX_N = 20
+TRIM_FRAC = 0.2  # trim 20% from each tail
+ERROR_BAR = "minmax"  # "minmax" | "std3" | "none"
 
 _p_cond = build_gold_pdf(CHARACTER_POOL)
 _p_up = list(CAPTURE_RADIANCE_WIN_RATE)
@@ -71,17 +74,20 @@ def _dp_pulls_task1(n_uncertain: int, k_miss_start: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def _timeit(fn, n_runs: int = 5) -> dict:
-    """Run *fn* n_runs times, return {time_ms, time_min, time_max}."""
+def _timeit(fn, n_runs: int = 50) -> dict:
+    """Run *fn* n_runs times, return trimmed mean + min/max/std."""
     times: list[float] = []
     for _ in range(n_runs):
         t0 = time.perf_counter()
         fn()
         times.append((time.perf_counter() - t0) * 1000)
+    arr = np.array(times)
     return {
-        "time_ms": float(np.median(times)),
-        "time_min": float(np.min(times)),
-        "time_max": float(np.max(times)),
+        "time_ms": float(trim_mean(arr, TRIM_FRAC)),
+        "time_min": float(np.min(arr)),
+        "time_max": float(np.max(arr)),
+        "time_std": float(np.std(arr)),
+        "n_runs": n_runs,
     }
 
 
@@ -106,6 +112,7 @@ def _null_metrics() -> dict:
     return {
         "expected": None, "quantiles": None,
         "time_ms": None, "time_min": None, "time_max": None,
+        "time_std": None, "n_runs": 0,
     }
 
 
@@ -125,46 +132,47 @@ def main() -> None:
         print(f"  n={n_up} ({ni+1}/{len(n_range)})", flush=True)
         state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
 
-        # --- dp-pulls (1 run — too slow) ---
+        # --- dp-pulls (11 runs) ---
         if n_up <= DP_PULLS_MAX_N:
             def _run_pulls():
-                return _dp_pulls_task1(n_up, 0)
-            timing = _timeit(_run_pulls, n_runs=1)
+                _dp_pulls_task1(n_up, 0)
+            timing = _timeit(_run_pulls, n_runs=11)
             pdf = _dp_pulls_task1(n_up, 0)
             data["dp-pulls"][str(n_up)] = _pdf_metrics(pdf, timing)
         else:
             data["dp-pulls"][str(n_up)] = _null_metrics()
 
-        # --- dp-path (5 runs) ---
+        # --- dp-path (50 runs — fast) ---
         if n_up <= DP_PATH_MAX_N:
             def _run_path():
                 up_distribution(state, n_up, method="dp-path")
-            timing = _timeit(_run_path, n_runs=5)
+            timing = _timeit(_run_path, n_runs=50)
             dist = up_distribution(state, n_up, method="dp-path")
             data["dp-path"][str(n_up)] = _dist_metrics(dist, timing)
         else:
             data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-state (3 runs — expensive at large n) ---
+        # --- dp-state (11 at large n, 50 otherwise) ---
+        nr_state = 11 if n_up >= 150 else 50
         def _run_state():
             up_distribution(state, n_up, method="dp-state")
-        timing = _timeit(_run_state, n_runs=3)
+        timing = _timeit(_run_state, n_runs=nr_state)
         dist = up_distribution(state, n_up, method="dp-state")
         data["dp-state"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- dp-golds (5 runs) ---
+        # --- dp-golds (50 runs — fast) ---
         def _run_golds():
             gp = _dp_golds_task1(n_up, 0)
             golds_to_pulls(gp)
-        timing = _timeit(_run_golds, n_runs=5)
+        timing = _timeit(_run_golds, n_runs=50)
         gp = _dp_golds_task1(n_up, 0)
         dist = golds_to_pulls(gp)
         data["dp-golds"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- CLT (5 runs) ---
+        # --- CLT (50 runs — fast) ---
         def _run_clt():
             up_distribution(state, n_up, method="clt")
-        timing = _timeit(_run_clt, n_runs=5)
+        timing = _timeit(_run_clt, n_runs=50)
         dist = up_distribution(state, n_up, method="clt")
         data["CLT"][str(n_up)] = _dist_metrics(dist, timing)
 
@@ -187,20 +195,27 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _plot_speed(data: dict, n_range: list[int]) -> None:
+def _plot_speed(data: dict, n_range: list[int], error_bar: str = "") -> None:
     from matplotlib import pyplot as plt
     from genshin_wish.viz._base import setup_style
     setup_style()
+
+    eb = error_bar or ERROR_BAR
 
     def _draw_speed(ax, names, ns_filter, show_band=True):
         for name in names:
             ns = [n for n in n_range if ns_filter(n) and data[name][str(n)]["time_ms"] is not None]
             times = [data[name][str(n)]["time_ms"] for n in ns]
             line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
-            if show_band:
-                t_min = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
-                t_max = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
-                ax.fill_between(ns, t_min, t_max, alpha=0.15, color=line.get_color())
+            if show_band and eb != "none":
+                if eb == "std3":
+                    t_std = [data[name][str(n)].get("time_std", 0) for n in ns]
+                    lo = [max(0, t - 3 * s) for t, s in zip(times, t_std)]
+                    hi = [t + 3 * s for t, s in zip(times, t_std)]
+                else:  # minmax
+                    lo = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
+                    hi = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
+                ax.fill_between(ns, lo, hi, alpha=0.15, color=line.get_color())
 
     # Full range (without dp-pulls)
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -341,6 +356,9 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--plot-only", action="store_true",
                    help="Skip computation, regenerate plots from data.json")
+    p.add_argument("--error-bar", choices=["minmax", "std3", "none"],
+                   default="minmax",
+                   help="Error bar style (default: minmax)")
     args = p.parse_args()
 
     if args.plot_only:
@@ -348,9 +366,10 @@ if __name__ == "__main__":
         data = _json.loads((OUTPUT / "data.json").read_text(encoding="utf-8"))
         n_range = [int(k) for k in data["dp-state"].keys()]
         n_range.sort()
-        _plot_speed(data, n_range)
+        _plot_speed(data, n_range, error_bar=args.error_bar)
         _plot_clt_error(data, n_range)
         _plot_clt_per_n(data, n_range)
         print(f"Plots regenerated — {OUTPUT}")
     else:
+        ERROR_BAR = args.error_bar
         main()

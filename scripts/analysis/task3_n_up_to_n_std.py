@@ -7,12 +7,15 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+from scipy.stats import trim_mean
 
 from genshin_wish._capture_radiance import guarantee_seq
 from genshin_wish._dp_golds import _dp_golds_full, golds_nstd_to_nstd_dist
 
 OUTPUT = Path("output/analysis/task3-n_up-to-n_std")
 DP_PATH_MAX_N = 20
+TRIM_FRAC = 0.2
+ERROR_BAR = "minmax"
 
 
 def _dp_path_task3(n_uncertain: int, k_miss: int) -> dict[int, float]:
@@ -24,16 +27,19 @@ def _dp_path_task3(n_uncertain: int, k_miss: int) -> dict[int, float]:
     return dict(result)
 
 
-def _timeit(fn, n_runs: int = 5) -> dict:
+def _timeit(fn, n_runs: int = 50) -> dict:
     times: list[float] = []
     for _ in range(n_runs):
         t0 = time.perf_counter()
         fn()
         times.append((time.perf_counter() - t0) * 1000)
+    arr = np.array(times)
     return {
-        "time_ms": float(np.median(times)),
-        "time_min": float(np.min(times)),
-        "time_max": float(np.max(times)),
+        "time_ms": float(trim_mean(arr, TRIM_FRAC)),
+        "time_min": float(np.min(arr)),
+        "time_max": float(np.max(arr)),
+        "time_std": float(np.std(arr)),
+        "n_runs": n_runs,
     }
 
 
@@ -41,6 +47,7 @@ def _null_metrics() -> dict:
     return {
         "n_std_dist": None, "expected_n_std": None,
         "time_ms": None, "time_min": None, "time_max": None,
+        "time_std": None, "n_runs": 0,
     }
 
 
@@ -54,11 +61,11 @@ def main() -> None:
     for n_up in n_range:
         print(f"  n={n_up} ({n_up}/{n_range[-1]})", flush=True)
 
-        # --- dp-path (5 runs) ---
+        # --- dp-path (50 runs) ---
         if n_up <= DP_PATH_MAX_N:
             def _run_path():
                 _dp_path_task3(n_up, 0)
-            timing = _timeit(_run_path, n_runs=5)
+            timing = _timeit(_run_path, n_runs=50)
             nstd_dist = _dp_path_task3(n_up, 0)
             data["dp-path"][str(n_up)] = {
                 "n_std_dist": {str(k): v for k, v in nstd_dist.items()},
@@ -68,11 +75,11 @@ def main() -> None:
         else:
             data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-golds (5 runs) ---
+        # --- dp-golds (50 runs) ---
         def _run_golds():
             gn = _dp_golds_full(n_up, 0)
             golds_nstd_to_nstd_dist(gn)
-        timing = _timeit(_run_golds, n_runs=5)
+        timing = _timeit(_run_golds, n_runs=50)
         gn = _dp_golds_full(n_up, 0)
         nstd_dist = golds_nstd_to_nstd_dist(gn)
         data["dp-golds"][str(n_up)] = {
@@ -93,19 +100,27 @@ def main() -> None:
     print(f"Done — {OUTPUT}")
 
 
-def _plot_speed(data: dict, n_range: list[int]) -> None:
+def _plot_speed(data: dict, n_range: list[int], error_bar: str = "") -> None:
     from matplotlib import pyplot as plt
     from genshin_wish.viz._base import setup_style
     setup_style()
+
+    eb = error_bar or ERROR_BAR
 
     fig, ax = plt.subplots(figsize=(10, 6))
     for name in ["dp-path", "dp-golds"]:
         ns = [n for n in n_range if data[name][str(n)]["time_ms"] is not None]
         times = [data[name][str(n)]["time_ms"] for n in ns]
         line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
-        t_min = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
-        t_max = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
-        ax.fill_between(ns, t_min, t_max, alpha=0.15, color=line.get_color())
+        if eb != "none":
+            if eb == "std3":
+                t_std = [data[name][str(n)].get("time_std", 0) for n in ns]
+                lo = [max(0, t - 3 * s) for t, s in zip(times, t_std)]
+                hi = [t + 3 * s for t, s in zip(times, t_std)]
+            else:
+                lo = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
+                hi = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
+            ax.fill_between(ns, lo, hi, alpha=0.15, color=line.get_color())
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 3 speed comparison")
@@ -171,6 +186,9 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--plot-only", action="store_true",
                    help="Skip computation, regenerate plots from data.json")
+    p.add_argument("--error-bar", choices=["minmax", "std3", "none"],
+                   default="minmax",
+                   help="Error bar style (default: minmax)")
     args = p.parse_args()
 
     if args.plot_only:
@@ -178,8 +196,9 @@ if __name__ == "__main__":
         data = _json.loads((OUTPUT / "data.json").read_text(encoding="utf-8"))
         n_range = [int(k) for k in data["dp-golds"].keys()]
         n_range.sort()
-        _plot_speed(data, n_range)
+        _plot_speed(data, n_range, error_bar=args.error_bar)
         _plot_distribution(data)
         print(f"Plots regenerated — {OUTPUT}")
     else:
+        ERROR_BAR = args.error_bar
         main()
