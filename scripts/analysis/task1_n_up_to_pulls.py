@@ -281,7 +281,7 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
     fig, ax = plt.subplots(figsize=(10, 6))
     small_n = [n for n in n_range if n <= 20]
     _draw_speed(ax, ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"],
-                lambda n: n <= 20, show_band=False)
+                lambda n: n <= 20)
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison (n≤20)")
