@@ -10,7 +10,7 @@ from scipy.stats import norm
 from ._constants import CHARACTER_POOL, STABLE_P, CLT_THRESHOLD, CAPTURE_RADIANCE_WIN_RATE
 from ._capture_radiance import guarantee_seq
 from ._gold import get_gold_pdfs
-from .long_term import _solve_exact
+from .long_term import _post50_moments, _solve_exact
 
 
 @dataclass
@@ -205,41 +205,48 @@ def stable_up_distribution(n_up: int, method: str = "auto") -> UpDistribution:
 def _up_distribution_clt_impl(
     state: CharacterState, n_up: int
 ) -> UpDistribution:
-    """CLT approximation core — returns UpDistribution with pity + guaranteed handled."""
+    """CLT approximation — mixed moments: first UP from initial k_miss,
+    remaining n−1 from steady-state."""
     n_uncertain = n_up - state.guaranteed
 
-    # Moments via single-UP _solve_exact (no pity shift — added below)
     pdfs = get_gold_pdfs(CHARACTER_POOL)
-    p_gold_loc = pdfs[1]
-    p_gold2_loc = np.convolve(p_gold_loc, p_gold_loc)
+    p_gold = pdfs[1]
+
+    # First UP moments (from initial k_miss)
     p_up = list(CAPTURE_RADIANCE_WIN_RATE)
-    dp1 = _solve_exact(1, p_up, p_gold_loc, p_gold2_loc,
+    p_gold2 = np.convolve(p_gold, p_gold)
+    dp1 = _solve_exact(1, p_up, p_gold, p_gold2,
                        start_state=state.consecutive_loss)
     d1_pdf = dp1[1]
-    mu_1 = float(np.sum(np.arange(len(d1_pdf)) * d1_pdf))
-    m2 = float(np.sum((np.arange(len(d1_pdf)) ** 2) * d1_pdf))
-    var_1 = m2 - mu_1**2
+    mu_first = float(np.sum(np.arange(len(d1_pdf)) * d1_pdf))
+    m2_first = float(np.sum((np.arange(len(d1_pdf)) ** 2) * d1_pdf))
+    var_first = m2_first - mu_first**2
 
-    mu_n = n_uncertain * mu_1
-    std_n = np.sqrt(n_uncertain * var_1)
+    # Steady-state moments for remaining UPs
+    mu_steady, var_steady = _post50_moments(p_gold)
+
+    # Mixed moments: first UP + (n−1) × steady
+    mu_n = mu_first + (n_uncertain - 1) * mu_steady
+    var_n = var_first + (n_uncertain - 1) * var_steady
+    std_n = np.sqrt(max(var_n, 0.0))
 
     lo = max(0, int(mu_n - 6 * std_n))
     hi = int(mu_n + 6 * std_n)
     edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
     pdf_clt = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
 
-    # Zero-pad to align pull counts with array indices
     pdf = np.zeros(hi + 1, dtype=np.float64)
     pdf[lo : hi + 1] = pdf_clt
 
-    # Pity shift + guaranteed gold
-    shifted_first = np.insert(
-        p_gold_loc[state.pity + 1:] / p_gold_loc[state.pity + 1:].sum(), 0, 0,
-    )
-    result_pdf = np.convolve(pdf, shifted_first)
+    # Pity shift — only when pity > 0 (pity=0: CLT moments already correct)
+    if state.pity > 0:
+        shifted_first = np.insert(
+            p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
+        )
+        pdf = np.convolve(pdf, shifted_first)
     if state.guaranteed:
-        result_pdf = np.convolve(result_pdf, p_gold_loc)
+        pdf = np.convolve(pdf, p_gold)
 
-    cdf = np.cumsum(result_pdf)
-    return UpDistribution(pdf=result_pdf, cdf=cdf, method="clt")
+    cdf = np.cumsum(pdf)
+    return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
 
