@@ -330,14 +330,14 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
         for qi, q in enumerate(QUANTILES):
             errors = []
             for n in ns:
-                e = _q(data["dp-state"][str(n)], q) / n
-                c = _q(data["CLT"][str(n)], q) / n
+                e = _q(data["dp-state"][str(n)], q)
+                c = _q(data["CLT"][str(n)], q)
                 errors.append(abs(e - c))
             ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
                     linewidth=2, label=f"{int(q * 100)}%")
         ax.set_title(f"Task 1 CLT absolute error (n={label})", fontsize=14)
         ax.set_xlabel("$n_\\text{up}$")
-        ax.set_ylabel("error (pulls / UP)")
+        ax.set_ylabel("error (pulls)")
         ax.legend(loc="upper right", ncol=4, fontsize=8)
         ax.grid(alpha=0.3)
         fig.tight_layout()
@@ -354,8 +354,8 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
         for qi, q in enumerate(QUANTILES):
             errors = []
             for n in ns:
-                e = _q(data["dp-state"][str(n)], q) / n
-                c = _q(data["CLT"][str(n)], q) / n
+                e = _q(data["dp-state"][str(n)], q)
+                c = _q(data["CLT"][str(n)], q)
                 errors.append(abs(e - c) / max(e, 1.0) * 100)
             ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
                     linewidth=2, label=f"{int(q * 100)}%")
@@ -370,7 +370,7 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
 
 
 def _plot_clt_per_n(data: dict, n_range: list[int]) -> None:
-    """Per-UP absolute error divided by n_up (error convergence rate)."""
+    """CLT per-UP absolute error (pulls divided by n_up)."""
     from matplotlib import pyplot as plt
     from genshin_wish.viz._base import setup_style
     setup_style()
@@ -393,12 +393,12 @@ def _plot_clt_per_n(data: dict, n_range: list[int]) -> None:
             for n in ns:
                 e = _q(data["dp-state"][str(n)], q) / n
                 c = _q(data["CLT"][str(n)], q) / n
-                errors.append(abs(e - c) / n)
+                errors.append(abs(e - c))
             ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
                     linewidth=2, label=f"{int(q * 100)}%")
-        ax.set_title(f"Task 1 CLT per-UP error / n_up (n={label})", fontsize=14)
+        ax.set_title(f"Task 1 CLT per-UP absolute error (n={label})", fontsize=14)
         ax.set_xlabel("$n_\\text{up}$")
-        ax.set_ylabel("error (pulls / UP) / $n_\\text{up}$")
+        ax.set_ylabel("error (pulls / UP)")
         ax.legend(loc="upper right", ncol=4, fontsize=8)
         ax.grid(alpha=0.3)
         fig.tight_layout()
