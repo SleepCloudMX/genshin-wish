@@ -61,7 +61,7 @@ def main() -> None:
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False, help="使用稳态分布")
-@click.option("--method", type=click.Choice(["auto", "dp-path", "dp-state", "clt"]),
+@click.option("--method", type=click.Choice(["auto", "dp-golds", "dp-path", "dp-state", "clt"]),
               default="auto", help="计算方法 (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def char(

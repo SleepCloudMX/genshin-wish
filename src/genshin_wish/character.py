@@ -80,12 +80,15 @@ def up_distribution(
     *method* selects the algorithm for part 2:
 
     ========== ====================================================
-    ``"auto"`` n_uncertain ≤ 10 → dp-path, ≤ 500 → dp-state, > 500 → clt + warning
+    ``"auto"`` n_uncertain ≤ 500 → dp-golds, > 500 → clt + warning
     ``"dp-path"``  enumerate all win/loss sequences (≤ 20 only)
     ``"dp-state"`` iterative state-space convolution
+    ``"dp-golds"`` DP over gold counts + weighted PDFs
     ``"clt"``     CLT normal approximation
     ========== ====================================================
     """
+    from ._dp_golds import _dp_golds_task1, golds_to_pulls as _golds_to_pulls
+
     if n_up < 0:
         raise ValueError(f"n_up must be >= 0, got {n_up}")
 
@@ -93,29 +96,27 @@ def up_distribution(
 
     # Resolve method
     if method == "auto":
-        if n_uncertain <= 10:
-            eff_method = "dp-path"
-        elif n_uncertain <= 500:
-            eff_method = "dp-state"
+        if n_uncertain <= 500:
+            eff_method = "dp-golds"
         else:
             eff_method = "clt"
             warnings.warn(
                 f"n_up={n_up} exceeds 500, switching to CLT approximation. "
-                f"Use method='dp-state' to force exact computation."
+                f"Use method='dp-golds' to force exact computation."
             )
     elif method == "dp-path":
         if n_uncertain > 20:
             raise ValueError(
                 f"dp-path limited to n_uncertain ≤ 20, got {n_uncertain}. "
-                f"Use method='dp-state' or 'clt'."
+                f"Use method='dp-golds', 'dp-state', or 'clt'."
             )
         eff_method = "dp-path"
-    elif method in ("dp-state", "clt"):
+    elif method in ("dp-golds", "dp-state", "clt"):
         eff_method = method
     else:
         raise ValueError(
             f"Unknown method: {method!r}. "
-            f"Valid: 'auto', 'dp-path', 'dp-state', 'clt'."
+            f"Valid: 'auto', 'dp-golds', 'dp-path', 'dp-state', 'clt'."
         )
 
     # Gold PDFs
@@ -140,8 +141,7 @@ def up_distribution(
         method_label = "exact"
     elif eff_method == "dp-state":
         if state.pity > 0:
-            # dp-state result is complete; can't easily replace first gold.
-            # Fall back to dp-path for accurate pity handling.
+            eff_method = "dp-path"  # fall back for pity handling
             result_pdf = _uncertain_pdf_path(state.consecutive_loss, n_uncertain, pdfs)
             method_label = "exact"
         else:
@@ -150,10 +150,20 @@ def up_distribution(
                                      start_state=state.consecutive_loss)
             result_pdf = dp_result[n_uncertain]
             method_label = "exact"
+    elif eff_method == "dp-golds":
+        if state.pity > 0:
+            eff_method = "dp-path"  # fall back for pity handling
+            result_pdf = _uncertain_pdf_path(state.consecutive_loss, n_uncertain, pdfs)
+            method_label = "exact"
+        else:
+            gold_probs = _dp_golds_task1(n_uncertain, state.consecutive_loss)
+            dist = _golds_to_pulls(gold_probs, pdfs)
+            result_pdf = dist.pdf
+            method_label = "exact"
     else:  # clt
         return _up_distribution_clt_impl(state, n_up)
 
-    # --- pity shift + guaranteed gold (dp-path only; dp-state result is complete) ---
+    # --- pity shift + guaranteed gold ---
     if eff_method == "dp-path":
         shifted_first = np.insert(
             p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
