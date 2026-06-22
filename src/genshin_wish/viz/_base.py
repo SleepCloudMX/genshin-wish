@@ -3,6 +3,11 @@
 from pathlib import Path
 
 import numpy as np
+
+# Must set before importing pyplot, otherwise font init caches wrong minus glyph.
+import matplotlib
+matplotlib.rcParams['axes.unicode_minus'] = False
+
 from matplotlib import pyplot as plt
 
 
