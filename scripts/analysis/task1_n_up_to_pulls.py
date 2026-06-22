@@ -250,9 +250,11 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
     n_early = [n for n in n_range if n <= 20]
     n_late = [n for n in n_range if n >= 10]
 
+    abs_dir = OUTPUT / "accuracy-clt-abs"
+    abs_dir.mkdir(parents=True, exist_ok=True)
     for label, ns, filename in [
-        ("1–20", n_early, "accuracy-clt-abs-early.png"),
-        ("10–500", n_late, "accuracy-clt-abs-late.png"),
+        ("1–20", n_early, "early.png"),
+        ("10–500", n_late, "late.png"),
     ]:
         fig, ax = plt.subplots(figsize=(12, 7))
         for qi, q in enumerate(QUANTILES):
@@ -269,12 +271,14 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
         ax.legend(loc="upper right", ncol=4, fontsize=8)
         ax.grid(alpha=0.3)
         fig.tight_layout()
-        fig.savefig(OUTPUT / filename, dpi=200)
+        fig.savefig(abs_dir / filename, dpi=200)
         plt.close(fig)
 
+    rel_dir = OUTPUT / "accuracy-clt-rel"
+    rel_dir.mkdir(parents=True, exist_ok=True)
     for label, ns, filename in [
-        ("1–20", n_early, "accuracy-clt-rel-early.png"),
-        ("10–500", n_late, "accuracy-clt-rel-late.png"),
+        ("1–20", n_early, "early.png"),
+        ("10–500", n_late, "late.png"),
     ]:
         fig, ax = plt.subplots(figsize=(12, 7))
         for qi, q in enumerate(QUANTILES):
@@ -291,7 +295,7 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
         ax.legend(loc="upper right", ncol=4, fontsize=8)
         ax.grid(alpha=0.3)
         fig.tight_layout()
-        fig.savefig(OUTPUT / filename, dpi=200)
+        fig.savefig(rel_dir / filename, dpi=200)
         plt.close(fig)
 
 
