@@ -47,8 +47,8 @@ def _task1() -> None:
     n_keys = [1, 5, 10, 20, 50, 100, 200, 500]
     a("## 期望抽数")
     a("")
-    a(_row("$n_\\text{up}$", *[str(n) for n in n_keys]))
-    a(_row("", *(f"---" for _ in n_keys)))
+    a("| $n_\\text{up}$ | " + " | ".join(str(n) for n in n_keys) + " |")
+    a("|------|" + "|".join("------" for _ in n_keys) + "|")
     for m in ["dp-pulls", "dp-path", "dp-state", "dp-golds"]:
         vals = []
         for n in n_keys:
@@ -60,17 +60,23 @@ def _task1() -> None:
     # CLT error summary
     a("## CLT 近似误差")
     a("")
-    # Pick n=50, 100, 500 for relative error at median
+    a("混合矩 CLT：首 UP 用初始 k_miss 矩，剩余用稳态矩。"
+      "误差为 $|\\text{exact} - \\text{clt}|$（总抽数）。")
+    a("")
+    q_keys = [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
     for n_label in [50, 100, 500]:
         sn = str(n_label)
-        e_exact = d["dp-state"][sn]["expected"]
-        e_clt = d["CLT"][sn]["expected"]
-        rel = abs(e_exact - e_clt) / e_exact * 100
-        q_exact = d["dp-state"][sn]["quantiles"]["0.5"]
-        q_clt = d["CLT"][sn]["quantiles"]["0.5"]
-        err_med = abs(q_exact - q_clt)
-        a(f"- $n = {n_label}$：期望值相对误差 {rel:.2f}%，"
-          f"中位数分位点偏差 {err_med} pulls")
+        a(f"### $n = {n_label}$")
+        a("")
+        a("| 分位点 | exact | CLT | 误差 (pulls) | 相对误差 |")
+        a("|--------|-------|-----|-------------|---------|")
+        for q in q_keys:
+            qe = d["dp-state"][sn]["quantiles"].get(str(q), d["dp-state"][sn]["quantiles"].get(q, 0))
+            qc = d["CLT"][sn]["quantiles"].get(str(q), d["CLT"][sn]["quantiles"].get(q, 0))
+            err = abs(qe - qc)
+            rel = err / qe * 100 if qe > 0 else 0
+            a(f"| {int(q*100)}% | {qe} | {qc} | {err} | {rel:.3f}% |")
+        a("")
     a("")
 
     # Speed summary
