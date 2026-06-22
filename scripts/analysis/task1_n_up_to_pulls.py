@@ -331,4 +331,20 @@ def _plot_clt_convergence(data: dict, n_range: list[int]) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument("--plot-only", action="store_true",
+                   help="Skip computation, regenerate plots from data.json")
+    args = p.parse_args()
+
+    if args.plot_only:
+        print("Plot-only mode — loading data.json ...", flush=True)
+        data = _json.loads((OUTPUT / "data.json").read_text(encoding="utf-8"))
+        n_range = [int(k) for k in data["dp-state"].keys()]
+        n_range.sort()
+        _plot_speed(data, n_range)
+        _plot_clt_error(data, n_range)
+        _plot_clt_convergence(data, n_range)
+        print(f"Plots regenerated — {OUTPUT}")
+    else:
+        main()
