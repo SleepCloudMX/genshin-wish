@@ -69,12 +69,13 @@ python scripts/analysis/up_dist_methods.py --enum-vs-conv   # 枚举 vs 卷积
 
 输出：`output/analysis/up_dist_methods/dp-vs-enum/` 和 `enum-vs-conv/` — 精度图 + 速度图 + 数据 + 结论。
 
-| 方案 | 方法 | 复杂度 | n_up=10 | n_up=20 | n_up=500 |
-|------|------|--------|---------|---------|---------|
-| 一（DP-full） | 3D DP 手动卷积 | $O(n_\text{up}^2 \cdot m^2)$ | 57ms | — | — |
-| 一（DP-prune） | 同上 + 剪枝 | 同上，常数更大 | 67ms | — | — |
-| 二（Enum） | 指数枚举序列 | $O(2^{n_\text{up}})$ | 0.5ms | 611ms | 不可用 |
-| 三（Conv） | 迭代卷积 FFT | $O(n_\text{up}^2 \cdot m \cdot \log)$ | 1.1ms | 3.8ms | ~1.2s |
+| 方案 | API 方法 | 实现 | 复杂度 | n_up=10 | n_up=20 | n_up=500 |
+|------|----------|------|--------|---------|---------|---------|
+| 一（DP-full） | — | 3D DP 手动卷积 | $O(n_\text{up}^2 \cdot m^2)$ | 57ms | — | — |
+| 一（DP-prune） | — | 同上 + 剪枝 | 同上，常数更大 | 67ms | — | — |
+| 二（Enum） | `dp-path` | 指数枚举序列 | $O(2^{n_\text{up}})$ | 0.5ms | 611ms | 不可用 |
+| 三（Conv） | `dp-state` | 迭代卷积 FFT | $O(n_\text{up}^2 \cdot m \cdot \log)$ | 1.1ms | 3.8ms | ~1.2s |
+| — | `clt` | CLT 正态近似 | $O(1)$ | — | — | 即时 |
 
 **结论：**
 

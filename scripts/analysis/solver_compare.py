@@ -19,6 +19,7 @@ from scipy.stats import norm
 
 from genshin_wish._constants import CHARACTER_POOL, STABLE_P, CAPTURE_RADIANCE_WIN_RATE
 from genshin_wish._gold import get_gold_pdfs
+from genshin_wish.long_term import _solve_exact
 from genshin_wish.viz._base import setup_style
 
 setup_style()
@@ -41,12 +42,6 @@ def _quantiles(cdf, max_len=None):
     if max_len:
         cdf = cdf[:max_len]
     return {q: float(np.searchsorted(cdf, q)) for q in QUANTILES}
-
-
-def _pad(a, length):
-    c = np.zeros(length, dtype=np.float64)
-    c[:len(a)] = a
-    return c
 
 
 # ---- A: 55/45 naive ----
@@ -97,30 +92,8 @@ p_gold2 = np.convolve(p_gold, p_gold)
 
 
 def solve_4state_exact(N):
-    L = N * 2 * CHARACTER_POOL.hard_pity + 1
-    pdf_state = [np.array([1.0], dtype=np.float64), None, None, None]
-    result = {}
-    for n in range(1, N + 1):
-        new = [np.zeros(1, dtype=np.float64)] * 4
-        for s in range(4):
-            ps = pdf_state[s]
-            if ps is None:
-                continue
-            wc = np.convolve(ps, p_gold)
-            new[0] = _pad(new[0], max(len(new[0]), len(wc)))
-            new[0][:len(wc)] += wc * p_up[s]
-            if s < 3:
-                lc = np.convolve(ps, p_gold2)
-                new[s + 1] = _pad(new[s + 1], max(len(new[s + 1]), len(lc)))
-                new[s + 1][:len(lc)] += lc * (1 - p_up[s])
-        pdf_state = new
-        non_none = [p for p in pdf_state if p is not None]
-        mlen = max(len(p) for p in non_none)
-        total = np.zeros(mlen, dtype=np.float64)
-        for p in non_none:
-            total[:len(p)] += p
-        result[n] = _quantiles(np.cumsum(total[:L]))
-    return result
+    results = _solve_exact(N, list(p_up), p_gold, p_gold2)
+    return {n: _quantiles(np.cumsum(results[n])) for n in range(1, N + 1)}
 
 
 # ---- F: 4-state CLT ----
