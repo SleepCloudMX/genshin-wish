@@ -39,6 +39,14 @@ ERROR_BAR = "minmax"  # "minmax" | "std3" | "none"
 N_RUNS_FAST = 50  # runs for fast solvers
 N_RUNS_SLOW = 11  # runs for slow solvers (dp-pulls, dp-state n≥150)
 
+METHOD_COLORS = {
+    "dp-pulls": "#d62728",  # red
+    "dp-path":  "#ff7f0e",  # orange
+    "dp-state": "#1f77b4",  # blue
+    "dp-golds": "#2ca02c",  # green
+    "CLT":      "#9467bd",  # purple
+}
+
 _p_cond = build_gold_pdf(CHARACTER_POOL)
 _p_up = list(CAPTURE_RADIANCE_WIN_RATE)
 
@@ -259,7 +267,8 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
                     times.append(data[name][str(n)]["time_ms"])
                     los.append(data[name][str(n)].get("time_min", times[-1]))
                     his.append(data[name][str(n)].get("time_max", times[-1]))
-            line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
+            line = ax.plot(ns, times, "o-", markersize=4, label=name,
+                          color=METHOD_COLORS.get(name))[0]
             if show_band and eb != "none":
                 ax.fill_between(ns, los, his, alpha=0.15, color=line.get_color())
 

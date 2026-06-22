@@ -28,6 +28,11 @@ TRIM_FRAC = 0.2
 ERROR_BAR = "minmax"
 N_RUNS = 50
 
+METHOD_COLORS = {
+    "dp-path":  "#ff7f0e",
+    "dp-golds": "#2ca02c",
+}
+
 
 def _dp_path_task3(n_uncertain: int, k_miss: int) -> dict[int, float]:
     """方案2: group guarantee_seq by n_std, sum probabilities."""
@@ -156,7 +161,8 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
                 times.append(data[name][str(n)]["time_ms"])
                 los.append(data[name][str(n)].get("time_min", times[-1]))
                 his.append(data[name][str(n)].get("time_max", times[-1]))
-        line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
+        line = ax.plot(ns, times, "o-", markersize=4, label=name,
+                      color=METHOD_COLORS.get(name))[0]
         if eb != "none":
             ax.fill_between(ns, los, his, alpha=0.15, color=line.get_color())
     ax.set_xlabel("$n_\\text{up}$")
