@@ -272,9 +272,9 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
             if show_band and eb != "none":
                 ax.fill_between(ns, los, his, alpha=0.15, color=line.get_color())
 
-    # Full range (without dp-pulls)
+    # Full range
     fig, ax = plt.subplots(figsize=(10, 6))
-    _draw_speed(ax, ["dp-path", "dp-state", "dp-golds", "CLT"], lambda n: True)
+    _draw_speed(ax, ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"], lambda n: True)
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison")
