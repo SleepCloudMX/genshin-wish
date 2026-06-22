@@ -167,15 +167,19 @@ $$
 
 ### 角色池
 
-三种精确算法（均为动态规划，仅状态空间不同），默认 `method="auto"` 自动选择：
+五种算法（均为精确计算，仅状态空间不同），默认 `method="auto"` 自动选择。详见 `docs/algorithms.md`。
 
-1. **dp-path（序列枚举，n_uncertain ≤ 10）**：`guarantee_seq` 枚举所有 win/loss 序列（每个位置 1=不歪 / 2=歪），序列数 $2^{n}$。对每条序列按总金数分组，加权多金 PDF 后与 pity 位移卷积。n=10 时 1024 条序列，0.5ms。
+1. **dp-pulls（逐抽 DP）**：每抽模拟 (k_miss, gold) 状态递推。O(n²·m²)，已确认无实用价值（n=10 时比 dp-path 慢 100×）。
 
-2. **dp-state（迭代卷积，n_uncertain ≤ 500）**：不枚举序列，仅维护当前各 k_miss 状态的 PDF，每步对 4 个状态与 `p_gold` / `p_gold2` 卷积并加总到下一状态。利用了「转移只取决于当前 k_miss」的马尔可夫性质，将 $2^n$ 的序列空间压缩为 O(n²·m·log) 的卷积。n=500 约 1.2s。
+2. **dp-path（序列枚举）**：枚举所有 win/loss 序列（$2^n$ 条），按金数分组加权 PDF。O(2^n)，n≤10 时 <1ms。
 
-3. **clt（正态近似，n_uncertain > 500 或手动指定）**：计算单 UP 的前两阶矩，用正态分布近似，结果标注 `method='clt'`。n > 500 时触发 `warnings.warn`。
+3. **dp-state（迭代卷积）**：按 k_miss 状态聚合 PDF，每步卷积递推。O(n²·m·log)，n=500 约 5.2s。
 
-dp-path 和 dp-state 结果数学等价（已验证 28 组参数，分位点完全一致），仅性能不同。`UpDistribution.method` 统一标记为 `"exact"`。
+4. **dp-golds（金数计数 DP）**：DP 计数 (gold, n_std) → 加权多金 PDF。O(n²) + O(n²·m) 后处理，n=500 约 111ms（比 dp-state 快 47×）。**当前 auto 默认 ≤500 使用。**
+
+5. **CLT（混合矩正态近似）**：首 UP 用初始 k_miss 矩，剩余 n−1 个用稳态矩。O(1)，n=500 误差 <0.001%。**auto 在 n>500 使用。**
+
+`UpDistribution.method` 标记 `"exact"`（方法 1-4）或 `"clt"`。
 
 **稳态分布**：以 `STABLE_P` 为权重，对四种 `k_miss` 的分布加权平均。透传 `method` 参数。
 

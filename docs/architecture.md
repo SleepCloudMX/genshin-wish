@@ -26,7 +26,8 @@ Gold PDF/CDF (_gold.py)  ←  PoolConfig (_constants.py)  ──────┘
 | `_constants.py` | `PoolConfig` 参数化池配置、稳态概率 `STABLE_P`、捕获明光胜率、CLT 阈值 | 无 |
 | `_gold.py` | 出金基础概率 PDF/CDF 构建与缓存，与池类型无关的纯数学 | `_constants.py` |
 | `_capture_radiance.py` | 捕获明光的状态转移枚举（win/loss 序列空间） | `_constants.py` |
-| `character.py` | 角色池 UP 分布：三部分分解 + CLT 近似 | `_constants.py`, `_capture_radiance.py`, `_gold.py` |
+| `_dp_golds.py` | 金数+常驻数计数 DP + 加权 PDF 后处理（方案 4） | `_constants.py`, `_gold.py`, `character.py` |
+| `character.py` | 角色池 UP 分布：多方法求解 + CLT 近似 | `_constants.py`, `_capture_radiance.py`, `_dp_golds.py`, `_gold.py`, `long_term.py` |
 | `weapon.py` | 武器池定轨分布：金数权重枚举 + 加权 PDF 合成 | `_constants.py`, `_gold.py` |
 | `standard.py` | 常驻池纯出金分布：精确卷积 + CLT 近似 | `_constants.py`, `_gold.py` |
 | `joint.py` | 独立卷积角色和武器分布，得到联合分布 | `character.py`, `weapon.py` |
@@ -91,13 +92,12 @@ class PoolConfig:
 
 | n_uncertain | 方法 | 算法 |
 |-------------|------|------|
-| ≤ 10 | dp-path | `guarantee_seq` 枚举所有 win/loss 序列（≤ 1024 条），金数分组后加权多金 PDF |
-| 10~500 | dp-state | 从 `long_term._solve_exact` 引入的迭代卷积，按 k_miss 状态聚合递推，N=500 约 1.2s |
-| > 500 | clt + warning | 正态近似，基于单 UP 前两阶矩 |
+| ≤ 500 | dp-golds | 金数计数 DP（`_dp_golds.py`）+ 加权多金 PDF，O(n²) + O(n²·m) 后处理，n=500 约 111ms |
+| > 500 | clt + warning | 混合矩 CLT 正态近似（首 UP 用初始 k_miss 矩，剩余用稳态矩）|
 
-三种方法原理见 `docs/ai-output/1-refactor/10-up-dist-dp-methods.md`，性能对比见 `output/analysis/up_dist_methods/`。
+`UpDistribution.method` 字段标记 `"exact"`（dp-path / dp-state / dp-golds）或 `"clt"`。
 
-`UpDistribution.method` 字段标记 `"exact"`（dp-path 或 dp-state）或 `"clt"`。
+dp-path 和 dp-state 保留为显式方法（`--method` 指定）。dp-golds 在任务 1 全面领先：n=500 时 111ms vs dp-state 5190ms（快 47×）。
 
 ### 4. PDF 不截断
 

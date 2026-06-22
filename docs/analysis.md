@@ -1,6 +1,8 @@
-<h1>分析与验证</h1>
+<h1>分析与验证 (ARCHIVED)</h1>
 
 [TOC]
+
+> **本文档已归档。** 其中引用的分析脚本（`clt_error.py`、`solver_compare.py`、`up_dist_methods.py`）已被 `scripts/analysis/task{1,2,3}_methods.py` 取代。算法原理与推荐方案见 `docs/algorithms.md`。
 
 开发分析工具，用于验证模型精度和比较算法方案。输出到 `output/analysis/`。
 

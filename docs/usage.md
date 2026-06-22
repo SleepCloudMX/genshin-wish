@@ -26,7 +26,7 @@ pip install -e .
 | `--pity` | INT | 0 | 已垫抽数，范围 0~89 |
 | `--loss` | INT | 0 | 连续歪次数，范围 0~3，驱动捕获明光概率 |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布。**与 `--loss`、`--guaranteed`、`--pity` 互斥**——指定 `--stable` 后这些参数被忽略 |
-| `--method` | `auto`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤10 dp-path，≤500 dp-state，>500 clt+warning）。`dp-path` 限 n_up ≤ 20 |
+| `--method` | `auto`\|`dp-golds`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤500 dp-golds，>500 clt+warning）。`dp-path` 限 n_up ≤ 20 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点，如 `0.5` = 中位数 |
 | `--quantiles` | STR | — | 多个分位点，逗号分隔，如 `"0.1,0.5,0.9"` |
@@ -148,13 +148,14 @@ state = CharacterState(
     consecutive_loss=0,  # 连续歪次数，0~3
 )
 
-# 计算分布（默认 auto：≤10 dp-path，≤500 dp-state，>500 clt+warning）
+# 计算分布（默认 auto：≤500 dp-golds，>500 clt+warning）
 dist = up_distribution(state, n_up=7)
 
 # 指定方法
-dist = up_distribution(state, n_up=100, method="dp-state")  # 强制迭代卷积
+dist = up_distribution(state, n_up=100, method="dp-golds")  # 金数 DP + 加权 PDF
 dist = up_distribution(state, n_up=600, method="clt")       # 强制 CLT 近似
-# method: "auto"（默认）/ "dp-path"（枚举，限 ≤20）/ "dp-state"（迭代卷积）/ "clt"
+# method: "auto"（默认）/ "dp-golds"（金数 DP）/ "dp-path"（枚举，限 ≤20）
+#         / "dp-state"（迭代卷积）/ "clt"
 
 # 查询
 dist.expected           # float, 期望抽数
@@ -171,7 +172,7 @@ dist.method             # str, "exact" 或 "clt"
 
 ```python
 dist_stable = stable_up_distribution(7)                # auto
-dist_stable = stable_up_distribution(500, method="dp-state")
+dist_stable = stable_up_distribution(500, method="dp-golds")
 ```
 
 ### 武器池
