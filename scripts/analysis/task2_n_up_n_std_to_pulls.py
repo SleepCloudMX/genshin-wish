@@ -74,6 +74,7 @@ def _timeit(fn, n_runs: int = 50) -> dict:
         "time_min": float(np.min(arr)),
         "time_max": float(np.max(arr)),
         "time_std": float(np.std(arr)),
+        "time_all": times,
         "n_runs": n_runs,
     }
 
@@ -82,7 +83,7 @@ def _null_metrics() -> dict:
     return {
         "n_std_values": None,
         "time_ms": None, "time_min": None, "time_max": None,
-        "time_std": None, "n_runs": 0,
+        "time_std": None, "time_all": [], "n_runs": 0,
     }
 
 
@@ -133,17 +134,26 @@ def main() -> None:
     print(f"Done — {OUTPUT}")
 
 
-def _plot_speed(data: dict, n_range: list[int], error_bar: str = "") -> None:
+def _trim_time(entry: dict, trim_frac: float) -> float | None:
+    raw = entry.get("time_all")
+    if raw and len(raw) > 0:
+        return float(trim_mean(np.array(raw), trim_frac))
+    return entry.get("time_ms")
+
+
+def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
+                trim_frac: float = 0.0) -> None:
     from matplotlib import pyplot as plt
     from genshin_wish.viz._base import setup_style
     setup_style()
 
     eb = error_bar or ERROR_BAR
+    trim = trim_frac or TRIM_FRAC
 
     fig, ax = plt.subplots(figsize=(10, 6))
     for name in ["dp-path", "dp-golds"]:
         ns = [n for n in n_range if data[name][str(n)]["time_ms"] is not None]
-        times = [data[name][str(n)]["time_ms"] for n in ns]
+        times = [_trim_time(data[name][str(n)], trim) for n in ns]
         line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
         if eb != "none":
             if eb == "std3":
@@ -198,16 +208,19 @@ if __name__ == "__main__":
     p.add_argument("--error-bar", choices=["minmax", "std3", "none"],
                    default="minmax",
                    help="Error bar style (default: minmax)")
+    p.add_argument("--trim", type=float, default=0.2,
+                   help="Trim fraction (default: 0.2)")
     args = p.parse_args()
 
     if args.plot_only:
-        print("Plot-only mode — loading data.json ...", flush=True)
+        print(f"Plot-only mode (trim={args.trim}) — loading data.json ...", flush=True)
         data = _json.loads((OUTPUT / "data.json").read_text(encoding="utf-8"))
         n_range = [int(k) for k in data["dp-golds"].keys()]
         n_range.sort()
-        _plot_speed(data, n_range, error_bar=args.error_bar)
+        _plot_speed(data, n_range, error_bar=args.error_bar, trim_frac=args.trim)
         _plot_distribution(data, n_range)
         print(f"Plots regenerated — {OUTPUT}")
     else:
         ERROR_BAR = args.error_bar
+        TRIM_FRAC = args.trim
         main()
