@@ -25,11 +25,12 @@ from genshin_wish._dp_golds import _dp_golds_full, golds_nstd_to_nstd_dist
 OUTPUT = Path("output/analysis/task3-n_up-to-n_std")
 DP_PATH_MAX_N = 20
 
+import matplotlib
+matplotlib.rcParams['axes.unicode_minus'] = False
+matplotlib.set_loglevel("error")
+
 from genshin_wish.viz._base import setup_style
 setup_style()
-
-import matplotlib
-matplotlib.set_loglevel("error")
 TRIM_FRAC = 0.2
 ERROR_BAR = "minmax"
 N_RUNS = 50

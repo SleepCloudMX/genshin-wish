@@ -39,11 +39,12 @@ METHOD_COLORS = {
 
 _p_up = CAPTURE_RADIANCE_WIN_RATE
 
+import matplotlib
+matplotlib.rcParams['axes.unicode_minus'] = False
+matplotlib.set_loglevel("error")
+
 from genshin_wish.viz._base import setup_style
 setup_style()
-
-import matplotlib
-matplotlib.set_loglevel("error")
 
 
 def _dp_path_task2(n_uncertain: int, k_miss: int) -> dict[int, UpDistribution]:
