@@ -1,5 +1,21 @@
 #!/usr/bin/env python
-"""A组: 任务1 (n_up-to-pulls) 全方法对比 — 方案1/2/3/4/CLT."""
+"""A组: 任务1 (n_up-to-pulls) — 全方法速度与精度对比.
+
+对比 dp-pulls / dp-path / dp-state / dp-golds / CLT 在 n=1..500 的性能，
+输出 speed.png、speed-detail.png、accuracy-clt-abs/、accuracy-clt-rel/、
+accuracy-clt-abs-per-n_up/ 及 data.json。
+
+使用示例::
+
+    # 默认参数 (fast=50 runs, slow=11 runs, trim=0.2)
+    python scripts/analysis/task1_n_up_to_pulls.py
+
+    # 自定义运行次数
+    python scripts/analysis/task1_n_up_to_pulls.py --n-runs-fast 100 --n-runs-slow 20
+
+    # 只重新绘图 (不重跑计算)
+    python scripts/analysis/task1_n_up_to_pulls.py --plot-only --trim 0.3 --error-bar std3
+"""
 
 import json as _json
 import time

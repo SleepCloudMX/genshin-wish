@@ -1,5 +1,15 @@
 #!/usr/bin/env python
-"""C组: 任务3 (n_up-to-n_std) 方案对比 — 方案2/4."""
+"""C组: 任务3 (n_up-to-n_std) — dp-path vs dp-golds.
+
+对比方案 2 和方案 4 在 n=1..100 时常驻数分布 P(n_std) 的一致性，
+验证方案 4 的正确性，输出 speed.png、distribution-n{10,20}.png 及 data.json。
+
+使用示例::
+
+    python scripts/analysis/task3_n_up_to_n_std.py
+    python scripts/analysis/task3_n_up_to_n_std.py --n-runs 100
+    python scripts/analysis/task3_n_up_to_n_std.py --plot-only --trim 0.3
+"""
 
 import json as _json
 import time

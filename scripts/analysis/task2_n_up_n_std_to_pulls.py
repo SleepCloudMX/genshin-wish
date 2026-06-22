@@ -1,5 +1,15 @@
 #!/usr/bin/env python
-"""B组: 任务2 (n_up-n_std-to-pulls) 方案对比 — 方案2/4."""
+"""B组: 任务2 (n_up-n_std-to-pulls) — dp-path vs dp-golds.
+
+对比方案 2 和方案 4 在 n=1..30 时按 n_std 分层的条件抽数分布，
+验证方案 4 的正确性，输出 speed.png 及 data.json。
+
+使用示例::
+
+    python scripts/analysis/task2_n_up_n_std_to_pulls.py
+    python scripts/analysis/task2_n_up_n_std_to_pulls.py --n-runs 100
+    python scripts/analysis/task2_n_up_n_std_to_pulls.py --plot-only --trim 0.3
+"""
 
 import json as _json
 import time
