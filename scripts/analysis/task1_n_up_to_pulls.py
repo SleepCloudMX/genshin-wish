@@ -162,6 +162,7 @@ def main() -> None:
     # --- Plots ---
     _plot_speed(data, n_range)
     _plot_clt_error(data, n_range)
+    _plot_clt_convergence(data, n_range)
 
     print(f"Done — {OUTPUT}")
 
@@ -204,11 +205,18 @@ def _plot_speed(data: dict, n_range: list[int]) -> None:
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison (n≤20)")
     ax.set_yscale("log")
+    ax.set_xticks([n for n in small_n if n % 2 == 0])
     ax.legend()
     ax.grid(alpha=0.3, which="both")
     fig.tight_layout()
     fig.savefig(OUTPUT / "speed-detail.png", dpi=200)
     plt.close(fig)
+
+
+def _q(entry: dict, key: float) -> float:
+    """Get quantile value, handling float/string keys from JSON round-trip."""
+    qs = entry["quantiles"]
+    return qs.get(key, qs.get(str(key), 0))
 
 
 def _plot_clt_error(data: dict, n_range: list[int]) -> None:
@@ -219,44 +227,86 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
     colors = ["#d62728", "#ff7f0e", "#2ca02c", "#1f77b4", "#2ca02c", "#ff7f0e", "#d62728"]
     linestyles = [":", "--", "-", "-", "-", "--", ":"]
 
-    # Absolute error
-    fig, ax = plt.subplots(figsize=(12, 7))
-    for qi, q in enumerate(QUANTILES):
-        ns = n_range
-        errors = []
-        for n in ns:
-            e = data["dp-state"][str(n)]["quantiles"][q] / n
-            c = data["CLT"][str(n)]["quantiles"][q] / n
-            errors.append(abs(e - c))
-        ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
-                linewidth=2, label=f"{int(q * 100)}%")
-    ax.set_title("Task 1 CLT absolute error (vs dp-state)", fontsize=14)
-    ax.set_xlabel("$n_\\text{up}$")
-    ax.set_ylabel("error (pulls / UP)")
-    ax.legend(loc="upper right", ncol=4, fontsize=8)
-    ax.grid(alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(OUTPUT / "accuracy-clt-abs.png", dpi=200)
-    plt.close(fig)
+    n_early = [n for n in n_range if n <= 20]
+    n_late = [n for n in n_range if n >= 10]
 
-    # Relative error
-    fig, ax = plt.subplots(figsize=(12, 7))
+    for label, ns, filename in [
+        ("1–20", n_early, "accuracy-clt-abs-early.png"),
+        ("10–500", n_late, "accuracy-clt-abs-late.png"),
+    ]:
+        fig, ax = plt.subplots(figsize=(12, 7))
+        for qi, q in enumerate(QUANTILES):
+            errors = []
+            for n in ns:
+                e = _q(data["dp-state"][str(n)], q) / n
+                c = _q(data["CLT"][str(n)], q) / n
+                errors.append(abs(e - c))
+            ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
+                    linewidth=2, label=f"{int(q * 100)}%")
+        ax.set_title(f"Task 1 CLT absolute error (n={label})", fontsize=14)
+        ax.set_xlabel("$n_\\text{up}$")
+        ax.set_ylabel("error (pulls / UP)")
+        ax.legend(loc="upper right", ncol=4, fontsize=8)
+        ax.grid(alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(OUTPUT / filename, dpi=200)
+        plt.close(fig)
+
+    for label, ns, filename in [
+        ("1–20", n_early, "accuracy-clt-rel-early.png"),
+        ("10–500", n_late, "accuracy-clt-rel-late.png"),
+    ]:
+        fig, ax = plt.subplots(figsize=(12, 7))
+        for qi, q in enumerate(QUANTILES):
+            errors = []
+            for n in ns:
+                e = _q(data["dp-state"][str(n)], q) / n
+                c = _q(data["CLT"][str(n)], q) / n
+                errors.append(abs(e - c) / max(e, 1.0) * 100)
+            ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
+                    linewidth=2, label=f"{int(q * 100)}%")
+        ax.set_title(f"Task 1 CLT relative error (n={label})", fontsize=14)
+        ax.set_xlabel("$n_\\text{up}$")
+        ax.set_ylabel("relative error (%)")
+        ax.legend(loc="upper right", ncol=4, fontsize=8)
+        ax.grid(alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(OUTPUT / filename, dpi=200)
+        plt.close(fig)
+
+
+def _plot_clt_convergence(data: dict, n_range: list[int]) -> None:
+    """Per-UP quantile convergence (like solver_compare/convergence.png)."""
+    from matplotlib import pyplot as plt
+    from genshin_wish.viz._base import setup_style
+    setup_style()
+
+    colors = ["#d62728", "#ff7f0e", "#2ca02c", "#1f77b4", "#2ca02c", "#ff7f0e", "#d62728"]
+    linestyles = [":", "--", "-", "-", "-", "--", ":"]
+    mu = 90.334  # theoretical steady-state per-UP mean (post-5.0)
+
+    n_focus = [n for n in n_range if n >= 5]
+
+    fig, ax = plt.subplots(figsize=(14, 7))
     for qi, q in enumerate(QUANTILES):
-        ns = n_range
-        errors = []
-        for n in ns:
-            e = data["dp-state"][str(n)]["quantiles"][q] / n
-            c = data["CLT"][str(n)]["quantiles"][q] / n
-            errors.append(abs(e - c) / max(e, 1.0) * 100)
-        ax.plot(ns, errors, color=colors[qi], linestyle=linestyles[qi],
-                linewidth=2, label=f"{int(q * 100)}%")
-    ax.set_title("Task 1 CLT relative error (vs dp-state)", fontsize=14)
+        vals = []
+        for n in n_focus:
+            vals.append(_q(data["dp-state"][str(n)], q) / n)
+        ax.plot(n_focus, vals, color=colors[qi], linestyle=linestyles[qi],
+                linewidth=1.5, label=f"exact {int(q * 100)}%")
+    # CLT overlay for median
+    clt_med = [_q(data["CLT"][str(n)], 0.5) / n for n in n_focus]
+    ax.plot(n_focus, clt_med, "k--", linewidth=1.5, alpha=0.5, label="CLT 50%")
+    ax.axhline(mu, color="gray", linestyle=":", alpha=0.5, linewidth=1)
+    ax.text(n_focus[-1] * 0.97, mu + 0.1, f"{mu:.1f}", ha="right", fontsize=9, color="gray")
+    ax.set_title("Task 1 per-UP quantile convergence (dp-state)", fontsize=14)
     ax.set_xlabel("$n_\\text{up}$")
-    ax.set_ylabel("relative error (%)")
+    ax.set_ylabel("pulls / UP")
+    ax.set_ylim(89, 92)
     ax.legend(loc="upper right", ncol=4, fontsize=8)
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(OUTPUT / "accuracy-clt-rel.png", dpi=200)
+    fig.savefig(OUTPUT / "convergence.png", dpi=200)
     plt.close(fig)
 
 
