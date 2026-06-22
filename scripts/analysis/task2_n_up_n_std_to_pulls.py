@@ -20,6 +20,7 @@ QUANTILES = [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
 DP_PATH_MAX_N = 20
 TRIM_FRAC = 0.2
 ERROR_BAR = "minmax"
+N_RUNS = 50
 
 _p_up = CAPTURE_RADIANCE_WIN_RATE
 
@@ -97,11 +98,11 @@ def main() -> None:
     for n_up in n_range:
         print(f"  n={n_up} ({n_up}/{n_range[-1]})", flush=True)
 
-        # --- dp-path (50 runs) ---
+        # --- dp-path ---
         if n_up <= DP_PATH_MAX_N:
             def _run_path():
                 _dp_path_task2(n_up, 0)
-            timing = _timeit(_run_path, n_runs=50)
+            timing = _timeit(_run_path, n_runs=N_RUNS)
             dists = _dp_path_task2(n_up, 0)
             data["dp-path"][str(n_up)] = {
                 "n_std_values": _metrics_per_nstd(dists),
@@ -110,11 +111,11 @@ def main() -> None:
         else:
             data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-golds (50 runs) ---
+        # --- dp-golds ---
         def _run_golds():
             gn = _dp_golds_full(n_up, 0)
             golds_nstd_to_pulls(gn)
-        timing = _timeit(_run_golds, n_runs=50)
+        timing = _timeit(_run_golds, n_runs=N_RUNS)
         gn = _dp_golds_full(n_up, 0)
         dists = golds_nstd_to_pulls(gn)
         data["dp-golds"][str(n_up)] = {
@@ -210,6 +211,8 @@ if __name__ == "__main__":
                    help="Error bar style (default: minmax)")
     p.add_argument("--trim", type=float, default=0.2,
                    help="Trim fraction (default: 0.2)")
+    p.add_argument("--n-runs", type=int, default=50,
+                   help="Number of runs per solver (default: 50)")
     args = p.parse_args()
 
     if args.plot_only:
@@ -223,4 +226,5 @@ if __name__ == "__main__":
     else:
         ERROR_BAR = args.error_bar
         TRIM_FRAC = args.trim
+        N_RUNS = args.n_runs
         main()

@@ -20,6 +20,8 @@ DP_PULLS_MAX_N = 7
 DP_PATH_MAX_N = 20
 TRIM_FRAC = 0.2  # trim 20% from each tail
 ERROR_BAR = "minmax"  # "minmax" | "std3" | "none"
+N_RUNS_FAST = 50  # runs for fast solvers
+N_RUNS_SLOW = 11  # runs for slow solvers (dp-pulls, dp-state n≥150)
 
 _p_cond = build_gold_pdf(CHARACTER_POOL)
 _p_up = list(CAPTURE_RADIANCE_WIN_RATE)
@@ -133,47 +135,47 @@ def main() -> None:
         print(f"  n={n_up} ({ni+1}/{len(n_range)})", flush=True)
         state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
 
-        # --- dp-pulls (11 runs) ---
+        # --- dp-pulls ---
         if n_up <= DP_PULLS_MAX_N:
             def _run_pulls():
                 _dp_pulls_task1(n_up, 0)
-            timing = _timeit(_run_pulls, n_runs=11)
+            timing = _timeit(_run_pulls, n_runs=N_RUNS_SLOW)
             pdf = _dp_pulls_task1(n_up, 0)
             data["dp-pulls"][str(n_up)] = _pdf_metrics(pdf, timing)
         else:
             data["dp-pulls"][str(n_up)] = _null_metrics()
 
-        # --- dp-path (50 runs — fast) ---
+        # --- dp-path ---
         if n_up <= DP_PATH_MAX_N:
             def _run_path():
                 up_distribution(state, n_up, method="dp-path")
-            timing = _timeit(_run_path, n_runs=50)
+            timing = _timeit(_run_path, n_runs=N_RUNS_FAST)
             dist = up_distribution(state, n_up, method="dp-path")
             data["dp-path"][str(n_up)] = _dist_metrics(dist, timing)
         else:
             data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-state (11 at large n, 50 otherwise) ---
-        nr_state = 11 if n_up >= 150 else 50
+        # --- dp-state ---
+        nr_state = N_RUNS_SLOW if n_up >= 150 else N_RUNS_FAST
         def _run_state():
             up_distribution(state, n_up, method="dp-state")
         timing = _timeit(_run_state, n_runs=nr_state)
         dist = up_distribution(state, n_up, method="dp-state")
         data["dp-state"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- dp-golds (50 runs — fast) ---
+        # --- dp-golds ---
         def _run_golds():
             gp = _dp_golds_task1(n_up, 0)
             golds_to_pulls(gp)
-        timing = _timeit(_run_golds, n_runs=50)
+        timing = _timeit(_run_golds, n_runs=N_RUNS_FAST)
         gp = _dp_golds_task1(n_up, 0)
         dist = golds_to_pulls(gp)
         data["dp-golds"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- CLT (50 runs — fast) ---
+        # --- CLT ---
         def _run_clt():
             up_distribution(state, n_up, method="clt")
-        timing = _timeit(_run_clt, n_runs=50)
+        timing = _timeit(_run_clt, n_runs=N_RUNS_FAST)
         dist = up_distribution(state, n_up, method="clt")
         data["CLT"][str(n_up)] = _dist_metrics(dist, timing)
 
@@ -372,6 +374,10 @@ if __name__ == "__main__":
                    help="Error bar style (default: minmax)")
     p.add_argument("--trim", type=float, default=0.2,
                    help="Trim fraction for trimmed mean (default: 0.2)")
+    p.add_argument("--n-runs-fast", type=int, default=50,
+                   help="Runs for fast solvers (default: 50)")
+    p.add_argument("--n-runs-slow", type=int, default=11,
+                   help="Runs for slow solvers (default: 11)")
     args = p.parse_args()
 
     if args.plot_only:
@@ -386,4 +392,6 @@ if __name__ == "__main__":
     else:
         ERROR_BAR = args.error_bar
         TRIM_FRAC = args.trim
+        N_RUNS_FAST = args.n_runs_fast
+        N_RUNS_SLOW = args.n_runs_slow
         main()
