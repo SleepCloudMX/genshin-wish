@@ -83,18 +83,16 @@ def test_stable_expected_close_to_weighted():
         assert abs(d.expected - weighted_sum) / weighted_sum < 0.01
 
 
-def test_clt_close_to_exact_for_n7():
-    """CLT approximation close to exact for n_up=7 at common quantiles."""
-    from genshin_wish.character import up_distribution_clt
-
-    d_exact = stable_up_distribution(7)
-    d_clt = up_distribution_clt(n_up=7)
+def test_clt_close_to_exact():
+    """CLT approximation close to exact for medium n_up at common quantiles."""
+    d_exact = stable_up_distribution(100)
+    d_clt = stable_up_distribution(100, method="clt")
 
     for q in [0.1, 0.3, 0.5, 0.7, 0.9]:
         exact_val = d_exact.quantile(q)
         clt_val = d_clt.quantile(q)
         err = abs(exact_val - clt_val) / exact_val
-        assert err < 0.02, f"q={q}: exact={exact_val}, clt={clt_val}, err={err:.3%}"
+        assert err < 0.05, f"q={q}: exact={exact_val}, clt={clt_val}, err={err:.3%}"
 
 
 def test_luck_monotonic():

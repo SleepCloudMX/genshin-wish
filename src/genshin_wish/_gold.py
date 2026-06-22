@@ -2,8 +2,6 @@
 
 import pickle
 from pathlib import Path
-from functools import cache
-
 import numpy as np
 
 from ._constants import PoolConfig

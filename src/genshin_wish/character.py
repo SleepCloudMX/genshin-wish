@@ -226,7 +226,11 @@ def _up_distribution_clt_impl(
     lo = max(0, int(mu_n - 6 * std_n))
     hi = int(mu_n + 6 * std_n)
     edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
-    pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
+    pdf_clt = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
+
+    # Zero-pad to align pull counts with array indices
+    pdf = np.zeros(hi + 1, dtype=np.float64)
+    pdf[lo : hi + 1] = pdf_clt
 
     # Pity shift + guaranteed gold
     shifted_first = np.insert(
@@ -239,36 +243,3 @@ def _up_distribution_clt_impl(
     cdf = np.cumsum(result_pdf)
     return UpDistribution(pdf=result_pdf, cdf=cdf, method="clt")
 
-
-def up_distribution_clt(
-    state: CharacterState | None = None, n_up: int = 1
-) -> UpDistribution:
-    """CLT approximation for large *n_up*.
-
-    Uses the first two moments of a single UP distribution and the
-    normal approximation with continuity correction.
-    Suitable when n_up exceeds CLT_THRESHOLD.
-    """
-    if state is None:
-        # Steady-state: weighted average of per-state moments
-        mu_1 = 0.0
-        m2_sum = 0.0
-        for k_miss, weight in enumerate(STABLE_P):
-            s = CharacterState(guaranteed=False, pity=0, consecutive_loss=k_miss)
-            d = up_distribution(s, 1, method="dp-state")
-            m1 = d.expected
-            m2 = float(np.sum((np.arange(len(d.pdf)) ** 2) * d.pdf))
-            mu_1 += weight * m1
-            m2_sum += weight * m2
-        var_1 = m2_sum - mu_1**2
-
-        mu_n = n_up * mu_1
-        std_n = np.sqrt(n_up * var_1)
-        lo = max(0, int(mu_n - 6 * std_n))
-        hi = int(mu_n + 6 * std_n)
-        edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
-        pdf = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
-        cdf = np.cumsum(pdf)
-        return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
-
-    return _up_distribution_clt_impl(state, n_up)
