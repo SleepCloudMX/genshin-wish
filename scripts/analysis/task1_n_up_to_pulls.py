@@ -214,12 +214,20 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _trim_time(entry: dict, trim_frac: float) -> float | None:
-    """Re-trim from raw timings, or use stored value if no raw data."""
-    raw = entry.get("time_all")
-    if raw and len(raw) > 0:
-        return float(trim_mean(np.array(raw), trim_frac))
-    return entry.get("time_ms")
+def _trimmed_stats(raw: list[float], trim_frac: float) -> dict:
+    """Return {mean, min, max, std} from the trimmed subset of *raw*."""
+    arr = np.sort(np.array(raw))
+    n = len(arr)
+    n_cut = int(n * trim_frac)
+    if n_cut * 2 >= n:
+        n_cut = (n - 1) // 2
+    trimmed = arr[n_cut : n - n_cut]
+    return {
+        "mean": float(np.mean(trimmed)),
+        "min": float(np.min(trimmed)),
+        "max": float(np.max(trimmed)),
+        "std": float(np.std(trimmed)),
+    }
 
 
 def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
@@ -234,17 +242,26 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
     def _draw_speed(ax, names, ns_filter, show_band=True):
         for name in names:
             ns = [n for n in n_range if ns_filter(n) and data[name][str(n)]["time_ms"] is not None]
-            times = [_trim_time(data[name][str(n)], trim) for n in ns]
+            times = []
+            los = []
+            his = []
+            for n in ns:
+                raw = data[name][str(n)].get("time_all")
+                if raw and len(raw) > 0:
+                    stats = _trimmed_stats(raw, trim)
+                    times.append(stats["mean"])
+                    los.append(stats["min"])
+                    his.append(stats["max"])
+                    if eb == "std3":
+                        los[-1] = max(0, stats["mean"] - 3 * stats["std"])
+                        his[-1] = stats["mean"] + 3 * stats["std"]
+                else:
+                    times.append(data[name][str(n)]["time_ms"])
+                    los.append(data[name][str(n)].get("time_min", times[-1]))
+                    his.append(data[name][str(n)].get("time_max", times[-1]))
             line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
             if show_band and eb != "none":
-                if eb == "std3":
-                    t_std = [data[name][str(n)].get("time_std", 0) for n in ns]
-                    lo = [max(0, t - 3 * s) for t, s in zip(times, t_std)]
-                    hi = [t + 3 * s for t, s in zip(times, t_std)]
-                else:  # minmax
-                    lo = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
-                    hi = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
-                ax.fill_between(ns, lo, hi, alpha=0.15, color=line.get_color())
+                ax.fill_between(ns, los, his, alpha=0.15, color=line.get_color())
 
     # Full range (without dp-pulls)
     fig, ax = plt.subplots(figsize=(10, 6))
