@@ -50,6 +50,12 @@ METHOD_COLORS = {
 _p_cond = build_gold_pdf(CHARACTER_POOL)
 _p_up = list(CAPTURE_RADIANCE_WIN_RATE)
 
+from genshin_wish.viz._base import setup_style
+setup_style()
+
+import matplotlib
+matplotlib.set_loglevel("error")
+
 
 # ---------------------------------------------------------------------------
 # 方案1 (dp-pulls) — per-pull DP
@@ -241,8 +247,7 @@ def _trimmed_stats(raw: list[float], trim_frac: float) -> dict:
 def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
                 trim_frac: float = 0.0) -> None:
     from matplotlib import pyplot as plt
-    from genshin_wish.viz._base import setup_style
-    setup_style()
+    plt.rcParams['axes.unicode_minus'] = False
 
     eb = error_bar or ERROR_BAR
     trim = trim_frac or TRIM_FRAC
@@ -311,8 +316,7 @@ def _q(entry: dict, key: float) -> float:
 
 def _plot_clt_error(data: dict, n_range: list[int]) -> None:
     from matplotlib import pyplot as plt
-    from genshin_wish.viz._base import setup_style
-    setup_style()
+    plt.rcParams['axes.unicode_minus'] = False
 
     colors = ["#d62728", "#ff7f0e", "#2ca02c", "#1f77b4", "#2ca02c", "#ff7f0e", "#d62728"]
     linestyles = [":", "--", "-", "-", "-", "--", ":"]
@@ -372,8 +376,7 @@ def _plot_clt_error(data: dict, n_range: list[int]) -> None:
 def _plot_clt_per_n(data: dict, n_range: list[int]) -> None:
     """CLT per-UP absolute error (pulls divided by n_up)."""
     from matplotlib import pyplot as plt
-    from genshin_wish.viz._base import setup_style
-    setup_style()
+    plt.rcParams['axes.unicode_minus'] = False
 
     colors = ["#d62728", "#ff7f0e", "#2ca02c", "#1f77b4", "#2ca02c", "#ff7f0e", "#d62728"]
     linestyles = [":", "--", "-", "-", "-", "--", ":"]

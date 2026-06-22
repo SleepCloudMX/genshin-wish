@@ -24,6 +24,12 @@ from genshin_wish._dp_golds import _dp_golds_full, golds_nstd_to_nstd_dist
 
 OUTPUT = Path("output/analysis/task3-n_up-to-n_std")
 DP_PATH_MAX_N = 20
+
+from genshin_wish.viz._base import setup_style
+setup_style()
+
+import matplotlib
+matplotlib.set_loglevel("error")
 TRIM_FRAC = 0.2
 ERROR_BAR = "minmax"
 N_RUNS = 50
@@ -135,8 +141,7 @@ def _trimmed_stats(raw: list[float], trim_frac: float) -> dict:
 def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
                 trim_frac: float = 0.0) -> None:
     from matplotlib import pyplot as plt
-    from genshin_wish.viz._base import setup_style
-    setup_style()
+    plt.rcParams['axes.unicode_minus'] = False
 
     eb = error_bar or ERROR_BAR
     trim = trim_frac or TRIM_FRAC

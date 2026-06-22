@@ -39,6 +39,12 @@ METHOD_COLORS = {
 
 _p_up = CAPTURE_RADIANCE_WIN_RATE
 
+from genshin_wish.viz._base import setup_style
+setup_style()
+
+import matplotlib
+matplotlib.set_loglevel("error")
+
 
 def _dp_path_task2(n_uncertain: int, k_miss: int) -> dict[int, UpDistribution]:
     """方案2: group guarantee_seq by n_std, then condition."""
@@ -168,8 +174,7 @@ def _trimmed_stats(raw: list[float], trim_frac: float) -> dict:
 def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
                 trim_frac: float = 0.0) -> None:
     from matplotlib import pyplot as plt
-    from genshin_wish.viz._base import setup_style
-    setup_style()
+    plt.rcParams['axes.unicode_minus'] = False
 
     eb = error_bar or ERROR_BAR
     trim = trim_frac or TRIM_FRAC
