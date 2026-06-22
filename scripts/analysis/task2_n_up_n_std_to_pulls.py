@@ -59,6 +59,26 @@ def _metrics_per_nstd(dists: dict[int, UpDistribution]) -> dict:
     return out
 
 
+def _timeit(fn, n_runs: int = 5) -> dict:
+    times: list[float] = []
+    for _ in range(n_runs):
+        t0 = time.perf_counter()
+        fn()
+        times.append((time.perf_counter() - t0) * 1000)
+    return {
+        "time_ms": float(np.median(times)),
+        "time_min": float(np.min(times)),
+        "time_max": float(np.max(times)),
+    }
+
+
+def _null_metrics() -> dict:
+    return {
+        "n_std_values": None,
+        "time_ms": None, "time_min": None, "time_max": None,
+    }
+
+
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
@@ -69,29 +89,29 @@ def main() -> None:
     for n_up in n_range:
         print(f"  n={n_up} ({n_up}/{n_range[-1]})", flush=True)
 
-        # --- dp-path ---
+        # --- dp-path (5 runs) ---
         if n_up <= DP_PATH_MAX_N:
-            t0 = time.perf_counter()
+            def _run_path():
+                _dp_path_task2(n_up, 0)
+            timing = _timeit(_run_path, n_runs=5)
             dists = _dp_path_task2(n_up, 0)
-            t = (time.perf_counter() - t0) * 1000
             data["dp-path"][str(n_up)] = {
                 "n_std_values": _metrics_per_nstd(dists),
-                "time_ms": t,
+                **timing,
             }
         else:
-            data["dp-path"][str(n_up)] = {
-                "n_std_values": None,
-                "time_ms": None,
-            }
+            data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-golds ---
-        t0 = time.perf_counter()
-        gold_nstd = _dp_golds_full(n_up, 0)
-        dists = golds_nstd_to_pulls(gold_nstd)
-        t = (time.perf_counter() - t0) * 1000
+        # --- dp-golds (5 runs) ---
+        def _run_golds():
+            gn = _dp_golds_full(n_up, 0)
+            golds_nstd_to_pulls(gn)
+        timing = _timeit(_run_golds, n_runs=5)
+        gn = _dp_golds_full(n_up, 0)
+        dists = golds_nstd_to_pulls(gn)
         data["dp-golds"][str(n_up)] = {
             "n_std_values": _metrics_per_nstd(dists),
-            "time_ms": t,
+            **timing,
         }
 
     (OUTPUT / "data.json").write_text(
@@ -115,7 +135,10 @@ def _plot_speed(data: dict, n_range: list[int]) -> None:
     for name in ["dp-path", "dp-golds"]:
         ns = [n for n in n_range if data[name][str(n)]["time_ms"] is not None]
         times = [data[name][str(n)]["time_ms"] for n in ns]
-        ax.plot(ns, times, "o-", markersize=4, label=name)
+        line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
+        t_min = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
+        t_max = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
+        ax.fill_between(ns, t_min, t_max, alpha=0.15, color=line.get_color())
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 2 speed comparison")

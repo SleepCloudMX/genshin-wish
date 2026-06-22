@@ -67,16 +67,45 @@ def _dp_pulls_task1(n_uncertain: int, k_miss_start: int) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Timing helper
+# Timing helpers
 # ---------------------------------------------------------------------------
 
 
-def _metrics(pdf: np.ndarray, t_ms: float) -> dict:
+def _timeit(fn, n_runs: int = 5) -> dict:
+    """Run *fn* n_runs times, return {time_ms, time_min, time_max}."""
+    times: list[float] = []
+    for _ in range(n_runs):
+        t0 = time.perf_counter()
+        fn()
+        times.append((time.perf_counter() - t0) * 1000)
+    return {
+        "time_ms": float(np.median(times)),
+        "time_min": float(np.min(times)),
+        "time_max": float(np.max(times)),
+    }
+
+
+def _dist_metrics(dist, timing: dict) -> dict:
+    return {
+        "expected": dist.expected,
+        "quantiles": {q: dist.quantile(q) for q in QUANTILES},
+        **timing,
+    }
+
+
+def _pdf_metrics(pdf: np.ndarray, timing: dict) -> dict:
     cdf = np.cumsum(pdf)
     return {
         "expected": float(np.sum(np.arange(len(pdf)) * pdf)),
         "quantiles": {q: int(np.searchsorted(cdf, q)) for q in QUANTILES},
-        "time_ms": t_ms,
+        **timing,
+    }
+
+
+def _null_metrics() -> dict:
+    return {
+        "expected": None, "quantiles": None,
+        "time_ms": None, "time_min": None, "time_max": None,
     }
 
 
@@ -96,62 +125,48 @@ def main() -> None:
         print(f"  n={n_up} ({ni+1}/{len(n_range)})", flush=True)
         state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
 
-        # --- dp-pulls ---
+        # --- dp-pulls (1 run — too slow) ---
         if n_up <= DP_PULLS_MAX_N:
-            t0 = time.perf_counter()
+            def _run_pulls():
+                return _dp_pulls_task1(n_up, 0)
+            timing = _timeit(_run_pulls, n_runs=1)
             pdf = _dp_pulls_task1(n_up, 0)
-            t = (time.perf_counter() - t0) * 1000
-            data["dp-pulls"][str(n_up)] = _metrics(pdf, t)
+            data["dp-pulls"][str(n_up)] = _pdf_metrics(pdf, timing)
         else:
-            data["dp-pulls"][str(n_up)] = {
-                "expected": None, "quantiles": None, "time_ms": None
-            }
+            data["dp-pulls"][str(n_up)] = _null_metrics()
 
-        # --- dp-path ---
+        # --- dp-path (5 runs) ---
         if n_up <= DP_PATH_MAX_N:
-            t0 = time.perf_counter()
+            def _run_path():
+                up_distribution(state, n_up, method="dp-path")
+            timing = _timeit(_run_path, n_runs=5)
             dist = up_distribution(state, n_up, method="dp-path")
-            t = (time.perf_counter() - t0) * 1000
-            data["dp-path"][str(n_up)] = {
-                "expected": dist.expected,
-                "quantiles": {q: dist.quantile(q) for q in QUANTILES},
-                "time_ms": t,
-            }
+            data["dp-path"][str(n_up)] = _dist_metrics(dist, timing)
         else:
-            data["dp-path"][str(n_up)] = {
-                "expected": None, "quantiles": None, "time_ms": None
-            }
+            data["dp-path"][str(n_up)] = _null_metrics()
 
-        # --- dp-state ---
-        t0 = time.perf_counter()
+        # --- dp-state (3 runs — expensive at large n) ---
+        def _run_state():
+            up_distribution(state, n_up, method="dp-state")
+        timing = _timeit(_run_state, n_runs=3)
         dist = up_distribution(state, n_up, method="dp-state")
-        t = (time.perf_counter() - t0) * 1000
-        data["dp-state"][str(n_up)] = {
-            "expected": dist.expected,
-            "quantiles": {q: dist.quantile(q) for q in QUANTILES},
-            "time_ms": t,
-        }
+        data["dp-state"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- dp-golds ---
-        t0 = time.perf_counter()
-        gold_probs = _dp_golds_task1(n_up, 0)
-        dist = golds_to_pulls(gold_probs)
-        t = (time.perf_counter() - t0) * 1000
-        data["dp-golds"][str(n_up)] = {
-            "expected": dist.expected,
-            "quantiles": {q: dist.quantile(q) for q in QUANTILES},
-            "time_ms": t,
-        }
+        # --- dp-golds (5 runs) ---
+        def _run_golds():
+            gp = _dp_golds_task1(n_up, 0)
+            golds_to_pulls(gp)
+        timing = _timeit(_run_golds, n_runs=5)
+        gp = _dp_golds_task1(n_up, 0)
+        dist = golds_to_pulls(gp)
+        data["dp-golds"][str(n_up)] = _dist_metrics(dist, timing)
 
-        # --- CLT ---
-        t0 = time.perf_counter()
+        # --- CLT (5 runs) ---
+        def _run_clt():
+            up_distribution(state, n_up, method="clt")
+        timing = _timeit(_run_clt, n_runs=5)
         dist = up_distribution(state, n_up, method="clt")
-        t = (time.perf_counter() - t0) * 1000
-        data["CLT"][str(n_up)] = {
-            "expected": dist.expected,
-            "quantiles": {q: dist.quantile(q) for q in QUANTILES},
-            "time_ms": t,
-        }
+        data["CLT"][str(n_up)] = _dist_metrics(dist, timing)
 
     # Save JSON
     (OUTPUT / "data.json").write_text(
@@ -177,12 +192,19 @@ def _plot_speed(data: dict, n_range: list[int]) -> None:
     from genshin_wish.viz._base import setup_style
     setup_style()
 
-    # Speed (without dp-pulls)
+    def _draw_speed(ax, names, ns_filter, show_band=True):
+        for name in names:
+            ns = [n for n in n_range if ns_filter(n) and data[name][str(n)]["time_ms"] is not None]
+            times = [data[name][str(n)]["time_ms"] for n in ns]
+            line = ax.plot(ns, times, "o-", markersize=4, label=name)[0]
+            if show_band:
+                t_min = [data[name][str(n)].get("time_min", t) for n, t in zip(ns, times)]
+                t_max = [data[name][str(n)].get("time_max", t) for n, t in zip(ns, times)]
+                ax.fill_between(ns, t_min, t_max, alpha=0.15, color=line.get_color())
+
+    # Full range (without dp-pulls)
     fig, ax = plt.subplots(figsize=(10, 6))
-    for name in ["dp-path", "dp-state", "dp-golds", "CLT"]:
-        ns = [n for n in n_range if data[name][str(n)]["time_ms"] is not None]
-        times = [data[name][str(n)]["time_ms"] for n in ns]
-        ax.plot(ns, times, "o-", markersize=4, label=name)
+    _draw_speed(ax, ["dp-path", "dp-state", "dp-golds", "CLT"], lambda n: True)
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison")
@@ -197,10 +219,8 @@ def _plot_speed(data: dict, n_range: list[int]) -> None:
     # Detail (with dp-pulls, small n)
     fig, ax = plt.subplots(figsize=(10, 6))
     small_n = [n for n in n_range if n <= 20]
-    for name in ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"]:
-        ns = [n for n in small_n if data[name][str(n)]["time_ms"] is not None]
-        times = [data[name][str(n)]["time_ms"] for n in ns]
-        ax.plot(ns, times, "o-", markersize=4, label=name)
+    _draw_speed(ax, ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"],
+                lambda n: n <= 20, show_band=False)
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison (n≤20)")
