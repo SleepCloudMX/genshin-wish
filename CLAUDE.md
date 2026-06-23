@@ -29,7 +29,8 @@ src/genshin_wish/       # Python 包
 
 ref/                    # 旧参考代码，只读，禁止修改
 tests/                  # pytest
-scripts/plot_all.py     # 一键生成全部图表
+scripts/main_plot.py    # 一键生成全部图表
+scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
 temp/                   # 临时测试缓存，已 gitignore，仅在不宜污染 .cache/ 时使用
@@ -46,7 +47,7 @@ pip install -e .
 python -m pytest tests/ -v
 
 # 生成图表
-python scripts/plot_all.py
+python scripts/main_plot.py
 ```
 
 测试环境：`conda activate ai`（Python 3.12，numpy 2.x，scipy 1.16，matplotlib 3.10）
