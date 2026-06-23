@@ -4,17 +4,13 @@ from pathlib import Path
 
 import numpy as np
 
-# Must set before importing pyplot, otherwise font init caches wrong minus glyph.
-import matplotlib
-matplotlib.rcParams['axes.unicode_minus'] = False
-
 from matplotlib import pyplot as plt
 
 
 def setup_style() -> None:
     """Apply global matplotlib style for consistent chart appearance."""
     plt.rcParams.update({
-        'font.sans-serif': ['SimHei'],
+        'font.sans-serif': ['Microsoft YaHei'],
         'axes.unicode_minus': False,
         'figure.dpi': 150,
         'savefig.dpi': 300,
