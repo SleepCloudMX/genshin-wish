@@ -84,7 +84,7 @@ print(f"800 抽达成概率: {dist.probability(800) * 100:.1f}%")
 
 > 武器池、常驻池、联合计算的 Python API 见 **[使用指南](docs/usage.md)**。
 
-## 生成图表
+## 批量生成图表
 
 ```bash
 python scripts/main_plot.py          # 全部图表
@@ -92,7 +92,7 @@ python scripts/main_plot.py -c       # 仅角色池
 python scripts/main_plot.py -n       # 仅 n_std 分布
 ```
 
-图表输出到 `output/`。分析脚本见 `scripts/main_analysis.py`。
+图表输出到 `output/`。分析脚本见 `scripts/main_analysis.py`。更自由的单图绘制见 [单图绘制](#5-单图绘制)。
 
 ## 文档
 

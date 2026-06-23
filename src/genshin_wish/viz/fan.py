@@ -23,6 +23,8 @@ def _build_configs(interval_set: int) -> list[dict]:
 # 3-interval rendering
 # ---------------------------------------------------------------------------
 def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
+    from genshin_wish.viz._base import setup_style
+    setup_style()
     alpha_configs = _build_configs(3)
 
     up_axis = np.arange(1, max_n_up + 1)
@@ -62,7 +64,7 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
         plt.plot(up_axis, all_bounds[a], color=color, **line_style)
 
     plt.plot(up_axis, expectations_avg, color='black', linewidth=2, marker='o',
-             markersize=6, label='单位平均期望', zorder=10)
+             markersize=6, label='期望', zorder=10)
 
     for i, n in enumerate(up_axis):
         vals_to_plot = [
@@ -77,8 +79,8 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
         last_y = 999.0
         for val, _label, col in vals_to_plot:
             y_pos = val
-            if last_y - val < 4:
-                y_pos = val - 2
+            if last_y - val < 5:
+                y_pos = val - 3
             plt.text(n + 0.05, y_pos, f"{val:.1f}", color=col, ha='left',
                      va='center', fontsize=8, fontweight='bold', alpha=0.9)
             last_y = y_pos
@@ -103,6 +105,8 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
 # 5-interval rendering
 # ---------------------------------------------------------------------------
 def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
+    from genshin_wish.viz._base import setup_style
+    setup_style()
     alpha_configs = _build_configs(5)  # sorted inner→outer: 0.40,0.30,0.20,0.10,0.01
 
     up_axis = np.arange(1, max_n_up + 1)
@@ -139,7 +143,7 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
                              alpha=0.25, label=alpha_configs[i]['label'], zorder=5 - i)
 
     plt.plot(up_axis, expectations_avg, color='black', linewidth=2.5, marker='s',
-             markersize=5, label='单位平均期望', zorder=10)
+             markersize=5, label='期望', zorder=10)
 
     for i, n in enumerate(up_axis):
         vals = [(all_bounds[a][i], f"{int(a * 100)}%", a) for a in target_alphas]

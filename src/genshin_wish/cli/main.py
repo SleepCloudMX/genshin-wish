@@ -317,14 +317,16 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str) -
 
 @plot.command()
 @click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def nstd_bar(n_up: int, loss: int) -> None:
+def nstd_bar(n_up: int, guaranteed: bool, loss: int) -> None:
     """n_std 分布柱状图 (仅支持 pity=0)"""
     from genshin_wish.viz.nstd import plot_nstd_bar
 
-    state = CharacterState(guaranteed=False, pity=0, consecutive_loss=loss)
+    state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
     dist = n_std_distribution(state, n_up)
-    path = CLI_OUTPUT / f"nstd-bar-n{n_up}-loss{loss}.png"
+    suffix = f"-guaranteed" if guaranteed else ""
+    path = CLI_OUTPUT / f"nstd-bar-n{n_up}-loss{loss}{suffix}.png"
     plot_nstd_bar(dist, n_up, loss, path)
     click.echo(f"Saved: {path}")
 
@@ -332,17 +334,19 @@ def nstd_bar(n_up: int, loss: int) -> None:
 @plot.command()
 @click.option("--n-up", type=int, required=True, help="目标 UP 数")
 @click.option("--n-std", type=int, required=True, help="常驻数量")
+@click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def nstd_pdf(n_up: int, n_std: int, loss: int) -> None:
+def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int) -> None:
     """条件抽数分布 PDF (仅支持 pity=0)"""
     from genshin_wish.viz.nstd import plot_nstd_cdf
 
-    state = CharacterState(guaranteed=False, pity=0, consecutive_loss=loss)
+    state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
     dists = n_std_conditional_pulls(state, n_up, n_std=n_std)
     if n_std not in dists:
         click.echo(f"n_std={n_std} 不可达 (n_up={n_up}, loss={loss})", err=True)
         sys.exit(1)
-    path = CLI_OUTPUT / f"nstd-pdf-n{n_up}-s{n_std}-loss{loss}.png"
+    suffix = f"-guaranteed" if guaranteed else ""
+    path = CLI_OUTPUT / f"nstd-pdf-n{n_up}-s{n_std}-loss{loss}{suffix}.png"
     plot_nstd_cdf(dists[n_std], n_up, n_std, loss, path)
     click.echo(f"Saved: {path}")
 

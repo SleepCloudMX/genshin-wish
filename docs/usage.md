@@ -164,6 +164,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | 选项 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `--n-up` | INT | 必填 | 目标 UP 数 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
 | `--loss` | INT | 0 | 连续歪次数 0~3 |
 
 仅支持 `pity=0`。
@@ -174,6 +175,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 |------|------|------|------|
 | `--n-up` | INT | 必填 | 目标 UP 数 |
 | `--n-std` | INT | 必填 | 常驻数量 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
 | `--loss` | INT | 0 | 连续歪次数 0~3 |
 
 仅支持 `pity=0`。
