@@ -99,14 +99,16 @@ def _gen_pulls_dist(
 
             # Multi-curve PDF
             plot_nstd_pdf(dists, n, k,
-                          PULLS_DIST / f"pdf-n{n}-k{k}.png")
+                          PULLS_DIST / "pdf" / f"n{n}" / f"k{k}.png")
 
-            # Annotated CDF for top-2 most probable n_std
+            # Annotated CDF — only for n=3 and n=7
+            if n not in (3, 7):
+                continue
             ranked = sorted(dists.items(),
                             key=lambda kv: kv[1].pdf.sum(), reverse=True)
             for ns, dist in ranked[:2]:
                 plot_nstd_cdf(dist, n, ns, k,
-                              PULLS_DIST / f"cdf-n{n}-s{ns}-k{k}.png")
+                              PULLS_DIST / "cdf" / f"n{n}" / f"s{ns}-k{k}.png")
 
 
 def _parse_args():
