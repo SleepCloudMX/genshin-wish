@@ -54,6 +54,21 @@ genshin-wish std --n-gold 5 --pulls 371
 genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500
 ```
 
+#### （5）单图绘制
+
+```bash
+# 角色池 CDF
+genshin-wish plot char-cdf --n-up 7 --loss 0
+
+# n_std 分布柱状图
+genshin-wish plot nstd-bar --n-up 7 --loss 0
+
+# 武器池 CDF
+genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
+```
+
+图表输出到 `output/cli/`。
+
 > 完整 CLI 选项、参数互斥规则、JSON 输出格式见 **[使用指南](docs/usage.md)**。
 
 ### Python API

@@ -132,6 +132,83 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
   --pulls 500
 ```
 
+### `genshin-wish plot` — 单图绘制
+
+输出到 `output/cli/`，文件名由参数自动生成。与 `scripts/main_plot.py`（批量、固定参数）互补。
+
+#### `plot char-cdf` — 角色池标注 CDF
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-up` | INT | 必填 | 目标 UP 数 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
+| `--pity` | INT | 0 | 已垫抽数 |
+| `--loss` | INT | 0 | 连续歪次数 0~3 |
+
+#### `plot char-pdf` — 角色池 PDF
+
+选项同 `char-cdf`。
+
+#### `plot char-fan` — 角色池幸运扇形图
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-up` | INT | 7 | 最大 UP 数 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
+| `--pity` | INT | 0 | |
+| `--loss` | INT | 0 | |
+| `--interval` | `3`\|`5` | `3` | 区间层数 |
+
+#### `plot nstd-bar` — n_std 分布柱状图
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-up` | INT | 必填 | 目标 UP 数 |
+| `--loss` | INT | 0 | 连续歪次数 0~3 |
+
+仅支持 `pity=0`。
+
+#### `plot nstd-pdf` — 条件抽数 CDF
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-up` | INT | 必填 | 目标 UP 数 |
+| `--n-std` | INT | 必填 | 常驻数量 |
+| `--loss` | INT | 0 | 连续歪次数 0~3 |
+
+仅支持 `pity=0`。
+
+#### `plot weapon-cdf` — 武器池标注 CDF
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--count-a` | INT | 1 | 目标武器 A 数量 |
+| `--ep` | INT | 0 | 命定值 0~2 |
+| `--pity` | INT | 0 | 已垫抽数 |
+| `--prev-std` / `--no-prev-std` | flag | `--no-prev-std` | 上一金是否为常驻 |
+
+**示例：**
+
+```bash
+# 角色池满命 CDF
+genshin-wish plot char-cdf --n-up 7 --loss 0
+
+# 带垫抽和大保底的角色 PDF
+genshin-wish plot char-pdf --n-up 2 --guaranteed --pity 32 --loss 1
+
+# 幸运扇形图（5 层区间）
+genshin-wish plot char-fan --n-up 7 --interval 5
+
+# n_std 分布
+genshin-wish plot nstd-bar --n-up 7 --loss 2
+
+# 条件抽数（歪 2 次时的抽数分布）
+genshin-wish plot nstd-pdf --n-up 7 --n-std 2 --loss 0
+
+# 武器池定轨
+genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
+```
+
 ---
 
 ## Python API
