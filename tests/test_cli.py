@@ -44,7 +44,7 @@ def test_joint():
 
 
 def test_char_method_consistency():
-    """dp-path and dp-state give identical results."""
+    """auto (dp-golds) and dp-state give identical results."""
     runner = CliRunner()
     r1 = runner.invoke(main, ["char", "--n-up", "7", "--pulls", "800", "--format", "json"])
     r2 = runner.invoke(main, ["char", "--n-up", "7", "--pulls", "800", "--method", "dp-state", "--format", "json"])
