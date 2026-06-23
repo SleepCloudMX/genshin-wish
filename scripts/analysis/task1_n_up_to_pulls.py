@@ -330,7 +330,9 @@ def _add_fit_lines(ax, data: dict, n_range: list[int], methods: list[str]) -> No
             # k * exp(a * n) + b  — seed from log-linear fit (b=0)
             c0 = np.polyfit(ns_all, np.log(np.maximum(times_all, 1e-9)), 1)
             p0 = [np.exp(c0[1]), c0[0], 0.0]
-            popt, _ = curve_fit(_exp_offset, ns_all, times_all, p0=p0, maxfev=10000)
+            bounds = ([1e-12, 0, 0], [np.inf, np.inf, times_all[0]])
+            popt, _ = curve_fit(_exp_offset, ns_all, times_all, p0=p0,
+                                bounds=bounds, method="trf", maxfev=10000)
             k, a, b_off = popt
             ns_line = np.linspace(ns_all[0], ns_all[-1], 200)
             times_line = _exp_offset(ns_line, k, a, b_off)
