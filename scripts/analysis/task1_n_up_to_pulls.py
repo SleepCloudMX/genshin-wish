@@ -15,6 +15,9 @@ accuracy-clt-abs-per-n_up/ 及 data.json。
 
     # 只重新绘图 (不重跑计算)
     python scripts/analysis/task1_n_up_to_pulls.py --plot-only --trim 0.3 --error-bar std3
+
+    # 拟合 & 标注斜率
+    python scripts/analysis/task1_n_up_to_pulls.py --plot-only --fit
 """
 
 import json as _json
@@ -23,6 +26,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+from scipy.optimize import curve_fit
 from scipy.stats import trim_mean
 
 from genshin_wish._constants import CHARACTER_POOL, CAPTURE_RADIANCE_WIN_RATE
@@ -38,6 +42,7 @@ TRIM_FRAC = 0.2  # trim 20% from each tail
 ERROR_BAR = "minmax"  # "minmax" | "std3" | "none"
 N_RUNS_FAST = 50  # runs for fast solvers
 N_RUNS_SLOW = 11  # runs for slow solvers (dp-pulls, dp-state n≥150)
+FIT = False  # draw fit lines + slope annotations on speed.png
 
 METHOD_COLORS = {
     "dp-pulls": "#d62728",  # red
@@ -217,7 +222,7 @@ def main() -> None:
     )
 
     # --- Plots ---
-    _plot_speed(data, n_range)
+    _plot_speed(data, n_range, fit=FIT)
     _plot_clt_error(data, n_range)
     _plot_clt_per_n(data, n_range)
 
@@ -246,7 +251,7 @@ def _trimmed_stats(raw: list[float], trim_frac: float) -> dict:
 
 
 def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
-                trim_frac: float = 0.0) -> None:
+                trim_frac: float = 0.0, fit: bool = False) -> None:
     from matplotlib import pyplot as plt
     plt.rcParams['axes.unicode_minus'] = False
 
@@ -280,7 +285,8 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
 
     # Full range
     fig, ax = plt.subplots(figsize=(10, 6))
-    _draw_speed(ax, ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"], lambda n: True)
+    methods = ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"]
+    _draw_speed(ax, methods, lambda n: True)
     ax.set_xlabel("$n_\\text{up}$")
     ax.set_ylabel("time (ms)")
     ax.set_title("Task 1 speed comparison")
@@ -288,6 +294,8 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
     ax.set_yscale("log")
     ax.legend()
     ax.grid(alpha=0.3, which="both")
+    if fit:
+        _add_fit_lines(ax, data, n_range, methods)
     fig.tight_layout()
     fig.savefig(OUTPUT / "speed.png", dpi=200)
     plt.close(fig)
@@ -307,6 +315,57 @@ def _plot_speed(data: dict, n_range: list[int], error_bar: str = "",
     fig.tight_layout()
     fig.savefig(OUTPUT / "speed-detail.png", dpi=200)
     plt.close(fig)
+
+
+FIT_N_MIN = 10  # dp-golds fit starts from this n
+
+
+def _add_fit_lines(ax, data: dict, n_range: list[int], methods: list[str]) -> None:
+    """Draw dashed fit lines with slope annotations on log-log axes."""
+    for name in methods:
+        ns_all = np.array([n for n in n_range if data[name][str(n)]["time_ms"] is not None])
+        times_all = np.array([data[name][str(n)]["time_ms"] for n in ns_all])
+
+        if name == "dp-path":
+            # k * exp(a * n) + b  — seed from log-linear fit (b=0)
+            c0 = np.polyfit(ns_all, np.log(np.maximum(times_all, 1e-9)), 1)
+            p0 = [np.exp(c0[1]), c0[0], 0.0]
+            popt, _ = curve_fit(_exp_offset, ns_all, times_all, p0=p0, maxfev=10000)
+            k, a, b_off = popt
+            ns_line = np.linspace(ns_all[0], ns_all[-1], 200)
+            times_line = _exp_offset(ns_line, k, a, b_off)
+            label = "O(2ⁿ)"
+            xytext = (4, 0)
+            va = "center"
+        else:
+            # power law: log t = k * log n + b
+            if name in ("dp-golds", "dp-state"):
+                mask = ns_all >= FIT_N_MIN
+                ns_fit = ns_all[mask]
+                ts_fit = times_all[mask]
+                ns_start = ns_fit[0]
+            else:
+                ns_fit = ns_all
+                ts_fit = times_all
+                ns_start = ns_all[0]
+            coeffs = np.polyfit(np.log(ns_fit), np.log(ts_fit), 1)
+            k, b = coeffs
+            ns_line = np.linspace(ns_start, ns_all[-1], 2)
+            times_line = np.exp(b + k * np.log(ns_line))
+            label = f"k≈{k:.3f}"
+            xytext = (0, -8)
+            va = "top"
+
+        color = METHOD_COLORS.get(name)
+        ax.plot(ns_line, times_line, "--", color=color, lw=1, alpha=0.35)
+        ax.annotate(label, xy=(ns_line[-1], times_line[-1]),
+                    xytext=xytext, textcoords="offset points",
+                    fontsize=7, color=color, va=va, alpha=0.65)
+
+
+def _exp_offset(x: np.ndarray, k: float, a: float, b: float) -> np.ndarray:
+    """k * exp(a * x) + b"""
+    return k * np.exp(a * x) + b
 
 
 def _q(entry: dict, key: float) -> float:
@@ -424,6 +483,8 @@ if __name__ == "__main__":
                    help="Runs for fast solvers (default: 50)")
     p.add_argument("--n-runs-slow", type=int, default=11,
                    help="Runs for slow solvers (default: 11)")
+    p.add_argument("--fit", action="store_true",
+                   help="Fit & annotate slope lines on speed.png")
     args = p.parse_args()
 
     if args.plot_only:
@@ -431,13 +492,14 @@ if __name__ == "__main__":
         data = _json.loads((OUTPUT / "data.json").read_text(encoding="utf-8"))
         n_range = [int(k) for k in data["dp-state"].keys()]
         n_range.sort()
-        _plot_speed(data, n_range, error_bar=args.error_bar, trim_frac=args.trim)
+        _plot_speed(data, n_range, error_bar=args.error_bar, trim_frac=args.trim, fit=args.fit)
         _plot_clt_error(data, n_range)
         _plot_clt_per_n(data, n_range)
         print(f"Plots regenerated — {OUTPUT}")
     else:
         ERROR_BAR = args.error_bar
         TRIM_FRAC = args.trim
+        FIT = args.fit
         N_RUNS_FAST = args.n_runs_fast
         N_RUNS_SLOW = args.n_runs_slow
         main()
