@@ -32,8 +32,8 @@ def main(
     k_miss: list[int] | None = None,
     chart_type: str = "all",
 ) -> None:
-    n_ups = n_up or list(range(1, 8))
-    k_misses = k_miss or [0]
+    n_ups = n_up or [3, 7]
+    k_misses = k_miss or [0, 1, 2, 3]
 
     # --- collect all data ---
     all_nstd: dict[int, dict[int, dict[int, float]]] = {}
