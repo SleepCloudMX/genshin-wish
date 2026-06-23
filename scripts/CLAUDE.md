@@ -4,6 +4,7 @@
 
 | 脚本 | 用途 | 输出到 | 角色 |
 |------|------|--------|------|
+| `main_analysis.py` | 统一调用 `analysis/task*.py`（默认需显式 `--plot-only`） | — | 用户工具 |
 | `main_plot.py` | 一键生成全部标准图表，通过 flag 路由到 `plots/` 子模块 | `output/` | 用户工具 |
 | `plots/character.py` | 角色池图表：CDF, fan, column, rolls2gold | `output/character/` | 用户工具 |
 | `plots/weapon.py` | 武器池图表：PDF, CDF, target | `output/weapon/` | 用户工具 |

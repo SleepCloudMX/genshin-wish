@@ -29,7 +29,8 @@ src/genshin_wish/       # Python 包
 
 ref/                    # 旧参考代码，只读，禁止修改
 tests/                  # pytest
-scripts/main_plot.py    # 一键生成全部图表
+scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3)
+scripts/main_plot.py    # 一键生成全部绘图
 scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
