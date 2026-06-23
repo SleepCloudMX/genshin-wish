@@ -8,7 +8,36 @@
 
 ---
 
-## 方案 1：dp-pulls（逐抽 DP）
+## 任务
+
+三类概率查询任务及各任务适用的方案。
+
+| 任务 | 输入 | 输出 | 说明 |
+|------|------|------|------|
+| 任务 1（n_up-to-pulls） | `n_up`, `state` | $P(\text{pulls})$ | 获得 n_up 个限定角色所需抽数的概率分布 |
+| 任务 2（n_up-n_std-to-pulls） | `n_up`, `state` | $\{n_{std}: P(\text{pulls} \mid n_{std})\}$ | 每个可能的常驻数对应的条件抽数分布 |
+| 任务 3（n_up-to-n_std） | `n_up`, `state` | $P(n_{std})$ | 歪出常驻数的概率分布 |
+
+**数学关系**：任务 1 = 任务 2 + 任务 3，即 $P(\text{pulls}) = \sum_{n_{std}} P(n_{std}) \cdot P(\text{pulls} \mid n_{std})$。
+
+### 方法覆盖矩阵
+
+| 方案 | 任务 1 | 任务 2 | 任务 3 | 精确 | 复杂度 |
+|------|:---:|:---:|:---:|:---:|------|
+| [dp-pulls](#方案-1dp-pulls逐抽-dp) | ✓ | (✓) | (✓) | ✓ | $O(n^2 \cdot m^2)$ |
+| [dp-path](#方案-2dp-pathwinloss-序列枚举) | ✓ | ✓ | ✓ | ✓ | $O(2^n)$ |
+| [dp-state](#方案-3dp-state迭代卷积) | ✓ | | | ✓ | $O(n^2 \cdot m \cdot \log)$ |
+| [dp-golds](#方案-4dp-golds金数计数-dp-当前默认) | ✓ | ✓ | ✓ | ✓ | $O(n^2 \cdot m)$ |
+| [dp-state-golds](#方案-5dp-state-golds多维迭代卷积) | ✓ | ✓ | ✓ | ✓ | $O(n^3 \cdot m \cdot \log)$ |
+| [CLT](#clt混合矩正态近似) | ✓ | | | ✗ | $O(1)$ |
+
+(✓) = 理论可行但过于缓慢，不予实现。
+
+---
+
+## 方案
+
+### 方案 1：dp-pulls（逐抽 DP）
 
 每抽取一抽，在 (k_miss, gold_count) 状态上递推概率质量，等同于逐抽蒙特卡洛的解析版。
 
@@ -19,19 +48,19 @@
 
 ---
 
-## 方案 2：dp-path（win/loss 序列枚举）
+### 方案 2：dp-path（win/loss 序列枚举）
 
 枚举所有 win(1)/loss(2) 序列，$2^n$ 条。每条序列天然携带 gold_count（= sum(seq)）和 n_std（= count(2)），按金数分组后加权多金 PDF。
 
 - **复杂度**：$O(2^n)$
 - **适用任务**：全部三个任务
-- **当前用法**：显式指定 `--method dp-path`，n≤20
+- **当前用法**：显式指定 `--method dp-path`，n≤20；n≤6 时的 n_std 路由
 - **性能**：n=10 时 1024 条序列 ~0.5ms，n=20 时 ~1M 条序列 ~611ms
 - **结论**：小 n 自然枚举最快（无 DP 表开销），n>10 后被 dp-golds 反超
 
 ---
 
-## 方案 3：dp-state（迭代卷积）
+### 方案 3：dp-state（迭代卷积）
 
 按 k_miss 状态聚合抽数 PDF（4 个状态 × 每步 2 次卷积），利用马尔可夫性质递推。仅需 k_miss 维度，不区分 n_std。
 
@@ -50,9 +79,9 @@
 
 ---
 
-## 方案 4：dp-golds（金数计数 DP）★ 当前默认
+### 方案 4：dp-golds（金数计数 DP）★ 当前默认
 
-### 原理
+#### 原理
 
 不逐序列枚举，而是 DP 直接统计每种 (gold_count, n_std) 组合的概率。
 
@@ -69,7 +98,7 @@
 
 Loss 仅在 $k \neq 3$ 时可行。
 
-### 后处理（金数 → 抽数）
+#### 后处理（金数 → 抽数）
 
 DP 产出概率表后加权多金 PDF：
 
@@ -77,7 +106,7 @@ DP 产出概率表后加权多金 PDF：
 - **任务 2**：$\text{pdf}[n_{std}] = \sum_g P(g \mid n_{std}) \cdot \text{pdfs}[g]$
 - **任务 3**：$P(n_{std}) = \sum_g P(g, n_{std})$（仅边际化，无需 PDF 卷积）
 
-### 实验数据
+#### 实验数据
 
 | n | dp-path | dp-state | dp-golds |
 |---|---------|----------|----------|
@@ -91,7 +120,7 @@ DP 产出概率表后加权多金 PDF：
 
 任务 3：dp-golds 在 n≥7 时更快；任务 3 无需 PDF 卷积，仅 O(n²) 整数 DP，极快。
 
-### 推荐
+#### 推荐
 
 | n_uncertain | 首选 | 说明 |
 |-------------|------|------|
@@ -100,7 +129,7 @@ DP 产出概率表后加权多金 PDF：
 
 ---
 
-## 方案 5：dp-state-golds（多维迭代卷积）
+### 方案 5：dp-state-golds（多维迭代卷积）
 
 方案 3 的扩展：`pdf_state[k][s]` 按 n_std 分层的 PDF，每步对每个 (k, s) 做卷积。
 
@@ -111,9 +140,9 @@ DP 产出概率表后加权多金 PDF：
 
 ---
 
-## CLT：混合矩正态近似
+### CLT：混合矩正态近似
 
-### 原理
+#### 原理
 
 CLT 将 $n$ 个 UP 视为独立同分布近似，但 k_miss 非固定——会在序列中从初始值迁移到稳态分布。
 
@@ -130,7 +159,7 @@ $$\sigma^2_n = \sigma^2_{first} + (n-1) \cdot \sigma^2_{steady}$$
 
 $$P(\text{pulls} = p) \approx \Phi\left(\frac{p+0.5 - \mu_n}{\sigma_n}\right) - \Phi\left(\frac{p-0.5 - \mu_n}{\sigma_n}\right)$$
 
-### 精度
+#### 精度
 
 | n | exact | CLT | 相对误差 | 中位数偏差 |
 |---|-------|-----|---------|-----------|
@@ -140,7 +169,7 @@ $$P(\text{pulls} = p) \approx \Phi\left(\frac{p+0.5 - \mu_n}{\sigma_n}\right) - 
 
 per-UP 误差随 n↗收敛到 0。auto 在 n>500 自动使用。
 
-### 与纯稳态矩的对比
+#### 与纯稳态矩的对比
 
 | 方法 | $\mu_n$ | n=500 误差 | 说明 |
 |------|--------|-----------|------|
@@ -150,22 +179,9 @@ per-UP 误差随 n↗收敛到 0。auto 在 n>500 自动使用。
 
 ---
 
-## 方法覆盖矩阵
+## 性能
 
-| 方案 | 任务 1 | 任务 2 | 任务 3 | 精确 | 复杂度 |
-|------|:---:|:---:|:---:|:---:|------|
-| dp-pulls | ✓ | (✓) | (✓) | ✓ | $O(n^2 \cdot m^2)$ |
-| dp-path | ✓ | ✓ | ✓ | ✓ | $O(2^n)$ |
-| dp-state | ✓ | | | ✓ | $O(n^2 \cdot m \cdot \log)$ |
-| dp-golds | ✓ | ✓ | ✓ | ✓ | $O(n^2 \cdot m)$ |
-| dp-state-golds | ✓ | ✓ | ✓ | ✓ | $O(n^3 \cdot m \cdot \log)$ |
-| CLT | ✓ | | | ✗ | $O(1)$ |
-
-(✓) = 理论可行但过于缓慢，不予实现。
-
----
-
-## 性能对比总表
+### 性能对比总表
 
 任务 1，n=500（k_miss=0, pity=0）：
 
@@ -177,9 +193,7 @@ per-UP 误差随 n↗收敛到 0。auto 在 n>500 自动使用。
 | dp-golds | **111 ms** | 1× | **auto ≤500** |
 | CLT | **2 ms** | 0.02× | **auto >500** |
 
----
-
-## FFT 卷积优化评估
+### FFT 卷积优化评估
 
 曾考虑用 FFT 加速卷积操作。结论：不需要。
 
@@ -192,5 +206,4 @@ per-UP 误差随 n↗收敛到 0。auto 在 n>500 自动使用。
 ## 参考
 
 - 方法选型与实验设计：`docs/ai-output/1-refactor/13-tasks-solutions.md`
-- CLT bug 修复记录：`docs/ai-output/1-refactor/14-clt-bug-postmortem.md`
 - 概率机制：`docs/mechanism.md`
