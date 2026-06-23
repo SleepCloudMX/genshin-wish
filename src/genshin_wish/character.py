@@ -1,7 +1,7 @@
 """Character event banner: UP distribution for n copies of the rate-up 5-star."""
 
 import warnings
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 
 import numpy as np
@@ -210,6 +210,113 @@ def stable_up_distribution(n_up: int, method: str = "auto") -> UpDistribution:
         stable_pdf[: len(d.pdf)] += d.pdf * weight
     stable_cdf = np.cumsum(stable_pdf)
     return UpDistribution(pdf=stable_pdf, cdf=stable_cdf, method=dists[0].method)
+
+
+def n_std_distribution(state: CharacterState, n_up: int) -> dict[int, float]:
+    """Marginal distribution of standard character count given *n_up* rate-ups.
+
+    Only supports ``pity=0`` (raises ``ValueError`` otherwise).
+
+    Returns ``{n_std: probability}``.
+    """
+    if n_up < 0:
+        raise ValueError(f"n_up must be >= 0, got {n_up}")
+    if state.pity != 0:
+        raise ValueError(f"pity must be 0 (not yet supported), got {state.pity}")
+
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+
+    if n_uncertain <= 0:
+        return {0: 1.0}
+
+    if n_uncertain <= 6:
+        return _n_std_dist_path(state.consecutive_loss, n_uncertain)
+
+    from ._dp_golds import _dp_golds_full, golds_nstd_to_nstd_dist
+    joint = _dp_golds_full(n_uncertain, state.consecutive_loss)
+    return golds_nstd_to_nstd_dist(joint)
+
+
+def _n_std_dist_path(k_miss: int, n_uncertain: int) -> dict[int, float]:
+    """dp-path: count losses (2s) per sequence to get n_std distribution."""
+    seq2p = guarantee_seq(k_miss, n_uncertain)
+    result: dict[int, float] = defaultdict(float)
+    for seq, (_final_k, prob) in seq2p.items():
+        result[seq.count(2)] += prob
+    return dict(result)
+
+
+def n_std_conditional_pulls(
+    state: CharacterState, n_up: int, n_std: int | None = None,
+) -> dict[int, UpDistribution]:
+    """Conditional pulls distribution per standard count given *n_up* rate-ups.
+
+    Only supports ``pity=0`` (raises ``ValueError`` otherwise).
+
+    Returns ``{n_std: UpDistribution}``.  If *n_std* is given, only that
+    key is returned.
+    """
+    if n_up < 0:
+        raise ValueError(f"n_up must be >= 0, got {n_up}")
+    if state.pity != 0:
+        raise ValueError(f"pity must be 0 (not yet supported), got {state.pity}")
+
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+    p_gold = get_gold_pdfs(CHARACTER_POOL, min_gold=1)[0]
+
+    if n_uncertain <= 0:
+        dist = UpDistribution(pdf=p_gold, cdf=np.cumsum(p_gold), method="exact")
+        return {0: dist}
+
+    if n_uncertain <= 6:
+        dists = _n_std_conditional_path(state.consecutive_loss, n_uncertain)
+    else:
+        from ._dp_golds import _dp_golds_full, golds_nstd_to_pulls
+        joint = _dp_golds_full(n_uncertain, state.consecutive_loss)
+        dists = golds_nstd_to_pulls(joint)
+
+    # Convolve guaranteed gold if applicable
+    if state.guaranteed:
+        for ns in list(dists):
+            d = dists[ns]
+            conv = np.convolve(d.pdf, p_gold)
+            dists[ns] = UpDistribution(pdf=conv, cdf=np.cumsum(conv), method=d.method)
+
+    if n_std is not None:
+        if n_std in dists:
+            return {n_std: dists[n_std]}
+        # n_std not reachable → empty distribution
+        return {n_std: UpDistribution(
+            pdf=np.array([np.nan]), cdf=np.array([np.nan]), method="exact",
+        )}
+    return dists
+
+
+def _n_std_conditional_path(
+    k_miss: int, n_uncertain: int,
+) -> dict[int, UpDistribution]:
+    """dp-path: per-n_std conditional pulls distributions."""
+    seq2p = guarantee_seq(k_miss, n_uncertain)
+    pdfs = get_gold_pdfs(CHARACTER_POOL, min_gold=n_uncertain * 2)
+
+    nstd_golds: dict[int, dict[int, float]] = defaultdict(lambda: defaultdict(float))
+    for seq, (_final_k, prob) in seq2p.items():
+        gold = sum(seq)
+        ns = seq.count(2)
+        nstd_golds[ns][gold] += prob
+
+    result: dict[int, UpDistribution] = {}
+    for ns, gold_probs in nstd_golds.items():
+        total = sum(gold_probs.values())
+        max_gold = max(gold_probs.keys())
+        pdf_arr = np.zeros(len(pdfs[max_gold]), dtype=np.float64)
+        for gold, prob in gold_probs.items():
+            if gold > 0:
+                pdf_arr[: len(pdfs[gold])] += pdfs[gold] * (prob / total)
+        cdf = np.cumsum(pdf_arr)
+        result[ns] = UpDistribution(pdf=pdf_arr, cdf=cdf, method="exact")
+
+    return result
 
 
 def _up_distribution_clt_impl(
