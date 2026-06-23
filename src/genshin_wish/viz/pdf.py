@@ -65,3 +65,28 @@ def plot_base_pdfs(pdfs: list[np.ndarray], save_path: Path) -> None:
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)  # 提高分辨率
     plt.close()
+
+
+def plot_simple_pdf(pdf: np.ndarray, title: str, save_path: Path) -> None:
+    """Plot a single PDF curve with expectation marker."""
+    save_path = _ensure_dir(save_path)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    x = np.arange(len(pdf))
+    expected = float(np.sum(x * pdf))
+    x_hi = int(np.searchsorted(np.cumsum(pdf), 0.9999)) + 5
+
+    ax.plot(x[:x_hi], pdf[:x_hi], color="#2171b5", lw=1.5)
+    ax.fill_between(x[:x_hi], pdf[:x_hi], color="#2171b5", alpha=0.1)
+    ax.axvline(expected, color="#ff7f0e", lw=1.2, ls="-", alpha=0.6)
+    ymax = float(pdf[:x_hi].max()) * 1.1
+    ax.text(expected + 1, ymax * 0.85, f"E={expected:.1f}",
+            fontsize=9, color="#ff7f0e", alpha=0.8)
+
+    ax.set_xlabel("pulls")
+    ax.set_ylabel("probability density")
+    ax.set_title(title)
+    ax.set_xlim(0, x_hi)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=200)
+    plt.close(fig)

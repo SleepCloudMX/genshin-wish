@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import sys
 
 import click
+import numpy as np
 
 from genshin_wish.character import (
     CharacterState,
     UpDistribution,
+    n_std_conditional_pulls,
+    n_std_distribution,
     stable_up_distribution,
     up_distribution,
 )
@@ -21,6 +25,13 @@ from genshin_wish.weapon import (
     weapon_up_distribution,
 )
 from genshin_wish.joint import joint_distribution
+
+CLI_OUTPUT = Path("output/cli")
+
+
+def _plot_setup() -> None:
+    from genshin_wish.viz._base import setup_style
+    setup_style()
 
 
 def _format_dist(name: str, dist: UpDistribution | WeaponUpDistribution, pulls: int | None) -> str:
@@ -217,6 +228,148 @@ def joint(
         "weapon_expected": dist.weapon.expected if dist.weapon else None,
     }
     _output(result, fmt)
+
+
+# ---------------------------------------------------------------------------
+# plot command group
+# ---------------------------------------------------------------------------
+
+
+@main.group()
+def plot() -> None:
+    """单图绘制，灵活参数 — 输出到 output/cli/"""
+    _plot_setup()
+
+
+def _state(guaranteed: bool, pity: int, loss: int) -> CharacterState:
+    return CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=loss)
+
+
+@plot.command()
+@click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--guaranteed/--no-guaranteed", default=False)
+@click.option("--pity", type=int, default=0, help="已垫抽数")
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+def char_cdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
+    """角色池标注 CDF"""
+    from genshin_wish.viz.cdf import plot_annotated_cdf
+
+    state = _state(guaranteed, pity, loss)
+    dist = up_distribution(state, n_up)
+    suffix = f"-guaranteed" if guaranteed else ""
+    path = CLI_OUTPUT / f"cdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    plot_annotated_cdf(
+        dist.cdf,
+        f"CDF (n_up={n_up}, loss={loss}, pity={pity}"
+        f"{', guaranteed' if guaranteed else ''})",
+        path,
+    )
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--guaranteed/--no-guaranteed", default=False)
+@click.option("--pity", type=int, default=0, help="已垫抽数")
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
+    """角色池 PDF"""
+    from genshin_wish.viz.pdf import plot_simple_pdf
+
+    state = _state(guaranteed, pity, loss)
+    dist = up_distribution(state, n_up)
+    suffix = f"-guaranteed" if guaranteed else ""
+    path = CLI_OUTPUT / f"pdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    plot_simple_pdf(
+        dist.pdf,
+        f"PDF (n_up={n_up}, loss={loss}, pity={pity}"
+        f"{', guaranteed' if guaranteed else ''})",
+        path,
+    )
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--n-up", type=int, default=7, help="最大 UP 数 (默认 7)")
+@click.option("--guaranteed/--no-guaranteed", default=False)
+@click.option("--pity", type=int, default=0, help="已垫抽数")
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+@click.option("--interval", type=click.Choice(["3", "5"]), default="3",
+              help="区间层数 (默认 3)")
+def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str) -> None:
+    """角色池幸运扇形图"""
+    from genshin_wish.viz.fan import plot_luck_fan
+
+    state = _state(guaranteed, pity, loss)
+
+    def pdf_func(n: int) -> np.ndarray:
+        return up_distribution(state, n).pdf
+
+    suffix = f"-guaranteed" if guaranteed else ""
+    path = CLI_OUTPUT / f"fan-n{n_up}-loss{loss}-pity{pity}-i{interval}{suffix}.png"
+    plot_luck_fan(
+        pdf_func, max_n_up=n_up, save_path=path,
+        interval_set=int(interval),
+        title=f"幸运扇形图 (max_n_up={n_up}, loss={loss}, pity={pity})",
+    )
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+def nstd_bar(n_up: int, loss: int) -> None:
+    """n_std 分布柱状图 (仅支持 pity=0)"""
+    from genshin_wish.viz.nstd import plot_nstd_bar
+
+    state = CharacterState(guaranteed=False, pity=0, consecutive_loss=loss)
+    dist = n_std_distribution(state, n_up)
+    path = CLI_OUTPUT / f"nstd-bar-n{n_up}-loss{loss}.png"
+    plot_nstd_bar(dist, n_up, loss, path)
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--n-std", type=int, required=True, help="常驻数量")
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+def nstd_pdf(n_up: int, n_std: int, loss: int) -> None:
+    """条件抽数分布 PDF (仅支持 pity=0)"""
+    from genshin_wish.viz.nstd import plot_nstd_cdf
+
+    state = CharacterState(guaranteed=False, pity=0, consecutive_loss=loss)
+    dists = n_std_conditional_pulls(state, n_up, n_std=n_std)
+    if n_std not in dists:
+        click.echo(f"n_std={n_std} 不可达 (n_up={n_up}, loss={loss})", err=True)
+        sys.exit(1)
+    path = CLI_OUTPUT / f"nstd-pdf-n{n_up}-s{n_std}-loss{loss}.png"
+    plot_nstd_cdf(dists[n_std], n_up, n_std, loss, path)
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--count-a", type=int, default=1, help="目标武器 A 的数量")
+@click.option("--ep", type=int, default=0, help="命定值 0~2")
+@click.option("--pity", type=int, default=0, help="已垫抽数")
+@click.option("--prev-std/--no-prev-std", default=False, help="上一金是否为常驻")
+def weapon_cdf(count_a: int, ep: int, pity: int, prev_std: bool) -> None:
+    """武器池标注 CDF (定轨不取消)"""
+    from genshin_wish.viz.cdf import plot_annotated_cdf
+
+    state = WeaponState(pity=pity, epitomized_points=ep, prev_standard=prev_std)
+    target = WeaponTarget(count_a=count_a, count_b=0)
+    dist = weapon_up_distribution(state, target)
+    path = CLI_OUTPUT / f"weapon-cdf-a{count_a}-pity{pity}-ep{ep}"
+    if prev_std:
+        path = Path(str(path) + "-prevstd")
+    path = path.with_suffix(".png")
+    plot_annotated_cdf(
+        dist.cdf,
+        f"武器池 CDF (count_a={count_a}, pity={pity}, ep={ep}"
+        f"{', prev_std' if prev_std else ''})",
+        path,
+    )
+    click.echo(f"Saved: {path}")
 
 
 if __name__ == "__main__":
