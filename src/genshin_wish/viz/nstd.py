@@ -33,7 +33,7 @@ def plot_nstd_heatmap(
     for i, nu in enumerate(n_ups):
         for j in range(max_nstd + 1):
             val = data[i, j]
-            if val < 0.01:
+            if val <= 0:
                 continue
             norm_v = val / (vmax + 1e-9)
             colour = "white" if norm_v > 0.5 else "#2b2b2b"
@@ -78,7 +78,7 @@ def plot_nstd_heatmap_per_up(
     for i in range(len(k_vals)):
         for j in range(max_nstd + 1):
             val = data[i, j]
-            if val < 0.01:
+            if val <= 0:
                 continue
             norm_v = val / (vmax + 1e-9)
             colour = "white" if norm_v > 0.5 else "#2b2b2b"
