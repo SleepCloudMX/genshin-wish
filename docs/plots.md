@@ -2,12 +2,14 @@
 
 [TOC]
 
-genshin-wish 使用 matplotlib 生成全部统计图表。所有绘图函数定义在 `src/genshin_wish/viz/` 下，统一由 `scripts/plot_all.py` 驱动输出。
+genshin-wish 使用 matplotlib 生成全部统计图表。所有绘图函数定义在 `src/genshin_wish/viz/` 下，由 `scripts/plots/` 下各子模块驱动，`scripts/main_plot.py` 统一入口。
 
 ## 一键生成
 
 ```bash
-python scripts/plot_all.py
+python scripts/main_plot.py          # 全部图表
+python scripts/main_plot.py -c       # 仅角色池
+python scripts/main_plot.py -n       # 仅 n_std
 ```
 
 所有图表输出到 `output/` 目录。

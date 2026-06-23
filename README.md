@@ -72,10 +72,12 @@ print(f"800 抽达成概率: {dist.probability(800) * 100:.1f}%")
 ## 生成图表
 
 ```bash
-python scripts/plot_all.py
+python scripts/main_plot.py          # 全部图表
+python scripts/main_plot.py -c       # 仅角色池
+python scripts/main_plot.py -n       # 仅 n_std 分布
 ```
 
-图表输出到 `output/`。`scripts/` 下还有其他分析工具，详见 [分析与验证](docs/analysis.md)。
+图表输出到 `output/`。分析脚本见 `scripts/main_analysis.py`。
 
 ## 文档
 
