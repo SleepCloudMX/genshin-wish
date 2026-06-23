@@ -54,7 +54,7 @@ setup_style()
 
 | 配置项 | 值 | 说明 |
 |--------|----|------|
-| `font.sans-serif` | `SimHei` | 中文字体 |
+| `font.sans-serif` | `Microsoft YaHei` | 中文字体，同时覆盖 Unicode 上标负号 |
 | `axes.unicode_minus` | `False` | 负号正常显示 |
 | `figure.dpi` | `150` | 屏幕显示 DPI |
 | `savefig.dpi` | `300` | 保存图片 DPI |
