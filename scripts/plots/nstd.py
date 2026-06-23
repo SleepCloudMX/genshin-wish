@@ -31,9 +31,11 @@ def main(
     n_up: list[int] | None = None,
     k_miss: list[int] | None = None,
     chart_type: str = "all",
+    cdf_n_up: list[int] | None = None,
 ) -> None:
-    n_ups = n_up or [3, 7]
+    n_ups = n_up or list(range(1, 8))
     k_misses = k_miss or [0, 1, 2, 3]
+    cdf_n_ups = cdf_n_up or [3, 7]
 
     # --- collect all data ---
     all_nstd: dict[int, dict[int, dict[int, float]]] = {}
@@ -52,7 +54,7 @@ def main(
     if chart_type in ("all", "std-dist"):
         _gen_std_dist(all_nstd, n_ups, k_misses)
     if chart_type in ("all", "pulls-dist"):
-        _gen_pulls_dist(all_pulls, n_ups, k_misses)
+        _gen_pulls_dist(all_pulls, n_ups, k_misses, cdf_n_ups)
 
     print(f"Done — {OUTPUT}")
 
@@ -78,13 +80,14 @@ def _gen_pulls_dist(
     all_pulls: dict[int, dict[int, dict[int, object]]],
     n_ups: list[int],
     k_misses: list[int],
+    cdf_n_ups: list[int],
 ) -> None:
     for n in n_ups:
         for k in k_misses:
             dists = all_pulls[n][k]
             plot_nstd_pdf(dists, n, k,
                           PULLS_DIST / "pdf" / f"n{n}" / f"k{k}.png")
-            if n not in (3, 7):
+            if n not in cdf_n_ups:
                 continue
             ranked = sorted(dists.items(),
                             key=lambda kv: kv[1].pdf.sum(), reverse=True)
@@ -104,5 +107,7 @@ if __name__ == "__main__":
     p.add_argument("--k-miss", type=_int_list, default=None)
     p.add_argument("--type", choices=["all", "std-dist", "pulls-dist"],
                    default="all")
+    p.add_argument("--cdf-n-up", type=_int_list, default=None,
+                   help="n_up values to generate CDF for (default: 3,7)")
     args = p.parse_args()
-    main(args.n_up, args.k_miss, args.type)
+    main(args.n_up, args.k_miss, args.type, args.cdf_n_up)
