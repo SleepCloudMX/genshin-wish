@@ -77,12 +77,17 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
             (all_bounds[0.01][i], '1%',  '#d62728'),
         ]
         last_y = 999.0
-        for val, _label, col in vals_to_plot:
-            y_pos = val
-            if last_y - val < 5:
-                y_pos = val - 3
+        for val, label, col in vals_to_plot:
+            if label == 'Avg':
+                y_pos = val + 1.2
+                va = 'bottom'
+            else:
+                y_pos = val
+                if last_y - val < 5:
+                    y_pos = val - 3
+                va = 'center'
             plt.text(n + 0.05, y_pos, f"{val:.1f}", color=col, ha='left',
-                     va='center', fontsize=8, fontweight='bold', alpha=0.9)
+                     va=va, fontsize=8, fontweight='bold', alpha=0.9)
             last_y = y_pos
 
     plt.title(title, fontsize=16, pad=25)
