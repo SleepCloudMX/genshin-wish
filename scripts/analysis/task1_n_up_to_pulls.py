@@ -327,15 +327,16 @@ def _add_fit_lines(ax, data: dict, n_range: list[int], methods: list[str]) -> No
         times_all = np.array([data[name][str(n)]["time_ms"] for n in ns_all])
 
         if name == "dp-path":
-            # k * exp(a * n) + b  — seed from log-linear fit (b=0)
+            # exp(a * n + b) + c  — seed from log-linear fit (c=0)
             c0 = np.polyfit(ns_all, np.log(np.maximum(times_all, 1e-9)), 1)
-            p0 = [np.exp(c0[1]), c0[0], 0.0]
-            bounds = ([1e-12, 0, 0], [np.inf, np.inf, times_all[0]])
+            p0 = [c0[0], c0[1], 0.0]
+            bounds = ([0, -np.inf, 0], [np.inf, np.inf, times_all[0]])
             popt, _ = curve_fit(_exp_offset, ns_all, times_all, p0=p0,
                                 bounds=bounds, method="trf", maxfev=10000)
-            k, a, b_off = popt
-            ns_line = np.linspace(ns_all[0], ns_all[-1], 200)
-            times_line = _exp_offset(ns_line, k, a, b_off)
+            a, b, c = popt
+            mask = ns_all >= 7
+            ns_line = np.linspace(ns_all[mask][0], ns_all[-1], 200)
+            times_line = _exp_offset(ns_line, a, b, c)
             label = "O(2ⁿ)"
             xytext = (4, 0)
             va = "center"
@@ -365,9 +366,9 @@ def _add_fit_lines(ax, data: dict, n_range: list[int], methods: list[str]) -> No
                     fontsize=7, color=color, va=va, alpha=0.65)
 
 
-def _exp_offset(x: np.ndarray, k: float, a: float, b: float) -> np.ndarray:
-    """k * exp(a * x) + b"""
-    return k * np.exp(a * x) + b
+def _exp_offset(x: np.ndarray, a: float, b: float, c: float) -> np.ndarray:
+    """exp(a * x + b) + c"""
+    return np.exp(a * x + b) + c
 
 
 def _q(entry: dict, key: float) -> float:
