@@ -41,6 +41,13 @@ python scripts/main_analysis.py --plot-only              # 全部 task (plot-onl
 python scripts/main_analysis.py --plot-only --tasks 1 --fit
 ```
 
+## CLI 示例 (`cli_examples/`)
+
+| 文件 | 说明 |
+|------|------|
+| `cli_examples/plot.sh` | `genshin-wish plot` 单图绘制示例 |
+| `cli_examples/calc_prob.sh` | `genshin-wish char/weapon/std/joint` 概率查询示例 |
+
 ## 约定
 
 见 `scripts/CLAUDE.md` 和 `scripts/analysis/CLAUDE.md`。
