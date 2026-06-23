@@ -5,6 +5,9 @@ Usage:
     python scripts/analysis/up_dist_methods.py --dp-vs-enum
     python scripts/analysis/up_dist_methods.py --enum-vs-conv
     python scripts/analysis/up_dist_methods.py               # both
+
+DEPRECATED: superseded by task1_n_up_to_pulls.py (A组 benchmark).
+Kept for reference only.
 """
 
 import argparse

@@ -4,6 +4,9 @@
 Computes per-UP pull distributions for N=1..100 using exact iterative
 convolution over 4 k_miss states, then compares against CLT at 7 key
 quantiles. Exports plots and data.json.
+
+DEPRECATED: superseded by task1_n_up_to_pulls.py (A组 benchmark).
+Kept for reference only.
 """
 
 import json as _json

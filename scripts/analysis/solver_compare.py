@@ -7,6 +7,9 @@ Solves:
   D — 55/45 CLT
   E — 4-state capture radiance exact (ground truth, N<=20)
   F — 4-state capture radiance CLT
+
+DEPRECATED: superseded by task1_n_up_to_pulls.py (A组 benchmark).
+Kept for reference only.
 """
 
 import time
