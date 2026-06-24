@@ -114,9 +114,8 @@ def plot_nstd_bar(
     fig, ax = plt.subplots(figsize=(8, 4))
     bars = ax.bar(xs, probs, width=0.7, color="#4292c6", edgecolor="white")
     for bar, prob in zip(bars, probs):
-        if prob >= 0.03:
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
-                    f"{prob:.1%}", ha="center", va="bottom", fontsize=9)
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.005,
+                f"{prob:.1%}", ha="center", va="bottom", fontsize=9)
 
     ax.set_xticks(xs)
     ax.set_xlabel("$n_\\mathrm{std}$")
