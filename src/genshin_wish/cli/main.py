@@ -439,5 +439,54 @@ def radiance_bar(n_up: int, guaranteed: bool, loss: int,
     click.echo(f"Saved: {path}")
 
 
+@plot.command()
+@click.option("--char-up", type=int, required=True, help="角色目标 UP 数 (含本体)")
+@click.option("--weapon-count", type=int, default=1, help="武器目标数量")
+@click.option("--char-guaranteed/--no-char-guaranteed", default=False)
+@click.option("--char-pity", type=int, default=0)
+@click.option("--char-loss", type=int, default=0)
+@click.option("--weapon-ep", type=int, default=0)
+@click.option("--weapon-pity", type=int, default=0)
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def joint_cdf(char_up: int, weapon_count: int, char_guaranteed: bool,
+              char_pity: int, char_loss: int, weapon_ep: int,
+              weapon_pity: int, output: str | None) -> None:
+    """联合计算 CDF (角色 + 武器)"""
+    from genshin_wish.character import CharacterState
+    from genshin_wish.weapon import WeaponState, WeaponTarget
+    from genshin_wish.joint import joint_distribution
+    from genshin_wish.viz.cdf import plot_annotated_cdf
+
+    char_state = CharacterState(guaranteed=char_guaranteed, pity=char_pity,
+                                consecutive_loss=char_loss)
+    weapon_state = WeaponState(pity=weapon_pity, epitomized_points=weapon_ep,
+                               prev_standard=False)
+    target = WeaponTarget(count_a=weapon_count, count_b=0)
+    dist = joint_distribution(char_state, char_up, weapon_state, target)
+
+    parts = [f"joint-cdf-c{char_up}-w{weapon_count}"]
+    if char_guaranteed:
+        parts.append("charg")
+    if char_loss:
+        parts.append(f"loss{char_loss}")
+    if weapon_ep:
+        parts.append(f"ep{weapon_ep}")
+    if char_pity:
+        parts.append(f"cpity{char_pity}")
+    if weapon_pity:
+        parts.append(f"wpity{weapon_pity}")
+    name = "-".join(parts) + ".png"
+    path = _resolve_output(output, name)
+
+    title = (
+        f"joint CDF (char n_up={char_up}, weapon count={weapon_count}"
+        f"{', guaranteed' if char_guaranteed else ''}"
+        f"{', char_loss=' + str(char_loss) if char_loss else ''}"
+        f"{', weapon_ep=' + str(weapon_ep) if weapon_ep else ''})"
+    )
+    plot_annotated_cdf(dist.cdf, title, path)
+    click.echo(f"Saved: {path}")
+
+
 if __name__ == "__main__":
     main()
