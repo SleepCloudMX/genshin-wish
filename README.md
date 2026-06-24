@@ -83,7 +83,7 @@ genshin-wish plot nstd-bar --n-up 7 --loss 0
 genshin-wish plot nstd-pdf --n-up 7 --n-std 2 --loss 0
 ```
 
-#### （3）捕获明光 (`plot radiance-*`)
+#### （3）捕获明光次数分布 (`plot radiance-*`)
 
 ```bash
 # 给定 win/loss 序列
@@ -93,14 +93,21 @@ genshin-wish plot radiance-seq --seq "1,2,2,1,2,2,1,1,1,2"
 genshin-wish plot radiance-bar --n-up 100 --loss 0
 ```
 
-#### （4）武器池 (`plot weapon-*`)
+#### （4）联合 (`plot joint-*`)
+
+```bash
+# 角色 + 武器联合 CDF
+genshin-wish plot joint-cdf --char-up 3 --weapon-count 1
+```
+
+#### （5）武器池 (`plot weapon-*`)
 
 ```bash
 # 定轨 CDF
 genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
 ```
 
-> 完整 CLI 选项、参数互斥规则、JSON 输出格式见 **[使用指南](docs/usage.md)**。
+> 完整 CLI 选项、参数互斥规则、输出格式见 **[使用指南](docs/usage.md)**。
 
 ### Python API
 
