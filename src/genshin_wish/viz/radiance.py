@@ -2,9 +2,7 @@
 
 from pathlib import Path
 
-import numpy as np
 from matplotlib import pyplot as plt
-from scipy.stats import gaussian_kde
 
 from ._base import _ensure_dir
 
@@ -19,10 +17,9 @@ def plot_radiance_bar(
     fmt: str = ".2%",
     min_prob: float = 0.0001,
 ) -> None:
-    """Chart of radiance count distribution for a single n_up.
+    """Bar chart of radiance count distribution for a single n_up.
 
-    Bar chart overlaid with KDE when > 10 bins.  Right-tail bins with
-    probability < *min_prob* are trimmed.
+    Right-tail bins with probability < *min_prob* are trimmed.
     """
     all_items = sorted(dist.items())
 
@@ -36,31 +33,19 @@ def plot_radiance_bar(
     probs = [v for _, v in items]
     expected = sum(k * v for k, v in all_items)
 
-    use_kde = len(items) > 10
-    fig_w = max(8, len(items) * 0.45) if not use_kde else 10
+    fig_w = max(8, len(items) * 0.45)
     fig, ax = plt.subplots(figsize=(fig_w, 4))
 
     bars = ax.bar(xs, probs, width=0.7, color="#deebf7", edgecolor="#4292c6",
-                  linewidth=0.5, zorder=1)
+                  linewidth=0.5)
 
-    if use_kde:
-        # KDE overlay on weighted samples
-        weights = np.array(probs, dtype=float)
-        weights /= weights.sum()
-        rng = np.random.default_rng(42)
-        resampled = rng.choice(np.array(xs, dtype=float), size=5000, p=weights)
-        kde = gaussian_kde(resampled)
-        x_kde = np.linspace(xs[0], xs[-1], 200)
-        y_kde = kde(x_kde)
-        # Scale KDE to match bar heights
-        y_kde *= 1.0 / y_kde.max() * max(probs) if max(probs) > 0 else 1.0
-        ax.plot(x_kde, y_kde, color="#2171b5", lw=1.5, zorder=2)
-
+    fontsize = 9 if len(items) <= 15 else (8 if len(items) <= 25 else 7)
     for bar, prob in zip(bars, probs):
         if prob >= min_prob:
             ax.text(bar.get_x() + bar.get_width() / 2,
                     bar.get_height() + 0.005,
-                    f"{prob:{fmt}}", ha="center", va="bottom", fontsize=7.5)
+                    f"{prob:{fmt}}", ha="center", va="bottom",
+                    fontsize=fontsize)
 
     ax.set_xticks(xs)
     if len(xs) > 20:

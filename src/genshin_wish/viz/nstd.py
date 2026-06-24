@@ -94,6 +94,7 @@ def plot_nstd_heatmap_per_up(
 
     vmax = data.max()
     rows, cols = data.shape
+    fs = 9 if cols <= 12 else (7.5 if cols <= 20 else 6.5)
     for i in range(rows):
         for j in range(cols):
             val = data[i, j]
@@ -102,7 +103,7 @@ def plot_nstd_heatmap_per_up(
             norm_v = val / (vmax + 1e-9)
             colour = "white" if norm_v > 0.5 else "#2b2b2b"
             ax.text(j, i, f"{val:{fmt}}", ha="center", va="center",
-                    fontsize=9, color=colour)
+                    fontsize=fs, color=colour)
 
     ax.set_xticks(range(cols))
     ax.set_yticks(range(len(k_vals)))
