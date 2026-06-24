@@ -33,13 +33,18 @@ output/
 │   └── long-term/
 │       ├── N1=0,N2=500/  # long-term.png + 100/200/300/400/500.png (捕获明光后)
 │       └── N1=500,N2=0/  # long-term.png + 100/200/300/400/500.png (纯 50/50)
+│   ├── std/
+│   │   ├── std-dist/      # n_up={n}/heatmap.png + 柱状图
+│   │   └── pulls-dist/    # pdf/ + cdf/ (条件抽数分布)
+│   └── radiance/          # n_up={n}/heatmap.png + 柱状图 (捕获明光次数)
 ├── weapon/
 │   ├── pdf.png          # 多金 PDF 对比
 │   ├── cdf-gold1~4.png  # 1-4 金 CDF
 │   └── target-one-up.png
-└── multi-gold/
-    ├── character-2gold~6gold.png
-    └── weapon-2gold~6gold.png
+├── multi-gold/
+│   ├── character-2gold~6gold.png
+│   └── weapon-2gold~6gold.png
+└── joint/                # {a}+{b}/ CDF + heatmap + table
 ```
 
 ## 样式配置
@@ -132,7 +137,7 @@ def plot_up_cdf_lines(
 
 ### 2. 热力图 (`viz/heatmap.py`)
 
-**`plot_percentile_heatmap`** — 行 = 歪次数状态，列 = 分位点，值 = 所需抽数。
+**`plot_percentile_heatmap`** — 行 = 歪次数状态，列 = 分位点 + 期望，值 = 所需抽数。
 
 ```python
 def plot_percentile_heatmap(
@@ -140,6 +145,7 @@ def plot_percentile_heatmap(
     title: str,
     filename: str | Path,
     alphas: list[float] | None = None,
+    note_text: str | None = None,
 ) -> None
 ```
 
@@ -149,12 +155,12 @@ def plot_percentile_heatmap(
 | `title` | 图表标题 |
 | `filename` | 输出路径 |
 | `alphas` | 默认 `DEFAULT_ALPHAS` |
+| `note_text` | 底部注释，默认使用角色池模型说明 |
 
 图表内容：
-- Blues 色阶热力图
+- Blues 色阶热力图，最右一列为 "期望"（从 CDF 反算）
 - 单元格内标注抽数（浅色背景白字，深色背景深色字）
-- 右侧 colorbar 标注 "所需总抽数"
-- 底部附概率模型说明注释
+- 底部注释居中，行内左对齐
 
 ---
 
