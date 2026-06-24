@@ -66,7 +66,7 @@ def main(pairs: list[tuple[int, int]] | None = None) -> None:
         stable_cdf = np.zeros(max_len, dtype=np.float64)
         for loss, pi in enumerate(STABLE_P):
             cdf = cdf_map[f"miss={loss}"]
-            padded = np.zeros(max_len, dtype=np.float64)
+            padded = np.ones(max_len, dtype=np.float64)
             padded[: len(cdf)] = cdf
             stable_cdf += padded * pi
         cdf_map["stable"] = stable_cdf
