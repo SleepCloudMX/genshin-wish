@@ -20,7 +20,7 @@ def main(
     n_up: list[int] | None = None,
     k_miss: list[int] | None = None,
 ) -> None:
-    n_ups = n_up or list(range(1, 8))
+    n_ups = n_up or [7, 20, 50, 100]
     k_misses = k_miss or [0, 1, 2, 3]
 
     all_dist: dict[int, dict[int, dict[int, float]]] = {}
@@ -34,10 +34,16 @@ def main(
     for n in n_ups:
         nstd_by_k = {k: all_dist[n][k] for k in k_misses}
         out_dir = OUTPUT / f"n_up={n}"
-        plot_nstd_heatmap_per_up(nstd_by_k, n, out_dir / "heatmap.png")
+        plot_nstd_heatmap_per_up(
+            nstd_by_k, n, out_dir / "heatmap.png",
+            xlabel="radiance count", fmt=".2%", prune_threshold=0.0001,
+            title=f"$P(\\text{{radiance}} \\mid n_\\mathrm{{up}}={n})$",
+        )
         for k in k_misses:
-            plot_radiance_bar(all_dist[n][k], n, k,
-                              out_dir / f"n{n}-k{k}.png")
+            plot_radiance_bar(
+                all_dist[n][k], n, k,
+                out_dir / f"n{n}-k{k}.png",
+            )
 
     print(f"Done — {OUTPUT}")
 

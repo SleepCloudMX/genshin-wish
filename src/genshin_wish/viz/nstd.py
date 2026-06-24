@@ -58,40 +58,59 @@ def plot_nstd_heatmap_per_up(
     nstd_by_k: dict[int, dict[int, float]],
     n_up: int,
     save_path: str | Path,
+    *,
+    xlabel: str = "$n_\\mathrm{std}$",
+    fmt: str = ".1%",
+    prune_threshold: float = 0.0,
+    title: str | None = None,
 ) -> None:
-    """Single-n_up heatmap: rows = k_miss, cols = n_std, colour = probability."""
+    """Single-n_up heatmap: rows = k_miss, cols = value, colour = probability.
+
+    *xlabel* and *fmt* customize the column axis label and cell text format.
+    Columns where every row is < *prune_threshold* are removed from the plot.
+    """
     k_vals = sorted(nstd_by_k.keys())
     if not k_vals:
         return
-    max_nstd = max(max(d.keys()) for d in nstd_by_k.values())
+    max_v = max(max(d.keys()) for d in nstd_by_k.values())
 
-    data = np.zeros((len(k_vals), max_nstd + 1))
+    data = np.zeros((len(k_vals), max_v + 1))
     for i, k in enumerate(k_vals):
-        for ns, prob in nstd_by_k[k].items():
-            data[i, ns] = prob
+        for v, prob in nstd_by_k[k].items():
+            data[i, v] = prob
+
+    # Prune columns
+    keep = [j for j in range(max_v + 1) if data[:, j].max() >= prune_threshold]
+    if not keep:
+        return
+    data = data[:, keep]
 
     fig, ax = plt.subplots(figsize=(8, 3))
     cmap = plt.colormaps["Blues"]
     cax = ax.imshow(data, cmap=cmap, aspect="auto", origin="lower")
 
     vmax = data.max()
-    for i in range(len(k_vals)):
-        for j in range(max_nstd + 1):
+    rows, cols = data.shape
+    for i in range(rows):
+        for j in range(cols):
             val = data[i, j]
             if val <= 0:
                 continue
             norm_v = val / (vmax + 1e-9)
             colour = "white" if norm_v > 0.5 else "#2b2b2b"
-            ax.text(j, i, f"{val:.1%}", ha="center", va="center",
+            ax.text(j, i, f"{val:{fmt}}", ha="center", va="center",
                     fontsize=9, color=colour)
 
-    ax.set_xticks(range(max_nstd + 1))
+    ax.set_xticks(range(cols))
     ax.set_yticks(range(len(k_vals)))
-    ax.set_xticklabels([str(j) for j in range(max_nstd + 1)])
+    ax.set_xticklabels([str(keep[j]) for j in range(cols)])
     ax.set_yticklabels([f"k={k}" for k in k_vals])
-    ax.set_xlabel("$n_\\mathrm{std}$")
+    ax.set_xlabel(xlabel)
     ax.set_ylabel("k_miss")
-    ax.set_title(f"$P(n_\\mathrm{{std}} \\mid n_\\mathrm{{up}}={n_up})$")
+    if title is not None:
+        ax.set_title(title)
+    else:
+        ax.set_title(f"$P(n_\\mathrm{{std}} \\mid n_\\mathrm{{up}}={n_up})$")
     fig.colorbar(cax, ax=ax, label="probability")
     fig.tight_layout()
     _ensure_dir(save_path)
