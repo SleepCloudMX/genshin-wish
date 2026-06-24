@@ -11,8 +11,10 @@ import numpy as np
 from genshin_wish.character import CharacterState
 from genshin_wish.weapon import WeaponState, WeaponTarget
 from genshin_wish.joint import joint_distribution
+from genshin_wish._constants import STABLE_P
 from genshin_wish.viz._base import setup_style
 from genshin_wish.viz.cdf import plot_annotated_cdf
+from genshin_wish.viz.heatmap import plot_percentile_heatmap
 
 setup_style()
 
@@ -22,20 +24,29 @@ OUTPUT = Path("output/joint")
 DEFAULTS: list[tuple[int, int]] = [(2, 1), (6, 1), (6, 5)]
 
 
+def _make_weapon_state() -> WeaponState:
+    return WeaponState(pity=0, epitomized_points=0, prev_standard=False)
+
+
+def _make_target(b: int) -> WeaponTarget:
+    return WeaponTarget(count_a=b, count_b=0)
+
+
 def main() -> None:
     for a, b in DEFAULTS:
         n_up = a + 1
         out_dir = OUTPUT / f"{a}+{b}"
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        cdf_map: dict[str, np.ndarray] = {}
         percentiles: dict[int, dict[float, int]] = {}
         for loss in range(4):
             state = CharacterState(guaranteed=False, pity=0,
                                    consecutive_loss=loss)
-            weapon_state = WeaponState(pity=0, epitomized_points=0,
-                                       prev_standard=False)
-            target = WeaponTarget(count_a=b, count_b=0)
-            dist = joint_distribution(state, n_up, weapon_state, target)
+            dist = joint_distribution(state, n_up, _make_weapon_state(),
+                                      _make_target(b))
+
+            cdf_map[f"miss={loss}"] = dist.cdf
 
             path = out_dir / f"{a}+{b},miss={loss}.png"
             title = (
@@ -50,7 +61,23 @@ def main() -> None:
                     np.searchsorted(dist.cdf, alpha)
                 )
 
-        # Heatmap table
+        # Steady-state CDF (weighted average over k_miss)
+        max_len = max(len(c) for c in cdf_map.values())
+        stable_cdf = np.zeros(max_len, dtype=np.float64)
+        for loss, pi in enumerate(STABLE_P):
+            cdf = cdf_map[f"miss={loss}"]
+            padded = np.zeros(max_len, dtype=np.float64)
+            padded[: len(cdf)] = cdf
+            stable_cdf += padded * pi
+        cdf_map["stable"] = stable_cdf
+
+        plot_percentile_heatmap(
+            cdf_map,
+            f"{a}+{b} (C{a} + R{b})",
+            out_dir / f"{a}+{b}-heatmap.png",
+        )
+
+        # Markdown table
         rows = []
         for loss in range(4):
             p = percentiles[loss]
