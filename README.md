@@ -14,7 +14,7 @@ pip install -e .
 
 ## 快速开始
 
-### CLI
+### CLI 计算
 
 #### （1）角色池
 
@@ -56,20 +56,49 @@ genshin-wish std --n-gold 5 --pulls 371
 genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500
 ```
 
-#### （5）单图绘制
+### CLI 单图绘制
+
+图表默认输出到 `output/cli/`，可使用 `-o` 指定输出路径。
+
+#### （1）角色池 (`plot char-*`)
 
 ```bash
-# 角色池 CDF
+# CDF 曲线
 genshin-wish plot char-cdf --n-up 7 --loss 0
 
-# n_std 分布柱状图（指定输出目录）
-genshin-wish plot nstd-bar --n-up 7 --loss 0 -o output/my-charts/
+# PDF 曲线
+genshin-wish plot char-pdf --n-up 7 --loss 0
 
-# 武器池 CDF
-genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
+# 幸运扇形图
+genshin-wish plot char-fan --n-up 7 --interval 5
 ```
 
-图表默认输出到 `output/cli/`，可使用 -o 指定输出文件夹或者图片路径。
+#### （2）常驻数分布 (`plot nstd-*`)
+
+```bash
+# 柱状图
+genshin-wish plot nstd-bar --n-up 7 --loss 0
+
+# 条件抽数 CDF
+genshin-wish plot nstd-pdf --n-up 7 --n-std 2 --loss 0
+```
+
+#### （3）捕获明光 (`plot radiance-*`)
+
+```bash
+# 给定 win/loss 序列
+genshin-wish plot radiance-seq --seq "1,2,2,1,2,2,1,1,1,2"
+
+# 给定 n_up
+genshin-wish plot radiance-bar --n-up 100 --loss 0
+```
+
+#### （4）武器池 (`plot weapon-*`)
+
+```bash
+# 定轨 CDF
+genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
+```
 
 > 完整 CLI 选项、参数互斥规则、JSON 输出格式见 **[使用指南](docs/usage.md)**。
 
@@ -94,7 +123,7 @@ python scripts/main_plot.py -c       # 仅角色池
 python scripts/main_plot.py -n       # 仅 n_std 分布
 ```
 
-图表输出到 `output/`，同时作为独立仓库托管于 [genshin-wish-images](https://github.com/SleepCloudMX/genshin-wish-images)。分析脚本见 `scripts/main_analysis.py`。更自由的单图绘制见 [单图绘制](#5-单图绘制)。
+图表输出到 `output/`，同时作为独立仓库托管于 [genshin-wish-images](https://github.com/SleepCloudMX/genshin-wish-images)。分析脚本见 `scripts/main_analysis.py`。更自由的单图绘制见 [CLI 单图绘制](#cli-单图绘制)。
 
 ## 文档
 
