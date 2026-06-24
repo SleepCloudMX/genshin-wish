@@ -190,6 +190,24 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 仅支持 `pity=0`。
 
+#### `plot radiance-seq` — 捕获明光次数分布 (给定序列)
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--seq` | STR | 必填 | win/loss 序列，逗号分隔 (1=win, 2=loss) |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
+
+#### `plot radiance-bar` — 捕获明光次数分布 (给定 n_up)
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--n-up` | INT | 必填 | 目标 UP 数 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
+| `--loss` | INT | 0 | 连续歪次数 0~3 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
+
+仅支持 `pity=0`。
+
 #### `plot weapon-cdf` — 武器池标注 CDF
 
 | 选项 | 类型 | 默认 | 说明 |
@@ -226,6 +244,12 @@ genshin-wish plot char-cdf --n-up 7 -o output/my-charts/
 
 # 指定完整文件路径
 genshin-wish plot nstd-bar --n-up 7 -o output/special.png
+
+# 捕获明光次数 (给定序列)
+genshin-wish plot radiance-seq --seq "1,2,2,1,2,2,1,1,1,2"
+
+# 捕获明光次数 (给定 n_up)
+genshin-wish plot radiance-bar --n-up 100 --loss 0
 ```
 
 ---
@@ -269,6 +293,16 @@ dist.method             # str, "exact" 或 "clt"
 ```python
 dist_stable = stable_up_distribution(7)                # auto
 dist_stable = stable_up_distribution(500, method="dp-golds")
+```
+
+**捕获明光次数分布：** 计算获得 *n_up* 个 UP 过程中触发捕获明光的次数分布。仅支持 `pity=0`。
+
+```python
+from genshin_wish import CharacterState, radiance_distribution
+
+state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
+dist = radiance_distribution(state, n_up=7)
+# dist = {0: 0.35, 1: 0.42, 2: 0.18, 3: 0.05, ...}
 ```
 
 ### 武器池
