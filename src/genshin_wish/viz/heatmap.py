@@ -22,7 +22,7 @@ def plot_percentile_heatmap(
     if alphas is None:
         alphas = DEFAULT_ALPHAS
 
-    alpha_headers = [f"{int(a * 100)}%" for a in alphas] + ["E"]
+    alpha_headers = [f"{int(a * 100)}%" for a in alphas] + ["期望"]
 
     data = np.zeros((len(MISS_LABELS), len(alphas) + 1), dtype=float)
     for i, (_row_name, key) in enumerate(MISS_LABELS):
@@ -75,8 +75,8 @@ def plot_percentile_heatmap(
             "注：官方未公开概率，基于玩家经验数据建模（前 73 抽 0.6%，之后每抽递增 6%；连续歪 0/1/2/3 次捕获明光概率 0.018%/9.6%/18.3%/100%），\n"
             "与官方公布的综合概率相比，期望抽数约低估 0.3 抽/UP（观测误差）；结果为解析计算（非蒙特卡洛），无模型误差与截断误差，舍入误差可忽略。"
         )
-    fig.text(0.05, 0.04, note_text, ha='left', va='bottom', fontsize=8,
-             color='#666666', linespacing=1.35)
+    fig.text(0.45, 0.025, note_text, ha='center', va='bottom', fontsize=8,
+             color='#666666', linespacing=1.35, ma='left')
 
     _ensure_dir(filename)
     plt.savefig(filename, dpi=200)
