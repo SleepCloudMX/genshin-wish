@@ -16,6 +16,7 @@
 | `plots/multi_gold.py` | `output/multi-gold/` — 十连多金概率 |
 | `plots/long_term.py` | `output/character/long-term/` — 长期欧非演变 |
 | `plots/nstd.py` | `output/character/std/` — 常驻角色分布 |
+| `plots/radiance.py` | `output/character/radiance/` — 捕获明光次数分布 |
 
 每个 `plots/*.py` 可独立运行。
 
@@ -45,8 +46,14 @@ python scripts/main_analysis.py --plot-only --tasks 1 --fit
 
 | 文件 | 说明 |
 |------|------|
-| `cli_examples/plot.sh` | `genshin-wish plot` 单图绘制示例 |
-| `cli_examples/calc_prob.sh` | `genshin-wish char/weapon/std/joint` 概率查询示例 |
+| `cli_examples/calc_char.sh` | `genshin-wish char` 角色池查询示例 |
+| `cli_examples/calc_weapon.sh` | `genshin-wish weapon` 武器池查询示例 |
+| `cli_examples/calc_std.sh` | `genshin-wish std` 常驻池查询示例 |
+| `cli_examples/calc_joint.sh` | `genshin-wish joint` 联合计算示例 |
+| `cli_examples/plot_char.sh` | `genshin-wish plot char-*` 角色池绘图示例 |
+| `cli_examples/plot_nstd.sh` | `genshin-wish plot nstd-*` 常驻分布绘图示例 |
+| `cli_examples/plot_radiance.sh` | `genshin-wish plot radiance-*` 捕获明光绘图示例 |
+| `cli_examples/plot_weapon.sh` | `genshin-wish plot weapon-*` 武器池绘图示例 |
 
 ## 约定
 
