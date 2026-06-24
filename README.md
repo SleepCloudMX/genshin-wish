@@ -2,6 +2,8 @@
 
 原神抽卡概率计算器 — 基于玩家总结的概率机制，**解析计算**角色池、武器池、常驻池的抽数概率分布。
 
+> 图表展示：[genshin-wish-images](https://github.com/SleepCloudMX/genshin-wish-images)
+
 ## 安装
 
 ```bash
@@ -67,7 +69,7 @@ genshin-wish plot nstd-bar --n-up 7 --loss 0 -o output/my-charts/
 genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
 ```
 
-图表输出到 `output/cli/`。
+图表默认输出到 `output/cli/`，可使用 -o 指定输出文件夹或者图片路径。
 
 > 完整 CLI 选项、参数互斥规则、JSON 输出格式见 **[使用指南](docs/usage.md)**。
 
@@ -92,7 +94,7 @@ python scripts/main_plot.py -c       # 仅角色池
 python scripts/main_plot.py -n       # 仅 n_std 分布
 ```
 
-图表输出到 `output/`。分析脚本见 `scripts/main_analysis.py`。更自由的单图绘制见 [单图绘制](#5-单图绘制)。
+图表输出到 `output/`，同时作为独立仓库托管于 [genshin-wish-images](https://github.com/SleepCloudMX/genshin-wish-images)。分析脚本见 `scripts/main_analysis.py`。更自由的单图绘制见 [单图绘制](#5-单图绘制)。
 
 ## 文档
 
