@@ -321,6 +321,29 @@ dist = radiance_distribution(state, n_up=7)
 # dist = {0: 0.35, 1: 0.42, 2: 0.18, 3: 0.05, ...}
 ```
 
+**常驻角色数分布：** 获得 *n_up* 个 UP 过程中歪出常驻数量的概率分布。仅支持 `pity=0`。
+
+```python
+from genshin_wish import CharacterState, n_std_distribution
+
+state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
+dist = n_std_distribution(state, n_up=7)
+# dist = {0: 0.15, 1: 0.30, 2: 0.30, 3: 0.17, ...}
+```
+
+**常驻数条件下抽数分布：** 给定常驻数量的情况下的抽数分布。仅支持 `pity=0`。
+
+```python
+from genshin_wish import CharacterState, n_std_conditional_pulls
+
+state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
+dists = n_std_conditional_pulls(state, n_up=7)
+# dists = {0: UpDistribution(...), 1: UpDistribution(...), ...}
+dist = dists[2]  # 歪 2 次的抽数分布
+dist.expected    # 期望抽数
+dist.quantile(0.5)
+```
+
 ### 武器池
 
 ```python
