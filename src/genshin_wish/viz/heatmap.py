@@ -13,6 +13,7 @@ def plot_percentile_heatmap(
     title: str,
     filename: str | Path,
     alphas: list[float] | None = None,
+    note_text: str | None = None,
 ) -> None:
     """Draw a heatmap showing percentile values (pulls needed) across miss/stable states.
 
@@ -62,10 +63,11 @@ def plot_percentile_heatmap(
     cbar = fig.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("所需总抽数", rotation=270, labelpad=20, fontsize=12)
 
-    note_text = (
-        "注：官方未公开概率，基于玩家经验数据建模（前 73 抽 0.6%，之后每抽递增 6%；连续歪 0/1/2/3 次捕获明光概率 0.018%/9.6%/18.3%/100%），\n"
-        "与官方公布的综合概率相比，期望抽数约低估 0.3 抽/UP（观测误差）；结果为解析计算（非蒙特卡洛），无模型误差与截断误差，舍入误差可忽略。"
-    )
+    if note_text is None:
+        note_text = (
+            "注：官方未公开概率，基于玩家经验数据建模（前 73 抽 0.6%，之后每抽递增 6%；连续歪 0/1/2/3 次捕获明光概率 0.018%/9.6%/18.3%/100%），\n"
+            "与官方公布的综合概率相比，期望抽数约低估 0.3 抽/UP（观测误差）；结果为解析计算（非蒙特卡洛），无模型误差与截断误差，舍入误差可忽略。"
+        )
     fig.text(0.05, 0.04, note_text, ha='left', va='bottom', fontsize=8,
              color='#666666', linespacing=1.35)
 
