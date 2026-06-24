@@ -17,6 +17,7 @@
 | `plots/long_term.py` | `output/character/long-term/` — 长期欧非演变 |
 | `plots/nstd.py` | `output/character/std/` — 常驻角色分布 |
 | `plots/radiance.py` | `output/character/radiance/` — 捕获明光次数分布 |
+| `plots/joint.py` | `output/joint/` — 角色+武器联合 CDF |
 
 每个 `plots/*.py` 可独立运行。
 

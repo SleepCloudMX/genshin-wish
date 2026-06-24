@@ -218,6 +218,19 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--prev-std` / `--no-prev-std` | flag | `--no-prev-std` | 上一金是否为常驻 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
+#### `plot joint-cdf` — 联合计算 CDF
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--char-up` | INT | 必填 | 角色目标 UP 数 (含本体) |
+| `--weapon-count` | INT | 1 | 武器目标数量 |
+| `--char-guaranteed` / `--no-char-guaranteed` | flag | `--no-guaranteed` | 角色池是否大保底 |
+| `--char-pity` | INT | 0 | 角色池已垫抽数 |
+| `--char-loss` | INT | 0 | 角色池连续歪次数 0~3 |
+| `--weapon-ep` | INT | 0 | 武器池命定值 0~2 |
+| `--weapon-pity` | INT | 0 | 武器池已垫抽数 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
+
 **示例：**
 
 ```bash
@@ -250,6 +263,9 @@ genshin-wish plot radiance-seq --seq "1,2,2,1,2,2,1,1,1,2"
 
 # 捕获明光次数 (给定 n_up)
 genshin-wish plot radiance-bar --n-up 100 --loss 0
+
+# 联合计算 CDF (C2 + R1)
+genshin-wish plot joint-cdf --char-up 3 --weapon-count 1 --char-loss 0
 ```
 
 ---
