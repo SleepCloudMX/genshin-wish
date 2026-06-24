@@ -1,6 +1,65 @@
 """Capture Radiance mechanism: enumerate win/loss sequences for n_up UPs."""
 
+from collections import defaultdict
+
 from ._constants import CAPTURE_RADIANCE_WIN_RATE
+
+
+def radiance_dist_from_seq(seq: list[int]) -> dict[int, float]:
+    """Poisson-binomial: given a win/loss sequence, compute P(radiance count = r).
+
+    Args:
+        seq: List of 1 (win) / 2 (loss) outcomes.
+
+    Returns:
+        ``{radiance_count: probability}``.
+    """
+    p_up = CAPTURE_RADIANCE_WIN_RATE
+    k = 0
+    probs: list[float] = []
+    for outcome in seq:
+        if outcome == 1:  # win
+            pk = p_up[k]
+            if pk > 0.5:
+                probs.append((pk - 0.5) / pk)
+            k = 0
+        else:  # loss
+            if k < 3:
+                k += 1
+
+    dp: dict[int, float] = {0: 1.0}
+    for p in probs:
+        new: dict[int, float] = defaultdict(float)
+        for r, prob in dp.items():
+            new[r] += prob * (1 - p)
+            new[r + 1] += prob * p
+        dp = new
+    return dict(dp)
+
+
+def radiance_dist_from_n_up(n_up: int, k_miss: int = 0) -> dict[int, float]:
+    """3-D DP: distribution of radiance trigger count for *n_up* UPs from *k_miss*.
+
+    Complexity O(n_up²).
+    """
+    p_up = CAPTURE_RADIANCE_WIN_RATE
+    dp: dict[tuple[int, int], float] = {(k_miss, 0): 1.0}
+
+    for _ in range(n_up):
+        new: dict[tuple[int, int], float] = defaultdict(float)
+        for (k, r), prob in dp.items():
+            pk = p_up[k]
+            new[(0, r)] += prob * 0.5          # win via 50/50
+            new[(0, r + 1)] += prob * (pk - 0.5)  # win via radiance
+            if k < 3:
+                new[(k + 1, r)] += prob * (1 - pk)  # loss
+        dp = new
+
+    result: dict[int, float] = defaultdict(float)
+    for (k, r), prob in dp.items():
+        result[r] += prob
+    total = sum(result.values())
+    return {r: p / total for r, p in result.items()}
 
 
 def guarantee_seq(

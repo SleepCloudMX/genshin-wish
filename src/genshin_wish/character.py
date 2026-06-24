@@ -237,6 +237,24 @@ def n_std_distribution(state: CharacterState, n_up: int) -> dict[int, float]:
     return golds_nstd_to_nstd_dist(joint)
 
 
+def radiance_distribution(state: CharacterState, n_up: int) -> dict[int, float]:
+    """Distribution of Capturing Radiance trigger count for *n_up* UPs.
+
+    Only supports ``pity=0``.  Returns ``{radiance_count: probability}``.
+    """
+    from ._capture_radiance import radiance_dist_from_n_up
+
+    if n_up < 0:
+        raise ValueError(f"n_up must be >= 0, got {n_up}")
+    if state.pity != 0:
+        raise ValueError(f"pity must be 0 (not yet supported), got {state.pity}")
+
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+    if n_uncertain <= 0:
+        return {0: 1.0}
+    return radiance_dist_from_n_up(n_uncertain, state.consecutive_loss)
+
+
 def _n_std_dist_path(k_miss: int, n_uncertain: int) -> dict[int, float]:
     """dp-path: count losses (2s) per sequence to get n_std distribution."""
     seq2p = guarantee_seq(k_miss, n_uncertain)

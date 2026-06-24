@@ -401,5 +401,43 @@ def weapon_cdf(count_a: int, ep: int, pity: int, prev_std: bool,
     click.echo(f"Saved: {path}")
 
 
+@plot.command()
+@click.option("--seq", type=str, required=True,
+              help="win/loss 序列，逗号分隔 (1=win, 2=loss)")
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def radiance_seq(seq: str, output: str | None) -> None:
+    """捕获明光次数分布 (给定序列)"""
+    from genshin_wish._capture_radiance import radiance_dist_from_seq
+    from genshin_wish.viz.radiance import plot_radiance_bar
+
+    values = [int(x.strip()) for x in seq.split(",")]
+    dist = radiance_dist_from_seq(values)
+    name = f"radiance-seq-{seq.replace(',', '-')}.png"
+    path = _resolve_output(output, name)
+    plot_radiance_bar(dist, len(values), 0, path,
+                      title=f"Radiance count ($\\mathrm{{seq}}={values}$)")
+    click.echo(f"Saved: {path}")
+
+
+@plot.command()
+@click.option("--n-up", type=int, required=True, help="目标 UP 数")
+@click.option("--guaranteed/--no-guaranteed", default=False)
+@click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def radiance_bar(n_up: int, guaranteed: bool, loss: int,
+                 output: str | None) -> None:
+    """捕获明光次数分布 (给定 n_up)"""
+    from genshin_wish.character import radiance_distribution, CharacterState
+    from genshin_wish.viz.radiance import plot_radiance_bar
+
+    state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
+    dist = radiance_distribution(state, n_up)
+    suffix = f"-guaranteed" if guaranteed else ""
+    name = f"radiance-bar-n{n_up}-loss{loss}{suffix}.png"
+    path = _resolve_output(output, name)
+    plot_radiance_bar(dist, n_up, loss, path)
+    click.echo(f"Saved: {path}")
+
+
 if __name__ == "__main__":
     main()
