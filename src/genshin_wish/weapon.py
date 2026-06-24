@@ -156,19 +156,33 @@ def weapon_up_distribution(
     )
     pdfs = get_gold_pdfs(WEAPON_POOL)
 
-    # Weighted sum of multi-gold PDFs (gold > 0 only)
+    # Weighted sum of multi-gold PDFs.
+    # The first gold gets pity-shifted; remaining golds use full pdfs.
+    if state.pity == 0:
+        first_gold_pdf = pdfs[1]
+    else:
+        first_gold_pdf = np.insert(
+            pdfs[1][state.pity + 1:] / pdfs[1][state.pity + 1:].sum(),
+            0, 0,
+        )
+
     max_gold = max(weights.keys())
-    result_pdf = np.zeros(len(pdfs[max_gold]), dtype=np.float64)
+    if max_gold == 0:
+        return WeaponUpDistribution(
+            pdf=np.array([1.0], dtype=np.float64),
+            cdf=np.array([1.0], dtype=np.float64),
+            gold_weights=weights,
+        )
+
+    result_pdf = np.zeros(len(first_gold_pdf) + len(pdfs[max_gold]) - 1,
+                          dtype=np.float64)
     for gold, w in weights.items():
         if w > 0 and gold > 0:
-            result_pdf[: len(pdfs[gold])] += pdfs[gold] * w
-
-    # Shift by current pity
-    shifted_first = np.insert(
-        pdfs[1][state.pity + 1:] / pdfs[1][state.pity + 1:].sum(),
-        0, 0,
-    )
-    result_pdf = np.convolve(result_pdf, shifted_first)
+            contrib = np.convolve(first_gold_pdf, pdfs[gold - 1]) * w
+            if len(contrib) > len(result_pdf):
+                result_pdf = np.pad(result_pdf,
+                                    (0, len(contrib) - len(result_pdf)))
+            result_pdf[: len(contrib)] += contrib
 
     cdf = np.cumsum(result_pdf)
     return WeaponUpDistribution(pdf=result_pdf, cdf=cdf, gold_weights=weights)
