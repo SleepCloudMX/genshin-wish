@@ -94,6 +94,34 @@ def _solve_exact(
 
 
 # ---------------------------------------------------------------------------
+# Pre-5.0 exact solver (each UP i.i.d.)
+# ---------------------------------------------------------------------------
+
+def _solve_pre50(
+    max_n: int,
+    p_gold: np.ndarray,
+    p_gold2: np.ndarray,
+) -> dict[int, np.ndarray]:
+    """Exact pre-5.0: each UP is i.i.d.  50 % 1-gold, 50 % 2-gold.
+
+    Returns ``{n: pdf}`` where pdf is the N-fold convolution of the single-UP
+    PDF ``0.5·p_gold + 0.5·p_gold2``.
+    """
+    length = max(len(p_gold), len(p_gold2))
+    up1 = np.zeros(length, dtype=np.float64)
+    up1[: len(p_gold)] = 0.5 * p_gold
+    up1[: len(p_gold2)] += 0.5 * p_gold2
+
+    result: dict[int, np.ndarray] = {}
+    pdf = up1.copy()
+    for n in range(1, max_n + 1):
+        if n > 1:
+            pdf = np.convolve(pdf, up1)
+        result[n] = pdf
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Steady-state per-UP moments
 # ---------------------------------------------------------------------------
 
@@ -181,7 +209,7 @@ def make_long_solver(
     if method == "exact":
         pre_pdfs: dict[int, np.ndarray] = {}
         if N1 > 0:
-            pre_pdfs = _solve_exact(N1, [0.5, 1.0], p_gold, p_gold2)
+            pre_pdfs = _solve_pre50(N1, p_gold, p_gold2)
 
         post_pdfs: dict[int, np.ndarray] = {}
         if N2 > 0:
