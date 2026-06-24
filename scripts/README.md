@@ -55,6 +55,7 @@ python scripts/main_analysis.py --plot-only --tasks 1 --fit
 | `cli_examples/plot_nstd.sh` | `genshin-wish plot nstd-*` 常驻分布绘图示例 |
 | `cli_examples/plot_radiance.sh` | `genshin-wish plot radiance-*` 捕获明光绘图示例 |
 | `cli_examples/plot_weapon.sh` | `genshin-wish plot weapon-*` 武器池绘图示例 |
+| `cli_examples/plot_joint.sh` | `genshin-wish plot joint-*` 联合绘图示例 |
 
 ## 约定
 
