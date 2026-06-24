@@ -150,6 +150,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
 | `--pity` | INT | 0 | 已垫抽数 |
 | `--loss` | INT | 0 | 连续歪次数 0~3 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
 #### `plot char-pdf` — 角色池 PDF
 
@@ -164,6 +165,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
 | `--interval` | `3`\|`5` | `3` | 区间层数 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
 #### `plot nstd-bar` — n_std 分布柱状图
 
@@ -172,6 +174,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--n-up` | INT | 必填 | 目标 UP 数 |
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
 | `--loss` | INT | 0 | 连续歪次数 0~3 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
 仅支持 `pity=0`。
 
@@ -183,6 +186,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--n-std` | INT | 必填 | 常驻数量 |
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 是否大保底 |
 | `--loss` | INT | 0 | 连续歪次数 0~3 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
 仅支持 `pity=0`。
 
@@ -194,6 +198,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--ep` | INT | 0 | 命定值 0~2 |
 | `--pity` | INT | 0 | 已垫抽数 |
 | `--prev-std` / `--no-prev-std` | flag | `--no-prev-std` | 上一金是否为常驻 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
 **示例：**
 
