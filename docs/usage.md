@@ -136,6 +136,12 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 输出到 `output/cli/`，文件名由参数自动生成。与 `scripts/main_plot.py`（批量、固定参数）互补。
 
+所有子命令支持 `-o` / `--output` 自定义输出路径：
+
+- 路径含 `.` → 当作文件路径直接使用
+- 否则 → 当作目录，文件名自动生成放入该目录
+- 不指定 → 默认 `output/cli/<name>.png`
+
 #### `plot char-cdf` — 角色池标注 CDF
 
 | 选项 | 类型 | 默认 | 说明 |
@@ -209,6 +215,12 @@ genshin-wish plot nstd-pdf --n-up 7 --n-std 2 --loss 0
 
 # 武器池定轨
 genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
+
+# 指定输出目录
+genshin-wish plot char-cdf --n-up 7 -o output/my-charts/
+
+# 指定完整文件路径
+genshin-wish plot nstd-bar --n-up 7 -o output/special.png
 ```
 
 ---

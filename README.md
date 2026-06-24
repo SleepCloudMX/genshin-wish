@@ -60,8 +60,8 @@ genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500
 # 角色池 CDF
 genshin-wish plot char-cdf --n-up 7 --loss 0
 
-# n_std 分布柱状图
-genshin-wish plot nstd-bar --n-up 7 --loss 0
+# n_std 分布柱状图（指定输出目录）
+genshin-wish plot nstd-bar --n-up 7 --loss 0 -o output/my-charts/
 
 # 武器池 CDF
 genshin-wish plot weapon-cdf --count-a 1 --ep 1 --pity 45
