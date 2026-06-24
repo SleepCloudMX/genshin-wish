@@ -36,8 +36,10 @@ def main(
         out_dir = OUTPUT / f"n_up={n}"
         plot_nstd_heatmap_per_up(
             nstd_by_k, n, out_dir / "heatmap.png",
-            xlabel="radiance count", fmt=".2%", prune_threshold=0.0001,
-            title=f"$P(\\text{{radiance}} \\mid n_\\mathrm{{up}}={n})$",
+            xlabel="捕获明光次数",
+            ylabel="连歪次数 (k_miss)",
+            fmt=".2%", prune_threshold=0.0001,
+            title=f"P(capture radiance | n_up={n})",
         )
         for k in k_misses:
             plot_radiance_bar(

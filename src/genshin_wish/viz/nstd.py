@@ -60,14 +60,15 @@ def plot_nstd_heatmap_per_up(
     save_path: str | Path,
     *,
     xlabel: str = "$n_\\mathrm{std}$",
+    ylabel: str = "k_miss",
     fmt: str = ".1%",
     prune_threshold: float = 0.0,
     title: str | None = None,
 ) -> None:
     """Single-n_up heatmap: rows = k_miss, cols = value, colour = probability.
 
-    *xlabel* and *fmt* customize the column axis label and cell text format.
-    Columns where every row is < *prune_threshold* are removed from the plot.
+    *xlabel*/*ylabel* and *fmt* customize axis labels and cell text format.
+    Columns where every row is < *prune_threshold* are removed.
     """
     k_vals = sorted(nstd_by_k.keys())
     if not k_vals:
@@ -85,7 +86,9 @@ def plot_nstd_heatmap_per_up(
         return
     data = data[:, keep]
 
-    fig, ax = plt.subplots(figsize=(8, 3))
+    cols = data.shape[1]
+    fig_w = max(7, min(cols * 0.55, 22))
+    fig, ax = plt.subplots(figsize=(fig_w, 3))
     cmap = plt.colormaps["Blues"]
     cax = ax.imshow(data, cmap=cmap, aspect="auto", origin="lower")
 
@@ -106,7 +109,7 @@ def plot_nstd_heatmap_per_up(
     ax.set_xticklabels([str(keep[j]) for j in range(cols)])
     ax.set_yticklabels([f"k={k}" for k in k_vals])
     ax.set_xlabel(xlabel)
-    ax.set_ylabel("k_miss")
+    ax.set_ylabel(ylabel)
     if title is not None:
         ax.set_title(title)
     else:
