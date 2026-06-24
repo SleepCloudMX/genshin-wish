@@ -44,7 +44,7 @@ def main(
     for k in k_misses:
         state = CharacterState(guaranteed=False, pity=0, consecutive_loss=k)
         for n in n_ups:
-            if chart_type in ("all", "std-dist"):
+            if chart_type in ("all", "std-dist", "pulls-dist"):
                 dist = n_std_distribution(state, n)
                 all_nstd.setdefault(n, {})[k] = dist
             if chart_type in ("all", "pulls-dist"):
@@ -54,7 +54,7 @@ def main(
     if chart_type in ("all", "std-dist"):
         _gen_std_dist(all_nstd, n_ups, k_misses)
     if chart_type in ("all", "pulls-dist"):
-        _gen_pulls_dist(all_pulls, n_ups, k_misses, cdf_n_ups)
+        _gen_pulls_dist(all_pulls, all_nstd, n_ups, k_misses, cdf_n_ups)
 
     print(f"Done — {OUTPUT}")
 
@@ -78,6 +78,7 @@ def _gen_std_dist(
 
 def _gen_pulls_dist(
     all_pulls: dict[int, dict[int, dict[int, object]]],
+    all_nstd: dict[int, dict[int, dict[int, float]]],
     n_ups: list[int],
     k_misses: list[int],
     cdf_n_ups: list[int],
@@ -85,8 +86,10 @@ def _gen_pulls_dist(
     for n in n_ups:
         for k in k_misses:
             dists = all_pulls[n][k]
+            nstd_probs = all_nstd[n][k]
             plot_nstd_pdf(dists, n, k,
-                          PULLS_DIST / "pdf" / f"n{n}" / f"k{k}.png")
+                          PULLS_DIST / "pdf" / f"n{n}" / f"k{k}.png",
+                          nstd_probs=nstd_probs)
             if n not in cdf_n_ups:
                 continue
             ranked = sorted(dists.items(),

@@ -137,23 +137,32 @@ def plot_nstd_pdf(
     n_up: int,
     k_miss: int,
     save_path: str | Path,
+    nstd_probs: dict[int, float] | None = None,
     min_prob: float = 0.01,
 ) -> None:
-    """Multi-curve PDF overlay: one curve per n_std, coloured."""
+    """Multi-curve PDF overlay: one curve per n_std, coloured.
+
+    *dists* maps n_std to conditional P(pulls | n_std).  *nstd_probs* maps
+    n_std to marginal P(n_std) — used for legend labels.  If *None*,
+    every curve is drawn (``min_prob`` is ignored).
+    """
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    total_p = sum(d.pdf.sum() for d in dists.values())
     items = sorted(dists.items())
 
     for i, (ns, dist) in enumerate(items):
-        prob = dist.pdf.sum() / total_p if total_p > 0 else 0
-        if prob < min_prob:
-            continue
+        if nstd_probs is not None:
+            prob = nstd_probs.get(ns, 0.0)
+            if prob < min_prob:
+                continue
         colour = _NSTD_CMAP(i / max(len(items) - 1, 1))
         x_hi = int(np.searchsorted(dist.cdf, 0.9999))
         x = np.arange(min(x_hi + 10, len(dist.pdf)))
-        ax.plot(x, dist.pdf[x], color=colour, lw=1.2,
-                label=f"$n_\\mathrm{{std}}$={ns} ({prob:.1%})")
+        if nstd_probs is not None:
+            label = f"$n_\\mathrm{{std}}$={ns} ({prob:.1%})"
+        else:
+            label = f"$n_\\mathrm{{std}}$={ns}"
+        ax.plot(x, dist.pdf[x], color=colour, lw=1.2, label=label)
 
     ax.set_xlabel("pulls")
     ax.set_ylabel("probability density")
