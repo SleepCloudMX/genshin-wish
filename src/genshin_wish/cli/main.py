@@ -34,6 +34,16 @@ def _plot_setup() -> None:
     setup_style()
 
 
+def _resolve_output(output: str | None, default_name: str) -> Path:
+    """Resolve -o flag: basename with '.' → file path, otherwise directory."""
+    if output is None:
+        return CLI_OUTPUT / default_name
+    p = Path(output)
+    if "." in p.name:
+        return p
+    return p / default_name
+
+
 def _format_dist(name: str, dist: UpDistribution | WeaponUpDistribution, pulls: int | None) -> str:
     """Format a distribution result as text."""
     lines = [f"{name}:"]
@@ -250,14 +260,16 @@ def _state(guaranteed: bool, pity: int, loss: int) -> CharacterState:
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def char_cdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def char_cdf(n_up: int, guaranteed: bool, pity: int, loss: int, output: str | None) -> None:
     """角色池标注 CDF"""
     from genshin_wish.viz.cdf import plot_annotated_cdf
 
     state = _state(guaranteed, pity, loss)
     dist = up_distribution(state, n_up)
     suffix = f"-guaranteed" if guaranteed else ""
-    path = CLI_OUTPUT / f"cdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    name = f"cdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    path = _resolve_output(output, name)
     plot_annotated_cdf(
         dist.cdf,
         f"CDF (n_up={n_up}, loss={loss}, pity={pity}"
@@ -272,14 +284,16 @@ def char_cdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int, output: str | None) -> None:
     """角色池 PDF"""
     from genshin_wish.viz.pdf import plot_simple_pdf
 
     state = _state(guaranteed, pity, loss)
     dist = up_distribution(state, n_up)
     suffix = f"-guaranteed" if guaranteed else ""
-    path = CLI_OUTPUT / f"pdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    name = f"pdf-n{n_up}-loss{loss}-pity{pity}{suffix}.png"
+    path = _resolve_output(output, name)
     plot_simple_pdf(
         dist.pdf,
         f"PDF (n_up={n_up}, loss={loss}, pity={pity}"
@@ -296,7 +310,9 @@ def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int) -> None:
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--interval", type=click.Choice(["3", "5"]), default="3",
               help="区间层数 (默认 3)")
-def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
+             output: str | None) -> None:
     """角色池幸运扇形图"""
     from genshin_wish.viz.fan import plot_luck_fan
 
@@ -306,7 +322,8 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str) -
         return up_distribution(state, n).pdf
 
     suffix = f"-guaranteed" if guaranteed else ""
-    path = CLI_OUTPUT / f"fan-n{n_up}-loss{loss}-pity{pity}-i{interval}{suffix}.png"
+    name = f"fan-n{n_up}-loss{loss}-pity{pity}-i{interval}{suffix}.png"
+    path = _resolve_output(output, name)
     plot_luck_fan(
         pdf_func, max_n_up=n_up, save_path=path,
         interval_set=int(interval),
@@ -319,14 +336,16 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str) -
 @click.option("--n-up", type=int, required=True, help="目标 UP 数")
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def nstd_bar(n_up: int, guaranteed: bool, loss: int) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def nstd_bar(n_up: int, guaranteed: bool, loss: int, output: str | None) -> None:
     """n_std 分布柱状图 (仅支持 pity=0)"""
     from genshin_wish.viz.nstd import plot_nstd_bar
 
     state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
     dist = n_std_distribution(state, n_up)
     suffix = f"-guaranteed" if guaranteed else ""
-    path = CLI_OUTPUT / f"nstd-bar-n{n_up}-loss{loss}{suffix}.png"
+    name = f"nstd-bar-n{n_up}-loss{loss}{suffix}.png"
+    path = _resolve_output(output, name)
     plot_nstd_bar(dist, n_up, loss, path)
     click.echo(f"Saved: {path}")
 
@@ -336,7 +355,9 @@ def nstd_bar(n_up: int, guaranteed: bool, loss: int) -> None:
 @click.option("--n-std", type=int, required=True, help="常驻数量")
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
-def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int,
+             output: str | None) -> None:
     """条件抽数分布 PDF (仅支持 pity=0)"""
     from genshin_wish.viz.nstd import plot_nstd_cdf
 
@@ -346,7 +367,8 @@ def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int) -> None:
         click.echo(f"n_std={n_std} 不可达 (n_up={n_up}, loss={loss})", err=True)
         sys.exit(1)
     suffix = f"-guaranteed" if guaranteed else ""
-    path = CLI_OUTPUT / f"nstd-pdf-n{n_up}-s{n_std}-loss{loss}{suffix}.png"
+    name = f"nstd-pdf-n{n_up}-s{n_std}-loss{loss}{suffix}.png"
+    path = _resolve_output(output, name)
     plot_nstd_cdf(dists[n_std], n_up, n_std, loss, path)
     click.echo(f"Saved: {path}")
 
@@ -356,17 +378,20 @@ def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int) -> None:
 @click.option("--ep", type=int, default=0, help="命定值 0~2")
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--prev-std/--no-prev-std", default=False, help="上一金是否为常驻")
-def weapon_cdf(count_a: int, ep: int, pity: int, prev_std: bool) -> None:
+@click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
+def weapon_cdf(count_a: int, ep: int, pity: int, prev_std: bool,
+               output: str | None) -> None:
     """武器池标注 CDF (定轨不取消)"""
     from genshin_wish.viz.cdf import plot_annotated_cdf
 
     state = WeaponState(pity=pity, epitomized_points=ep, prev_standard=prev_std)
     target = WeaponTarget(count_a=count_a, count_b=0)
     dist = weapon_up_distribution(state, target)
-    path = CLI_OUTPUT / f"weapon-cdf-a{count_a}-pity{pity}-ep{ep}"
+    stem = f"weapon-cdf-a{count_a}-pity{pity}-ep{ep}"
     if prev_std:
-        path = Path(str(path) + "-prevstd")
-    path = path.with_suffix(".png")
+        stem += "-prevstd"
+    name = stem + ".png"
+    path = _resolve_output(output, name)
     plot_annotated_cdf(
         dist.cdf,
         f"武器池 CDF (count_a={count_a}, pity={pity}, ep={ep}"
