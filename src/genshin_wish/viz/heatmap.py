@@ -22,29 +22,36 @@ def plot_percentile_heatmap(
     if alphas is None:
         alphas = DEFAULT_ALPHAS
 
-    alpha_headers = [f"{int(a * 100)}%" for a in alphas]
+    alpha_headers = [f"{int(a * 100)}%" for a in alphas] + ["E"]
 
-    data = np.zeros((len(MISS_LABELS), len(alphas)), dtype=int)
+    data = np.zeros((len(MISS_LABELS), len(alphas) + 1), dtype=float)
     for i, (_row_name, key) in enumerate(MISS_LABELS):
         cdf = cdf_map[key]
         for j, a in enumerate(alphas):
             data[i, j] = int(np.searchsorted(cdf, a))
+        # Expected value
+        pdf = np.diff(cdf, prepend=0.0)
+        data[i, -1] = float(np.sum(np.arange(len(pdf)) * pdf))
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(10, 5))
     cmap = plt.colormaps['Blues']
 
     cax = ax.imshow(data, cmap=cmap, aspect='auto')
 
     min_val, max_val = data.min(), data.max()
     for i in range(len(MISS_LABELS)):
-        for j in range(len(alphas)):
+        for j in range(len(alpha_headers)):
             val = data[i, j]
             norm_val = (val - min_val) / (max_val - min_val + 1e-9)
             text_color = 'white' if norm_val > 0.6 else '#2b2b2b'
-            ax.text(j, i, str(val), ha='center', va='center',
+            if j == len(alpha_headers) - 1:  # expected column
+                text = f"{val:.0f}"
+            else:
+                text = str(int(val))
+            ax.text(j, i, text, ha='center', va='center',
                     color=text_color, fontweight='bold', fontsize=12)
 
-    ax.set_xticks(np.arange(len(alphas)))
+    ax.set_xticks(np.arange(len(alpha_headers)))
     ax.set_yticks(np.arange(len(MISS_LABELS)))
     ax.set_xticklabels(alpha_headers, fontsize=11)
     ax.set_yticklabels([r[0] for r in MISS_LABELS], fontsize=11)
