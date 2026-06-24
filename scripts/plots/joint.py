@@ -20,7 +20,7 @@ setup_style()
 
 OUTPUT = Path("output/joint")
 
-# a+b = C_a + R_b → n_up = a+1, weapon_count = b
+# a+b = C_a + W_b → n_up = a+1, weapon_count = b
 DEFAULTS: list[tuple[int, int]] = [(2, 1), (6, 1), (6, 5)]
 
 
@@ -32,8 +32,8 @@ def _make_target(b: int) -> WeaponTarget:
     return WeaponTarget(count_a=b, count_b=0)
 
 
-def main() -> None:
-    for a, b in DEFAULTS:
+def main(pairs: list[tuple[int, int]] | None = None) -> None:
+    for a, b in (pairs or DEFAULTS):
         n_up = a + 1
         out_dir = OUTPUT / f"{a}+{b}"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -91,7 +91,7 @@ def main() -> None:
             )
 
         table = (
-            f"### {a}+{b} (C{a} + R{b})\n\n"
+            f"### {a}+{b} (C{a} + W{b})\n\n"
             f"| k_miss | 10% | 30% | 50% | 70% | 90% | 99% |\n"
             f"|--------|-----|-----|-----|-----|-----|-----|\n"
             + "\n".join(rows) + "\n"
@@ -102,4 +102,14 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    def _parse_pair(s: str) -> tuple[int, int]:
+        a, b = s.split("+")
+        return int(a.strip()), int(b.strip())
+
+    p = argparse.ArgumentParser()
+    p.add_argument("pairs", nargs="*", type=_parse_pair,
+                   help="a+b pairs (default: 2+1 6+1 6+5)")
+    args = p.parse_args()
+    main(args.pairs if args.pairs else None)
