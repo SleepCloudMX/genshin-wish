@@ -37,7 +37,7 @@ def _callback(max_n_up, loss, guaranteed, stable):
         label = f"已连歪 {loss} 次"
 
     title = f"【{label}】各命座抽数分位点分布图"
-    return (plot_utils.plot_column(pdf_func, max_n_up, title),)
+    return plot_utils.plot_column(pdf_func, max_n_up, title)
 
 
 def build_tab():

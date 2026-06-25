@@ -35,7 +35,7 @@ def _callback(pool, gold):
     p = _pull10_prob(pdfs[1], gold)
     title = f"稳态下{pool_label}池十连 {gold} 金"
 
-    return (plot_utils.plot_multi(p, title),)
+    return plot_utils.plot_multi(p, title)
 
 
 def build_tab():

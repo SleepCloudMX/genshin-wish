@@ -19,8 +19,8 @@ def _callback(N, model, interval_set):
     solver = make_long_solver(state)
 
     title = f"{model} 长期欧非演变 (N={N})"
-    return (plot_utils.plot_luck_long(solver, N,
-                                      interval_set=interval_set, title=title),)
+    return plot_utils.plot_luck_long(solver, N,
+                                      interval_set=interval_set, title=title)
 
 
 def build_tab():

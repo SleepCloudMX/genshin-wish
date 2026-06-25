@@ -38,8 +38,8 @@ def _callback(max_n_up, interval_set, loss, guaranteed, stable):
         tag = f"max_n_up={max_n_up}, loss={loss}"
 
     title = f"幸运扇形图 ({tag})"
-    return (plot_utils.plot_fan(pdf_func, max_n_up,
-                                interval_set=interval_set, title=title),)
+    return plot_utils.plot_fan(pdf_func, max_n_up,
+                                interval_set=interval_set, title=title)
 
 
 def build_tab():
