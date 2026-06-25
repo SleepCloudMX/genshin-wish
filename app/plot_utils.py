@@ -106,7 +106,7 @@ def plot_nstd_hm(
     xlabel: str = "$n_\\mathrm{std}$",
     ylabel: str = "k_miss",
     fmt: str = ".1%",
-    prune_threshold: float = 0.0,
+    prune_threshold: float = 0.0001,
     title: str | None = None,
 ) -> str:
     """Return PNG path for a single-n_up heatmap (rows = k_miss)."""
