@@ -14,6 +14,10 @@ import numpy as np
 
 from genshin_wish.viz._base import write_percentile_table
 from genshin_wish.viz.cdf import plot_annotated_cdf
+from genshin_wish.viz.column import plot_success_column_chart
+from genshin_wish.viz.fan import plot_luck_fan
+from genshin_wish.viz.long_term import plot_long_term_luck
+from genshin_wish.viz.multi_gold import plot_multi_gold
 from genshin_wish.viz.nstd import (
     plot_nstd_bar,
     plot_nstd_heatmap_per_up,
@@ -127,3 +131,50 @@ def make_pct_table(cdf, *, alphas=None) -> str:
     vals = " | ".join(str(int(np.searchsorted(cdf, a))) for a in alphas)
     sep = " | ".join("---:" for _ in alphas)
     return f"| {headers} |\n| {sep} |\n| {vals} |\n\n> 表格数值：达到对应 α 所需的最少抽数"
+
+
+def plot_fan(
+    pdf_func,
+    max_n_up: int,
+    *,
+    interval_set: int = 5,
+    title: str | None = None,
+) -> str:
+    """Return PNG path for a luck fan chart."""
+    path = _png("fan")
+    plot_luck_fan(pdf_func, max_n_up, path,
+                  interval_set=interval_set, title=title)
+    return path
+
+
+def plot_column(
+    pdf_func,
+    max_n_up: int,
+    title: str,
+) -> str:
+    """Return PNG path for a success column chart."""
+    path = _png("column")
+    plot_success_column_chart(pdf_func, max_n_up, Path(path), title)
+    return path
+
+
+def plot_multi(p: float, title: str) -> str:
+    """Return PNG path for a multi-gold probability chart."""
+    path = _png("multi_gold")
+    plot_multi_gold(p, title, Path(path))
+    return path
+
+
+def plot_luck_long(
+    solver_func,
+    N: int,
+    *,
+    interval_set: int = 3,
+    title: str | None = None,
+    n_start: int = 0,
+) -> str:
+    """Return PNG path for a long-term luck fan chart."""
+    path = _png("long_term")
+    plot_long_term_luck(solver_func, N, path,
+                        interval_set=interval_set, title=title, n_start=n_start)
+    return path

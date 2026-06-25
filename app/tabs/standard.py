@@ -11,17 +11,24 @@ from genshin_wish.standard import StandardState, standard_distribution
 def _callback(n_gold, pity, pulls_raw, q):
     state = StandardState(pity=int(pity))
     dist = standard_distribution(state, int(n_gold))
+    exp_val = dist.expected
 
     prob = dist.probability(int(pulls_raw)) if pulls_raw is not None and pulls_raw > 0 else None
     q_pulls = dist.quantile(float(q)) if q is not None else None
 
-    tag = f"n_gold={int(n_gold)}, pity={int(pity)}"
+    tag = f"n_gold={int(n_gold)}"
     cdf_title = f"常驻池 CDF ({tag})"
     pdf_title = f"常驻池 PDF ({tag})"
 
+    pulls_txt = (
+        f"所需抽数：**{q_pulls} 抽**  \n期望抽数：**{exp_val:.1f} 抽**"
+        if q_pulls is not None
+        else f"期望抽数：**{exp_val:.1f} 抽**"
+    )
+
     return (
         f"达成概率：**{prob:.2%}**" if prob is not None else "",
-        f"所需抽数：**{q_pulls} 抽**" if q_pulls is not None else "",
+        pulls_txt,
         plot_utils.plot_cdf(dist.cdf, cdf_title),
         plot_utils.plot_pdf(dist.pdf, pdf_title),
         plot_utils.make_pct_table(dist.cdf),
@@ -30,10 +37,17 @@ def _callback(n_gold, pity, pulls_raw, q):
 
 def build_tab():
     with gr.Tab("常驻池"):
+        gr.Markdown(
+            "常驻祈愿获得指定数量五星所需的抽数分布。"
+            "支持双向查询：输入抽数查概率，或输入分位点查所需抽数。"
+        )
+
         with gr.Row():
             with gr.Column(scale=1):
                 n_gold = gr.Slider(1, 50, 5, step=1, label="目标五星数")
-                pity = gr.Slider(0, 89, 0, step=1, label="已垫抽数")
+            with gr.Column(scale=1):
+                with gr.Accordion("高级设置", open=False):
+                    pity = gr.Slider(0, 89, 0, step=1, label="已垫抽数")
 
         with gr.Row():
             with gr.Column(scale=1):

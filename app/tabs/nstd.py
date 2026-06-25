@@ -20,7 +20,6 @@ def _callback(n_up, loss, guaranteed):
     nstd_dist = n_std_distribution(state, n_up)
     cond_dists = n_std_conditional_pulls(state, n_up)
 
-    # heatmap: compute for all k_miss
     nstd_by_k = {}
     for k in range(4):
         s = CharacterState(consecutive_loss=k)
@@ -35,13 +34,18 @@ def _callback(n_up, loss, guaranteed):
 
 def build_tab():
     with gr.Tab("常驻分布"):
+        gr.Markdown(
+            "获得 n_up 个 UP 角色时歪出常驻角色的数量分布，"
+            "及各常驻数下的条件抽数分布。热力图展示全部 k_miss 状态。"
+        )
+
         with gr.Row():
             with gr.Column(scale=1):
                 n_up = gr.Slider(1, 30, 7, step=1, label="目标 UP 数")
                 loss = gr.Slider(0, 3, 0, step=1, label="连歪次数")
-                guaranteed = gr.Checkbox(False, label="大保底")
-            with gr.Column(scale=2):
-                pass
+            with gr.Column(scale=1):
+                with gr.Accordion("高级设置", open=False):
+                    guaranteed = gr.Checkbox(False, label="大保底")
 
         btn = gr.Button("计算", variant="primary")
 

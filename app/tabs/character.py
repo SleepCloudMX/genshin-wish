@@ -17,15 +17,22 @@ def _callback(n_up, guaranteed, pity, loss, stable, pulls_raw, q):
 
     prob = dist.probability(int(pulls_raw)) if pulls_raw is not None and pulls_raw > 0 else None
     q_pulls = dist.quantile(float(q)) if q is not None else None
+    exp_val = dist.expected
 
-    tag = f"n_up={n_up}, loss={loss}, pity={int(pity)}"
+    tag = f"n_up={n_up}, loss={loss}"
     tag += ", 稳态" if stable else ""
     cdf_title = f"角色池 CDF ({tag})"
     pdf_title = f"角色池 PDF ({tag})"
 
+    pulls_txt = (
+        f"所需抽数：**{q_pulls} 抽**  \n期望抽数：**{exp_val:.1f} 抽**"
+        if q_pulls is not None
+        else f"期望抽数：**{exp_val:.1f} 抽**"
+    )
+
     return (
         f"达成概率：**{prob:.2%}**" if prob is not None else "",
-        f"所需抽数：**{q_pulls} 抽**" if q_pulls is not None else "",
+        pulls_txt,
         plot_utils.plot_cdf(dist.cdf, cdf_title),
         plot_utils.plot_pdf(dist.pdf, pdf_title),
         plot_utils.make_pct_table(dist.cdf),
@@ -34,14 +41,20 @@ def _callback(n_up, guaranteed, pity, loss, stable, pulls_raw, q):
 
 def build_tab():
     with gr.Tab("角色池"):
+        gr.Markdown(
+            "查询获得指定数量 UP 角色（含本体）所需的抽数分布。"
+            "支持双向查询：输入抽数查概率，或输入分位点查所需抽数。"
+        )
+
         with gr.Row():
             with gr.Column(scale=1):
                 n_up = gr.Slider(1, 180, 7, step=1, label="目标 UP 数（含本体）")
-                pity = gr.Slider(0, 89, 0, step=1, label="已垫抽数")
-            with gr.Column(scale=1):
                 loss = gr.Slider(0, 3, 0, step=1, label="连歪次数")
-                guaranteed = gr.Checkbox(False, label="大保底")
-        stable = gr.Checkbox(False, label="稳态分布")
+            with gr.Column(scale=1):
+                with gr.Accordion("高级设置", open=False):
+                    guaranteed = gr.Checkbox(False, label="大保底")
+                    pity = gr.Slider(0, 89, 0, step=1, label="已垫抽数")
+                    stable = gr.Checkbox(False, label="稳态分布")
 
         with gr.Row():
             with gr.Column(scale=1):
