@@ -18,7 +18,6 @@ import gradio as gr
 
 from app.tabs import (
     character,
-    column,
     fan,
     joint,
     long_term,
@@ -48,7 +47,6 @@ def main():
         nstd.build_tab()
         radiance.build_tab()
         fan.build_tab()
-        column.build_tab()
         multi_gold.build_tab()
         long_term.build_tab()
 

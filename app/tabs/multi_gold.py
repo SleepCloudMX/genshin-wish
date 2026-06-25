@@ -52,6 +52,6 @@ def build_tab():
 
         btn = gr.Button("计算", variant="primary")
 
-        img = gr.Image(label="多金概率", type="filepath")
+        img = gr.Image(label="多金概率", type="filepath", height=420)
 
         btn.click(fn=_callback, inputs=[pool, gold], outputs=[img])
