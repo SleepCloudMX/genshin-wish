@@ -14,6 +14,9 @@ dependencies = [
     "click>=8.1",
 ]
 
+[project.optional-dependencies]
+ui = ["gradio>=5.0"]
+
 [project.scripts]
 genshin-wish = "genshin_wish.cli.main:main"
 
