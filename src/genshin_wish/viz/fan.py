@@ -21,7 +21,8 @@ def _build_configs(interval_set: int) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 3-interval rendering
 # ---------------------------------------------------------------------------
-def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
+def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str,
+                   player_avg: list[float] | None = None) -> None:
     from genshin_wish.viz._base import setup_style
     setup_style()
     alpha_configs = _build_configs(3)
@@ -64,6 +65,17 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
 
     plt.plot(up_axis, expectations_avg, color='black', linewidth=2, marker='o',
              markersize=6, label='期望', zorder=10)
+
+    if player_avg is not None:
+        n_pts = min(len(player_avg), max_n_up)
+        plt.plot(up_axis[:n_pts], player_avg[:n_pts],
+                 color='#27ae60', linewidth=2.5, marker='o',
+                 markersize=7, label='你的记录', zorder=20)
+        for i in range(n_pts):
+            plt.text(up_axis[i] + 0.05, player_avg[i] + 1.2,
+                     f"{player_avg[i]:.1f}",
+                     color='#27ae60', ha='left', va='bottom',
+                     fontsize=8, fontweight='bold', zorder=21)
 
     for i, n in enumerate(up_axis):
         vals = [
@@ -118,7 +130,8 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
 # ---------------------------------------------------------------------------
 # 5-interval rendering
 # ---------------------------------------------------------------------------
-def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
+def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str,
+                   player_avg: list[float] | None = None) -> None:
     from genshin_wish.viz._base import setup_style
     setup_style()
     alpha_configs = _build_configs(5)  # sorted inner→outer: 0.40,0.30,0.20,0.10,0.01
@@ -158,6 +171,17 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
 
     plt.plot(up_axis, expectations_avg, color='black', linewidth=2.5, marker='s',
              markersize=5, label='期望', zorder=10)
+
+    if player_avg is not None:
+        n_pts = min(len(player_avg), max_n_up)
+        plt.plot(up_axis[:n_pts], player_avg[:n_pts],
+                 color='#27ae60', linewidth=2.5, marker='o',
+                 markersize=7, label='你的记录', zorder=20)
+        for i in range(n_pts):
+            plt.text(up_axis[i] + 0.05, player_avg[i] + 1.5,
+                     f"{player_avg[i]:.1f}",
+                     color='#27ae60', ha='left', va='bottom',
+                     fontsize=8, fontweight='bold', zorder=21)
 
     for i, n in enumerate(up_axis):
         vals = [(all_bounds[a][i], f"{int(a * 100)}%", a) for a in target_alphas]
@@ -218,6 +242,7 @@ def plot_luck_fan(
     *,
     interval_set: int = 5,
     title: str | None = None,
+    player_avg: list[float] | None = None,
 ) -> None:
     """Plot a fan chart showing luck-distribution evolution per UP.
 
@@ -235,6 +260,8 @@ def plot_luck_fan(
         Number of probability bands: 3 or 5 (default 5).
     title : str, optional
         Chart title.  Falls back to a sensible default when *None*.
+    player_avg : list[float], optional
+        Player's cumulative average pulls per UP.  Overlaid as a green line.
     """
     sp = Path(save_path)
     if title is None:
@@ -242,6 +269,6 @@ def plot_luck_fan(
                  if interval_set == 3 else "欧非分布")
 
     if interval_set == 3:
-        _render_fan_3(pdf_func, max_n_up, sp, title)
+        _render_fan_3(pdf_func, max_n_up, sp, title, player_avg=player_avg)
     else:
-        _render_fan_5(pdf_func, max_n_up, sp, title)
+        _render_fan_5(pdf_func, max_n_up, sp, title, player_avg=player_avg)
