@@ -193,6 +193,7 @@ def plot_luck_fan(
     *,
     interval_set: int = 5,
     title: str | None = None,
+    player_avg: list[float] | None = None,
 ) -> None
 ```
 
@@ -203,6 +204,7 @@ def plot_luck_fan(
 | `save_path` | 输出 PNG 路径 |
 | `interval_set` | 分位带数量：`3` 或 `5`（默认 5） |
 | `title` | 图表标题，为 None 时自动生成 |
+| `player_avg` | 玩家每 UP 平均抽数列表，非 None 时叠加绿色曲线 |
 
 **3-interval 模式** 分位带：30%-70%（蓝色）、10%-90%（橙色）、1%-99%（红色）。
 
@@ -211,9 +213,10 @@ def plot_luck_fan(
 图表内容：
 - Y 轴 = 总抽数 / UP 数（单位平均成本）
 - X 轴 = 目标命座（0 命 ~ 6 命）
-- 每个命座处标注各分位点数值和期望值（Avg）
+- 每个命座处标注各分位点数值和期望值（Avg），全部左对齐
 - 黑色实线 = 单位平均期望，黑色标记点
 - 红色参考线 = 160 抽/UP（极限大保底参考）
+- 灰色竖虚线 = 各命座引导线（从 x 轴到最外层曲线）
 
 ---
 
@@ -381,7 +384,39 @@ def plot_multi_gold(p: float, title: str, save_path: Path) -> None
 
 ---
 
-### 10. 武器/多金 PDF 对比 (`viz/pdf.py`)
+### 10. 百分位对照图 (`viz/player_luck.py`)
+
+**`plot_player_luck`** — 将玩家实际抽卡记录对照理论分布，直观展示 "超过百分之多少的人"。
+
+```python
+def plot_player_luck(
+    pdf_func,
+    player_cum: list[int],
+    max_n_up: int,
+    save_path: str | Path,
+    *,
+    title: str | None = None,
+) -> None
+```
+
+| 参数 | 说明 |
+|------|------|
+| `pdf_func` | `(n_up: int) -> np.ndarray`，同 `plot_luck_fan` |
+| `player_cum` | 每个 UP 后的累计总抽数 |
+| `max_n_up` | X 轴最大 UP 数 |
+| `save_path` | 输出 PNG 路径 |
+| `title` | 图表标题 |
+
+图表内容：
+- Y 轴 = 百分位 (0–100%)，X 轴 = 已获得限定数
+- 10 条水平参考虚线 (1%/10%/20%/30%/40% 及对称的 60%/70%/80%/90%/99%)，颜色与 fan chart 分位带一致
+- 50% 中位线（灰色）
+- 每条水平线在各 UP 位置标注对应抽数，99% 线标注在线下方避免裁剪
+- 绿色曲线 = 玩家百分位记录，散点标注数值
+
+---
+
+### 11. 武器/多金 PDF 对比 (`viz/pdf.py`)
 
 **`plot_base_pdfs`** — 1~4 金的 PDF 曲线对比，标注期望值。
 
@@ -429,6 +464,7 @@ plot_annotated_cdf(dist.cdf, "标题", "output/custom.png")
 | `viz.staircase` | `plot_staircase_luck_fan` | 阶梯扇形图 |
 | `viz.long_term` | `plot_long_term_luck` | 长期欧非演变 |
 | `long_term` | `make_long_solver` | 创建 long-term solver |
+| `viz.player_luck` | `plot_player_luck` | 百分位对照图 |
 | `viz.multi_gold` | `plot_multi_gold` | 十连多金概率 |
 | `viz.pdf` | `plot_base_pdfs` | 多金 PDF 对比 |
 

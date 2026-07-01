@@ -164,8 +164,26 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
+| `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 (按 STABLE_P 加权) |
 | `--interval` | `3`\|`5` | `3` | 区间层数 |
+| `--pulls-seq` | TEXT | — | 个人抽卡序列, e.g. `"68,79+11,77+80,..."`（叠加绿色玩家曲线） |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
+
+`A+B` 表示歪常驻 (A 抽) 后出限定 (B 抽)；单个数字表示直接赢得限定。
+
+#### `plot player-luck` — 个人抽卡百分位对照图
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--pulls-seq` | TEXT | **必填** | 抽卡序列, e.g. `"68,79+11,77+80,..."` |
+| `--n-up` | INT | 序列长度 | 最大 UP 数 |
+| `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
+| `--pity` | INT | 0 | |
+| `--loss` | INT | 0 | |
+| `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
+| `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
+
+Y 轴 = 百分位 (0–100%)，X 轴 = 已获得限定数。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。 |
 
 #### `plot nstd-bar` — n_std 分布柱状图
 
@@ -242,6 +260,17 @@ genshin-wish plot char-pdf --n-up 2 --guaranteed --pity 32 --loss 1
 
 # 幸运扇形图（5 层区间）
 genshin-wish plot char-fan --n-up 7 --interval 5
+
+# 扇形图 + 稳态
+genshin-wish plot char-fan --n-up 7 --interval 5 --stable
+
+# 扇形图叠加个人抽卡记录
+genshin-wish plot char-fan --n-up 7 --interval 5 \
+  --pulls-seq "68,79+11,77+80,77,76+74,80+66,74,78,78,32+79"
+
+# 个人抽卡百分位对照图
+genshin-wish plot player-luck \
+  --pulls-seq "68,79+11,77+80,77,76+74,80+66,74,78,78,32+79"
 
 # n_std 分布
 genshin-wish plot nstd-bar --n-up 7 --loss 2
