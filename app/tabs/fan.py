@@ -3,25 +3,9 @@
 from __future__ import annotations
 
 import gradio as gr
-import numpy as np
 
 from app import plot_utils
-from genshin_wish import CharacterState, up_distribution
-from genshin_wish._constants import STABLE_P
-
-
-def _stable_pdf(n_up: int) -> np.ndarray:
-    res: np.ndarray | None = None
-    for m, w in enumerate(STABLE_P):
-        pdf = up_distribution(CharacterState(consecutive_loss=m), n_up).pdf
-        if res is None:
-            res = np.zeros(len(pdf))
-        if len(res) < len(pdf):
-            new_res = np.zeros(len(pdf))
-            new_res[:len(res)] = res
-            res = new_res
-        res[:len(pdf)] += pdf * w
-    return res
+from genshin_wish import CharacterState, stable_up_distribution, up_distribution
 
 
 def _callback(max_n_up, interval_set, loss, guaranteed, stable):
@@ -30,7 +14,7 @@ def _callback(max_n_up, interval_set, loss, guaranteed, stable):
     interval_set = int(interval_set)
 
     if stable:
-        pdf_func = _stable_pdf
+        pdf_func = lambda n: stable_up_distribution(n).pdf
         tag = f"max_n_up={max_n_up}, 稳态"
     else:
         state = CharacterState(guaranteed=bool(guaranteed), consecutive_loss=loss)
