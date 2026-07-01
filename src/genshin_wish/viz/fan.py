@@ -70,7 +70,7 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str,
         n_pts = min(len(player_avg), max_n_up)
         plt.plot(up_axis[:n_pts], player_avg[:n_pts],
                  color='#27ae60', linewidth=2.5, marker='o',
-                 markersize=7, label='你的记录', zorder=20)
+                 markersize=7, label='玩家', zorder=20)
         for i in range(n_pts):
             plt.text(up_axis[i] + 0.05, player_avg[i] + 1.2,
                      f"{player_avg[i]:.1f}",
@@ -176,7 +176,7 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str,
         n_pts = min(len(player_avg), max_n_up)
         plt.plot(up_axis[:n_pts], player_avg[:n_pts],
                  color='#27ae60', linewidth=2.5, marker='o',
-                 markersize=7, label='你的记录', zorder=20)
+                 markersize=7, label='玩家', zorder=20)
         for i in range(n_pts):
             plt.text(up_axis[i] + 0.05, player_avg[i] + 1.5,
                      f"{player_avg[i]:.1f}",

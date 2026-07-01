@@ -91,8 +91,8 @@ def plot_player_luck(
                     color = c
                     break
 
-            plt.text(n + 0.05, pct + 1.5, f"{val:.0f}",
-                     color=color, ha='left', va='bottom',
+            plt.text(n + 0.05, pct - 1.0, f"{val:.0f}",
+                     color=color, ha='left', va='top',
                      fontsize=7, fontweight='bold', alpha=0.9)
 
     # --- player curve ---
@@ -100,12 +100,12 @@ def plot_player_luck(
     if n_player > 0:
         plt.plot(up_axis[:n_player], player_pct[:n_player],
                  color=_PLAYER_COLOR, linewidth=2.5, marker='o',
-                 markersize=7, label='你的百分位', zorder=20)
+                 markersize=7, label='玩家记录', zorder=20)
 
         for i in range(n_player):
             plt.text(up_axis[i] + 0.05, player_pct[i] + 0.8,
                      f"{player_pct[i]:.1f}%",
-                     color=_PLAYER_COLOR, ha='left', va='bottom',
+                     color='black', ha='left', va='bottom',
                      fontsize=9, fontweight='bold', zorder=21)
 
     # --- styling ---
@@ -116,6 +116,7 @@ def plot_player_luck(
     plt.ylim(0, 100)
     plt.yticks(np.arange(0, 101, 10))
     plt.grid(axis='y', linestyle=':', alpha=0.5)
+    plt.grid(axis='x', linestyle=':', alpha=0.5)
     if n_player > 0:
         plt.legend(loc='lower right', frameon=True, fontsize=10)
 
