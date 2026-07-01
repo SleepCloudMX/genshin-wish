@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 
-from genshin_wish._constants import STABLE_P
 from genshin_wish.viz._base import INTERVAL_COLORS_3, INTERVAL_COLORS_5
 
 
@@ -67,7 +66,7 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
              markersize=6, label='期望', zorder=10)
 
     for i, n in enumerate(up_axis):
-        vals_to_plot = [
+        vals = [
             (all_bounds[0.99][i], '99%', '#d62728'),
             (all_bounds[0.90][i], '90%', '#ff7f0e'),
             (all_bounds[0.70][i], '70%', '#1f77b4'),
@@ -76,18 +75,24 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
             (all_bounds[0.10][i], '10%', '#ff7f0e'),
             (all_bounds[0.01][i], '1%',  '#d62728'),
         ]
+
         last_y = 999.0
-        for val, label, col in vals_to_plot:
+        for val, label, col in vals:
             if label == 'Avg':
                 y_pos = val + 1.2
-                va = 'bottom'
+                font_weight = 'extra bold'
+                z_order = 15
             else:
                 y_pos = val
-                if last_y - val < 5:
-                    y_pos = val - 3
-                va = 'center'
+                font_weight = 'bold'
+                z_order = 12
+
+            if last_y - y_pos < 3.5:
+                y_pos = last_y - 3.5
+
             plt.text(n + 0.05, y_pos, f"{val:.1f}", color=col, ha='left',
-                     va=va, fontsize=8, fontweight='bold', alpha=0.9)
+                     va='center', fontsize=8, fontweight=font_weight,
+                     zorder=z_order, alpha=0.9)
             last_y = y_pos
 
     plt.title(title, fontsize=16, pad=25)
@@ -156,13 +161,11 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
         vals.sort(key=lambda x: x[0], reverse=True)
 
         last_y = 999.0
-        for idx, (val, label, alpha_val) in enumerate(vals):
+        for _idx, (val, label, alpha_val) in enumerate(vals):
             if label == 'Avg':
                 color = '#000000'
                 font_weight = 'extra bold'
                 z_order = 15
-                x_offset = 0.15
-                ha = 'left'
                 y_pos = val + 1.5
             else:
                 color = 'black'
@@ -172,15 +175,13 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
                         color = cfg['color']
                 font_weight = 'bold'
                 z_order = 12
-                x_offset = 0.07 if idx % 2 == 0 else -0.07
-                ha = 'left' if idx % 2 == 0 else 'right'
                 y_pos = val
 
             if last_y - y_pos < 3.8:
                 y_pos = last_y - 3.8
 
-            plt.text(n + x_offset, y_pos, f"{val:.1f}",
-                     color=color, ha=ha, va='center',
+            plt.text(n + 0.05, y_pos, f"{val:.1f}",
+                     color=color, ha='left', va='center',
                      fontsize=8, fontweight=font_weight, zorder=z_order)
             last_y = y_pos
 
