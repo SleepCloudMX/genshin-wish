@@ -78,6 +78,10 @@ def plot_player_luck(
     plt.axhline(y=50, color='#555555', linestyle='--', linewidth=0.8, alpha=0.35)
 
     # --- annotations on horizontal lines ---
+    # Offset above/below the line; tune these to taste.
+    _ANNOT_OFFSET_ABOVE = 0.   # positive = above the line
+    _ANNOT_OFFSET_BELOW = 0.   # positive = below the line (used for 99% only)
+
     step = 1 if max_n_up <= 10 else max(1, max_n_up // 7)
     annot_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
     for a in annot_alphas:
@@ -91,8 +95,16 @@ def plot_player_luck(
                     color = c
                     break
 
-            plt.text(n + 0.05, pct - 1.0, f"{val:.0f}",
-                     color=color, ha='left', va='top',
+            # 99% line: annotate below to avoid clipping at top of plot
+            if abs(a - 0.99) < 0.001:
+                y_pos = pct - _ANNOT_OFFSET_BELOW
+                va = 'top'
+            else:
+                y_pos = pct + _ANNOT_OFFSET_ABOVE
+                va = 'bottom'
+
+            plt.text(n + 0.05, y_pos, f"{val:.0f}",
+                     color=color, ha='left', va=va,
                      fontsize=7, fontweight='bold', alpha=0.9)
 
     # --- player curve ---
