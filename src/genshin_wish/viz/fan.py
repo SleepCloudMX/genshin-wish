@@ -76,6 +76,10 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
             (all_bounds[0.01][i], '1%',  '#d62728'),
         ]
 
+        top_y = all_bounds[0.99][i]
+        plt.vlines(n, ymin=0, ymax=top_y, colors='gray', linestyles=':',
+                   alpha=0.4, zorder=1)
+
         last_y = 999.0
         for val, label, col in vals:
             if label == 'Avg':
@@ -160,6 +164,10 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
         vals.append((expectations_avg[i], 'Avg', 0.5))
         vals.sort(key=lambda x: x[0], reverse=True)
 
+        top_y = all_bounds[0.99][i]
+        plt.vlines(n, ymin=0, ymax=top_y, colors='gray', linestyles=':',
+                   alpha=0.4, zorder=1)
+
         last_y = 999.0
         for _idx, (val, label, alpha_val) in enumerate(vals):
             if label == 'Avg':
@@ -191,7 +199,7 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str) -> None:
     plt.xticks(up_axis, [f"{i-1}命" for i in up_axis])
     plt.yticks(np.arange(0, 181, 20))
     plt.ylim(0, 185)
-    plt.grid(linestyle=':', alpha=0.5)
+    plt.grid(axis='y', linestyle=':', alpha=0.5)
     plt.legend(loc='upper right', bbox_to_anchor=(1, 1), frameon=True,
                fontsize=9, ncol=2)
 
