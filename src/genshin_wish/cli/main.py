@@ -308,26 +308,35 @@ def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int, output: str | No
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+@click.option("--stable/--no-stable", default=False,
+              help="稳态分布 (按 STABLE_P 加权)")
 @click.option("--interval", type=click.Choice(["3", "5"]), default="3",
               help="区间层数 (默认 3)")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
-             output: str | None) -> None:
+             stable: bool, output: str | None) -> None:
     """角色池幸运扇形图"""
     from genshin_wish.viz.fan import plot_luck_fan
 
-    state = _state(guaranteed, pity, loss)
+    if stable:
+        def pdf_func(n: int) -> np.ndarray:
+            return stable_up_distribution(n).pdf
+        tag = "稳态"
+    else:
+        state = _state(guaranteed, pity, loss)
 
-    def pdf_func(n: int) -> np.ndarray:
-        return up_distribution(state, n).pdf
+        def pdf_func(n: int) -> np.ndarray:
+            return up_distribution(state, n).pdf
+        tag = f"loss={loss}, pity={pity}"
 
     suffix = f"-guaranteed" if guaranteed else ""
-    name = f"fan-n{n_up}-loss{loss}-pity{pity}-i{interval}{suffix}.png"
+    stable_suffix = "-stable" if stable else ""
+    name = f"fan-n{n_up}-loss{loss}-pity{pity}-i{interval}{suffix}{stable_suffix}.png"
     path = _resolve_output(output, name)
     plot_luck_fan(
         pdf_func, max_n_up=n_up, save_path=path,
         interval_set=int(interval),
-        title=f"幸运扇形图 (max_n_up={n_up}, loss={loss}, pity={pity})",
+        title=f"幸运扇形图 (max_n_up={n_up}, {tag})",
     )
     click.echo(f"Saved: {path}")
 
