@@ -181,12 +181,18 @@ def _plot_rolls2gold() -> None:
     print("  Character rolls2gold/staircase done")
 
 
-def main() -> None:
-    _plot_cdf()
-    _plot_fan()
-    _plot_column()
-    _plot_rolls2gold()
+def main(types: list[str] | None = None) -> None:
+    if types is None:
+        types = ["cdf", "fan", "column", "rolls2gold"]
+    for t in types:
+        {"cdf": _plot_cdf, "fan": _plot_fan, "column": _plot_column,
+         "rolls2gold": _plot_rolls2gold}[t]()
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="角色池图表")
+    parser.add_argument("--type", nargs="+", choices=["cdf", "fan", "column", "rolls2gold"],
+                        help="指定图表类型，默认全画")
+    args = parser.parse_args()
+    main(args.type)
