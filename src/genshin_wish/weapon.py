@@ -1,9 +1,9 @@
 """Weapon banner: epitomized-path probability for rate-up 5-star weapons.
 
 The epitomized path guarantees that after one miss (not getting the chosen
-weapon), the next 5-star is the chosen one.
+weapon), the next 5-star is the chosen one.  `epitomized_points` is 0 or 1.
 
-Standard guarantee (independent): after a standard 5-star, the next is
+The standard guarantee (independent): after a standard 5-star, the next is
 guaranteed limited (50% A, 50% B).
 """
 
@@ -22,9 +22,9 @@ class WeaponState:
 
     Attributes:
         pity:              Pulls since last 5-star (0..79).
-        epitomized_points: Epitomized Path points (0..2).
-                          At ≥1, next non-chosen 5-star triggers the guarantee
-                          (so effectively the next is the chosen one).
+        epitomized_points: Epitomized Path points (0..1).
+                          1 means the last 5-star was not the chosen weapon
+                          → next 5-star is guaranteed to be the chosen one.
         prev_standard:     Whether the previous 5-star was standard
                           (triggers standard guarantee: next is limited).
     """
@@ -36,8 +36,8 @@ class WeaponState:
     def __post_init__(self) -> None:
         if not 0 <= self.pity < WEAPON_POOL.hard_pity:
             raise ValueError(f"pity must be 0..{WEAPON_POOL.hard_pity - 1}, got {self.pity}")
-        if not 0 <= self.epitomized_points <= 2:
-            raise ValueError(f"epitomized_points must be 0..2, got {self.epitomized_points}")
+        if self.epitomized_points not in (0, 1):
+            raise ValueError(f"epitomized_points must be 0 or 1, got {self.epitomized_points}")
 
 
 @dataclass
@@ -67,7 +67,7 @@ def _single_copy_weights(
     Standard guarantee: if prev was standard → next cannot be standard
     → pool is 50% A, 50% B.
     """
-    if epitomized_points >= 1:
+    if epitomized_points == 1:
         # Already have a "miss" — next gold IS the chosen weapon
         return {1: 1.0}
 

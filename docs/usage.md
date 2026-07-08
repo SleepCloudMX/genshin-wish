@@ -61,7 +61,7 @@ genshin-wish char --n-up 7 --pulls 800 --format json
 |------|------|------|------|
 | `--count-a` | INT | 1 | 目标武器 A 的数量（定轨不取消） |
 | `--pity` | INT | 0 | 已垫抽数，范围 0~79 |
-| `--ep` | INT | 0 | 命定值，范围 0~2 |
+| `--ep` | INT | 0 | 命定值，0 或 1 |
 | `--prev-std` / `--no-prev-std` | flag | `--no-prev-std` | 上一金是否为常驻（触发标准大保底） |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点 |
@@ -118,7 +118,7 @@ genshin-wish std --n-gold 30 --pity 10 --quantile 0.5
 | `--char-pity` | INT | 0 | 角色池已垫抽数，0~89 |
 | `--char-loss` | INT | 0 | 角色池连续歪次数，0~3 |
 | `--weapon-pity` | INT | 0 | 武器池已垫抽数，0~79 |
-| `--weapon-ep` | INT | 0 | 武器池命定值，0~2 |
+| `--weapon-ep` | INT | 0 | 武器池命定值，0 或 1 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--format` | `text`\|`json` | `text` | 输出格式 |
 | `--pct-fmt` | `auto`\|`.2f`\|`.4f`\|`.2e` | `auto` | 百分比格式 |
@@ -235,7 +235,7 @@ Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量�
 | 选项 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `--count-a` | INT | 1 | 目标武器 A 数量 |
-| `--ep` | INT | 0 | 命定值 0~2 |
+| `--ep` | INT | 0 | 命定值 0 或 1 |
 | `--pity` | INT | 0 | 已垫抽数 |
 | `--prev-std` / `--no-prev-std` | flag | `--no-prev-std` | 上一金是否为常驻 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
@@ -249,7 +249,7 @@ Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量�
 | `--char-guaranteed` / `--no-char-guaranteed` | flag | `--no-guaranteed` | 角色池是否大保底 |
 | `--char-pity` | INT | 0 | 角色池已垫抽数 |
 | `--char-loss` | INT | 0 | 角色池连续歪次数 0~3 |
-| `--weapon-ep` | INT | 0 | 武器池命定值 0~2 |
+| `--weapon-ep` | INT | 0 | 武器池命定值 0 或 1 |
 | `--weapon-pity` | INT | 0 | 武器池已垫抽数 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 (含 `.` = 文件, 否则 = 目录) |
 
@@ -384,7 +384,7 @@ from genshin_wish import WeaponState, WeaponTarget, weapon_up_distribution
 
 state = WeaponState(
     pity=0,                # 已垫抽数，0~79
-    epitomized_points=0,   # 命定值，0~2
+    epitomized_points=0,   # 命定值，0 或 1
     prev_standard=False,   # 上一金是否为常驻
 )
 

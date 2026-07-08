@@ -158,7 +158,7 @@ def char(
 @click.option("--count-a", type=int, default=1, help="目标武器 A 的数量")
 @click.option("--pulls", type=int, default=None, help="抽数 (查询概率)")
 @click.option("--quantile", type=float, default=None, help="分位点")
-@click.option("--ep", type=int, default=0, help="命定值 0~2")
+@click.option("--ep", type=int, default=0, help="命定值 0 或 1")
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--prev-std/--no-prev-std", default=False, help="上一金是否为常驻")
 @click.option("--pct-fmt", default="auto",
@@ -480,7 +480,7 @@ def nstd_pdf(n_up: int, n_std: int, guaranteed: bool, loss: int,
 
 @plot.command()
 @click.option("--count-a", type=int, default=1, help="目标武器 A 的数量")
-@click.option("--ep", type=int, default=0, help="命定值 0~2")
+@click.option("--ep", type=int, default=0, help="命定值 0 或 1")
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--prev-std/--no-prev-std", default=False, help="上一金是否为常驻")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")

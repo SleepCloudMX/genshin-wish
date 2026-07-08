@@ -61,7 +61,7 @@ def build_tab():
                 weapon_count = gr.Slider(1, 5, 1, step=1, label="目标武器数")
                 with gr.Accordion("高级设置", open=False):
                     weapon_pity = gr.Slider(0, 79, 0, step=1, label="武器已垫抽数")
-                    weapon_ep = gr.Slider(0, 2, 0, step=1, label="武器命定值")
+                    weapon_ep = gr.Slider(0, 1, 0, step=1, label="武器命定值")
 
         with gr.Row():
             with gr.Column(scale=1):
