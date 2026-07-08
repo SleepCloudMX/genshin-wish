@@ -386,7 +386,7 @@ def plot_multi_gold(p: float, title: str, save_path: Path) -> None
 
 ### 10. 百分位对照图 (`viz/player_luck.py`)
 
-**`plot_player_luck`** — 将玩家实际抽卡记录对照理论分布，直观展示 "比百分之多少的玩家非"。
+**`plot_player_luck`** — 将玩家实际抽卡记录对照理论分布，展示整体欧非趋势，并在每段折线上标注单次抽取的边际欧非。
 
 ```python
 def plot_player_luck(
@@ -396,6 +396,10 @@ def plot_player_luck(
     save_path: str | Path,
     *,
     title: str | None = None,
+    player_pulls: PlayerPulls | None = None,
+    initial_loss: int = 0,
+    initial_guaranteed: bool = False,
+    show_marginal: bool = True,
 ) -> None
 ```
 
@@ -406,13 +410,18 @@ def plot_player_luck(
 | `max_n_up` | X 轴最大 UP 数 |
 | `save_path` | 输出 PNG 路径 |
 | `title` | 图表标题 |
+| `player_pulls` | `PlayerPulls` 对象，含 `per_up`、`cumulative`、`is_direct_win`，用于边际标注 |
+| `initial_loss` | 初始连续歪次数 0~3，用于重建每段抽取前的状态 |
+| `initial_guaranteed` | 初始是否大保底 |
+| `show_marginal` | 是否在折线段上标注单次抽取的边际欧非 (默认 True) |
 
 图表内容：
 - Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量
 - 10 条水平参考虚线 (1%/10%/20%/30%/40% 及对称的 60%/70%/80%/90%/99%)，颜色与 fan chart 分位带一致
 - 50% 中位线（灰色）
 - 每条水平线在各 UP 位置标注对应抽数，99% 线标注在线下方避免裁剪
-- 绿色曲线 = 玩家百分位记录，散点标注数值
+- 绿色曲线 = 玩家累计百分位记录，黑色散点标注数值
+- 深绿色旋转文字 = 每段折线的边际欧非标注（"非于 X%"），位于线段中垂线上方，角度与线段一致
 
 ---
 

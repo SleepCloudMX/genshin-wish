@@ -185,6 +185,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
+| `--show-marginal` / `--no-show-marginal` | flag | `--show-marginal` | 折线段上标注单次抽取的边际欧非 (默认开启) |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
 Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。
