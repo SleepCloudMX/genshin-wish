@@ -15,4 +15,8 @@ genshin-wish joint \
   --pulls 500
 
 echo ""
+echo "=== 指定百分比格式 ==="
+genshin-wish joint --char-up 2 --weapon-count 1 --pulls 500 --pct-fmt .4f
+
+echo ""
 echo "Done"

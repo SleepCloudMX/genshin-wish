@@ -15,4 +15,8 @@ echo "=== JSON 输出 ==="
 genshin-wish std --n-gold 5 --format json
 
 echo ""
+echo "=== 小概率显示 ==="
+genshin-wish std --n-gold 3 --pulls 100
+
+echo ""
 echo "Done"

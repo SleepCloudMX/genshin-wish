@@ -27,6 +27,18 @@ echo "=== JSON 输出 ==="
 genshin-wish char --n-up 7 --pulls 800 --format json
 
 echo ""
+echo "=== 小概率自动显示四位小数 ==="
+genshin-wish char --n-up 7 --pulls 200
+
+echo ""
+echo "=== 科学记数法 (--pct-fmt .2e) ==="
+genshin-wish char --n-up 7 --pulls 200 --pct-fmt .2e
+
+echo ""
+echo "=== 极小概率 (auto 自动切换科学记数) ==="
+genshin-wish char --n-up 7 --pulls 100
+
+echo ""
 echo "=== 指定方法 ==="
 genshin-wish char --n-up 100 --method dp-golds --quantile 0.5
 

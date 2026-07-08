@@ -15,4 +15,8 @@ echo "=== 上一金是常驻 ==="
 genshin-wish weapon --count-a 1 --prev-std --pulls 200
 
 echo ""
+echo "=== 指定百分比格式 (四位小数) ==="
+genshin-wish weapon --count-a 2 --pulls 200 --pct-fmt .4f
+
+echo ""
 echo "Done"
