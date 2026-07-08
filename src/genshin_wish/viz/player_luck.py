@@ -122,9 +122,9 @@ def plot_player_luck(
 
     # --- styling ---
     plt.title(title or "抽卡百分位对照图", fontsize=18, pad=25)
-    plt.xlabel("已获得限定数", fontsize=12)
-    plt.ylabel("超过百分之多少的玩家 (%)", fontsize=12)
-    plt.xticks(up_axis, [f"{i-1}命" if i > 1 else "本体" for i in up_axis])
+    plt.xlabel("限定五星数量", fontsize=12)
+    plt.ylabel("比百分之多少的玩家非 (%)", fontsize=12)
+    plt.xticks(up_axis, [str(i) for i in up_axis] if max_n_up > 7 else [f"{i-1}命" if i > 1 else "本体" for i in up_axis])
     plt.ylim(0, 100)
     plt.yticks(np.arange(0, 101, 10))
     plt.grid(axis='y', linestyle=':', alpha=0.5)

@@ -112,9 +112,9 @@ def _render_fan_3(pdf_func, max_n_up: int, save_path: Path, title: str,
             last_y = y_pos
 
     plt.title(title, fontsize=16, pad=25)
-    plt.xlabel("目标命座", fontsize=12)
+    plt.xlabel("限定五星数量" if max_n_up > 7 else "目标命座", fontsize=12)
     plt.ylabel("平均每UP消耗抽数 (总数/UP数)", fontsize=12)
-    plt.xticks(up_axis, [f"{i-1}命" for i in up_axis])
+    plt.xticks(up_axis, [str(i) for i in up_axis] if max_n_up > 7 else [f"{i-1}命" for i in up_axis])
     plt.yticks(np.arange(0, 181, 20))
     plt.ylim(0, 185)
     plt.grid(axis='y', linestyle=':', alpha=0.5)
@@ -218,9 +218,9 @@ def _render_fan_5(pdf_func, max_n_up: int, save_path: Path, title: str,
             last_y = y_pos
 
     plt.title(title, fontsize=18, pad=30)
-    plt.xlabel("目标命座 (包含角色本体)", fontsize=12)
+    plt.xlabel("限定五星数量" if max_n_up > 7 else "目标命座 (包含角色本体)", fontsize=12)
     plt.ylabel("平均每个UP消耗抽数 (总数/UP数)", fontsize=12)
-    plt.xticks(up_axis, [f"{i-1}命" for i in up_axis])
+    plt.xticks(up_axis, [str(i) for i in up_axis] if max_n_up > 7 else [f"{i-1}命" for i in up_axis])
     plt.yticks(np.arange(0, 181, 20))
     plt.ylim(0, 185)
     plt.grid(axis='y', linestyle=':', alpha=0.5)

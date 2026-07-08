@@ -339,7 +339,7 @@ def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int, output: str | No
 
 
 @plot.command()
-@click.option("--n-up", type=int, default=7, help="最大 UP 数 (默认 7)")
+@click.option("--n-up", type=int, default=None, help="最大 UP 数 (默认取序列长度，无序列时 7)")
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
@@ -370,6 +370,17 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
     if pulls_seq is not None:
         pp = parse_pulls_seq(pulls_seq)
         player_avg = [pp.cumulative[i] / (i + 1) for i in range(len(pp.cumulative))]
+        seq_len = len(pp.cumulative)
+        if n_up is not None and n_up != seq_len:
+            click.echo(
+                f"Warning: --n-up={n_up} differs from pulls-seq length ({seq_len}), "
+                f"using --n-up={n_up}",
+                err=True,
+            )
+        elif n_up is None:
+            n_up = seq_len
+    if n_up is None:
+        n_up = 7
 
     suffix = f"-guaranteed" if guaranteed else ""
     stable_suffix = "-stable" if stable else ""
