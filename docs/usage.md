@@ -11,7 +11,7 @@ pip install -e .
 
 依赖：Python >= 3.11, numpy, scipy, matplotlib, click
 
-核心原理：从当前状态出发，枚举 UP/歪序列计算精确概率分布，n_up > 7 时自动切换 CLT 近似。角色池支持捕获明光机制，武器池支持定轨路径，联合计算将二者分布做卷积。
+核心原理：从当前状态出发，枚举 UP/歪序列计算精确概率分布，n_up > 500 时自动切换 CLT 近似。角色池支持捕获明光机制，武器池支持定轨路径，联合计算将二者分布做卷积。
 
 ---
 
@@ -31,6 +31,7 @@ pip install -e .
 | `--quantile` | FLOAT | — | 查询给定概率的分位点，如 `0.5` = 中位数 |
 | `--quantiles` | STR | — | 多个分位点，逗号分隔，如 `"0.1,0.5,0.9"` |
 | `--format` | `text`\|`json` | `text` | 输出格式 |
+| `--pct-fmt` | `auto`\|`.2f`\|`.4f`\|`.2e` | `auto` | 百分比格式。`auto` 自适应（≥1% 两位、≥0.001% 四位、<0.001% 科学记数） |
 
 **示例：**
 
@@ -65,6 +66,7 @@ genshin-wish char --n-up 7 --pulls 800 --format json
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点 |
 | `--format` | `text`\|`json` | `text` | 输出格式 |
+| `--pct-fmt` | `auto`\|`.2f`\|`.4f`\|`.2e` | `auto` | 百分比格式 |
 
 **示例：**
 
@@ -90,6 +92,7 @@ genshin-wish weapon --format json
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点 |
 | `--format` | `text`\|`json` | `text` | 输出格式 |
+| `--pct-fmt` | `auto`\|`.2f`\|`.4f`\|`.2e` | `auto` | 百分比格式 |
 
 n_gold ≤ 7 精确卷积，> 7 则首金精确处理 pity 后对剩余金数用 CLT 近似。
 
@@ -118,6 +121,7 @@ genshin-wish std --n-gold 30 --pity 10 --quantile 0.5
 | `--weapon-ep` | INT | 0 | 武器池命定值，0~2 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--format` | `text`\|`json` | `text` | 输出格式 |
+| `--pct-fmt` | `auto`\|`.2f`\|`.4f`\|`.2e` | `auto` | 百分比格式 |
 
 **示例：**
 
@@ -160,7 +164,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 | 选项 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `--n-up` | INT | 7 | 最大 UP 数 |
+| `--n-up` | INT | 序列长度/7 | 最大 UP 数。有 `--pulls-seq` 时默认取其长度；否则默认 7 |
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
@@ -183,7 +187,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
-Y 轴 = 百分位 (0–100%)，X 轴 = 已获得限定数。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。 |
+Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。
 
 #### `plot nstd-bar` — n_std 分布柱状图
 
