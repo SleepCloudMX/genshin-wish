@@ -48,6 +48,8 @@ def _resolve_output(output: str | None, default_name: str) -> Path:
 def _format_pct(p: float, fmt: str = "auto") -> str:
     """Format a probability [0, 1] as a percentage string."""
     if fmt != "auto":
+        if fmt.endswith("e"):
+            return f"{p:{fmt}}"
         return f"{p * 100:{fmt}}%"
 
     pct = p * 100
@@ -56,7 +58,7 @@ def _format_pct(p: float, fmt: str = "auto") -> str:
     elif pct >= 0.001:
         return f"{pct:.4f}%"
     else:
-        return f"{pct:.2e}%"
+        return f"{p:.2e}"
 
 
 def _format_dist(
