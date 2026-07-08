@@ -45,12 +45,32 @@ def _resolve_output(output: str | None, default_name: str) -> Path:
     return p / default_name
 
 
-def _format_dist(name: str, dist: UpDistribution | WeaponUpDistribution, pulls: int | None) -> str:
+def _format_pct(p: float, fmt: str = "auto") -> str:
+    """Format a probability [0, 1] as a percentage string."""
+    if fmt != "auto":
+        return f"{p * 100:{fmt}}%"
+
+    pct = p * 100
+    if pct >= 1:
+        return f"{pct:.2f}%"
+    elif pct >= 0.001:
+        return f"{pct:.4f}%"
+    else:
+        return f"{pct:.2e}%"
+
+
+def _format_dist(
+    name: str,
+    dist: UpDistribution | WeaponUpDistribution,
+    pulls: int | None,
+    pct_fmt: str = "auto",
+) -> str:
     """Format a distribution result as text."""
     lines = [f"{name}:"]
     lines.append(f"  期望抽数: {dist.expected:.1f}")
     if pulls is not None and pulls >= 0:
-        lines.append(f"  {pulls} 抽内达成概率: {dist.probability(pulls) * 100:.2f}%")
+        p = dist.probability(pulls)
+        lines.append(f"  {pulls} 抽内达成概率: {_format_pct(p, pct_fmt)}")
     return "\n".join(lines)
 
 
@@ -85,6 +105,8 @@ def main() -> None:
 @click.option("--stable/--no-stable", default=False, help="使用稳态分布")
 @click.option("--method", type=click.Choice(["auto", "dp-golds", "dp-path", "dp-state", "clt"]),
               default="auto", help="计算方法 (默认 auto)")
+@click.option("--pct-fmt", default="auto",
+              help="百分比格式: auto | .2f | .4f | .2e (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def char(
     n_up: int,
@@ -96,6 +118,7 @@ def char(
     loss: int,
     stable: bool,
     method: str,
+    pct_fmt: str,
     fmt: str,
 ) -> None:
     """角色池概率查询"""
@@ -105,7 +128,7 @@ def char(
         state = CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=loss)
         dist = up_distribution(state, n_up, method=method)
 
-    text_parts = [_format_dist("角色池", dist, pulls)]
+    text_parts = [_format_dist("角色池", dist, pulls, pct_fmt)]
 
     if quantile is not None:
         text_parts.append(f"  分位点 {quantile}: {dist.quantile(quantile)} 抽")
@@ -136,6 +159,8 @@ def char(
 @click.option("--ep", type=int, default=0, help="命定值 0~2")
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--prev-std/--no-prev-std", default=False, help="上一金是否为常驻")
+@click.option("--pct-fmt", default="auto",
+              help="百分比格式: auto | .2f | .4f | .2e (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def weapon(
     count_a: int,
@@ -144,6 +169,7 @@ def weapon(
     ep: int,
     pity: int,
     prev_std: bool,
+    pct_fmt: str,
     fmt: str,
 ) -> None:
     """武器池概率查询 (定轨不取消)"""
@@ -151,7 +177,7 @@ def weapon(
     target = WeaponTarget(count_a=count_a, count_b=0)
     dist = weapon_up_distribution(state, target)
 
-    text_parts = [_format_dist("武器池", dist, pulls)]
+    text_parts = [_format_dist("武器池", dist, pulls, pct_fmt)]
 
     if quantile is not None:
         text_parts.append(f"  分位点 {quantile}: {dist.quantile(quantile)} 抽")
@@ -170,19 +196,22 @@ def weapon(
 @click.option("--pity", type=int, default=0, help="已垫抽数 (0~89)")
 @click.option("--pulls", type=int, default=None, help="抽数 (查询概率)")
 @click.option("--quantile", type=float, default=None, help="分位点")
+@click.option("--pct-fmt", default="auto",
+              help="百分比格式: auto | .2f | .4f | .2e (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def std(
     n_gold: int,
     pity: int,
     pulls: int | None,
     quantile: float | None,
+    pct_fmt: str,
     fmt: str,
 ) -> None:
     """常驻池概率查询 (纯出金，无 UP 机制)"""
     state = StandardState(pity=pity)
     dist = standard_distribution(state, n_gold)
 
-    text_parts = [_format_dist("常驻池", dist, pulls)]
+    text_parts = [_format_dist("常驻池", dist, pulls, pct_fmt)]
     if quantile is not None:
         text_parts.append(f"  分位点 {quantile}: {dist.quantile(quantile)} 抽")
 
@@ -207,6 +236,8 @@ def std(
 @click.option("--char-loss", type=int, default=0)
 @click.option("--weapon-pity", type=int, default=0)
 @click.option("--weapon-ep", type=int, default=0)
+@click.option("--pct-fmt", default="auto",
+              help="百分比格式: auto | .2f | .4f | .2e (默认 auto)")
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def joint(
     char_up: int,
@@ -217,6 +248,7 @@ def joint(
     char_loss: int,
     weapon_pity: int,
     weapon_ep: int,
+    pct_fmt: str,
     fmt: str,
 ) -> None:
     """联合计算 (角色 + 武器)"""
@@ -226,7 +258,7 @@ def joint(
 
     dist = joint_distribution(char_state, char_up, weapon_state, weapon_target)
 
-    text = _format_dist("联合 (角色 + 武器)", dist, pulls)
+    text = _format_dist("联合 (角色 + 武器)", dist, pulls, pct_fmt)
     if dist.char is not None and dist.weapon is not None:
         text += f"\n  角色单独: {dist.char.expected:.1f} 抽"
         text += f"\n  武器单独: {dist.weapon.expected:.1f} 抽"
