@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 
+from genshin_wish._player_pulls import PlayerPulls
 
 # Symmetric percentile pairs with colors from fan chart interval colors
 _PERCENTILE_PAIRS: list[tuple[float, str]] = [
@@ -16,6 +17,26 @@ _PERCENTILE_PAIRS: list[tuple[float, str]] = [
 ]
 
 _PLAYER_COLOR = '#27ae60'
+_MARGINAL_COLOR = '#1e8449'
+
+
+def _reconstruct_states(
+    pp: PlayerPulls, initial_loss: int, initial_guaranteed: bool
+) -> list[tuple[int, bool]]:
+    """Reconstruct (k_miss, guaranteed) state before each UP."""
+    km = initial_loss
+    gtd = initial_guaranteed
+    states: list[tuple[int, bool]] = []
+    for is_win in pp.is_direct_win:
+        states.append((km, gtd))
+        if is_win:
+            km = 0
+            gtd = False
+        else:
+            km = min(km + 1, 3)
+            km = 0
+            gtd = False
+    return states
 
 
 def plot_player_luck(
@@ -25,6 +46,10 @@ def plot_player_luck(
     save_path: str | Path,
     *,
     title: str | None = None,
+    player_pulls: PlayerPulls | None = None,
+    initial_loss: int = 0,
+    initial_guaranteed: bool = False,
+    show_marginal: bool = True,
 ) -> None:
     """Plot a percentile chart comparing a player's pull history to the distribution.
 
@@ -39,7 +64,16 @@ def plot_player_luck(
     save_path : str or Path
         Output image path (PNG).
     title : str, optional
+    player_pulls : PlayerPulls, optional
+        Required for per-segment marginal annotations.
+    initial_loss : int
+        Starting k_miss (0..3) for state reconstruction.
+    initial_guaranteed : bool
+        Starting guaranteed flag for state reconstruction.
+    show_marginal : bool
+        Show light-green per-segment marginal percentile labels (default True).
     """
+    from genshin_wish.character import CharacterState, up_distribution
     from genshin_wish.viz._base import setup_style
     setup_style()
 
@@ -66,6 +100,20 @@ def plot_player_luck(
         else:
             player_pct.append(float('nan'))
 
+    # --- compute marginal percentiles ---
+    marginal_pct: list[float] = []
+    if show_marginal and player_pulls is not None and player_pulls.is_direct_win:
+        states = _reconstruct_states(player_pulls, initial_loss, initial_guaranteed)
+        from genshin_wish.character import CharacterState, up_distribution
+        for i, pulls in enumerate(player_pulls.per_up):
+            km, gtd = states[i]
+            state = CharacterState(guaranteed=gtd, pity=0, consecutive_loss=km)
+            dist = up_distribution(state, n_up=1)
+            idx = min(pulls, len(dist.cdf) - 1)
+            marginal_pct.append(float(dist.cdf[idx]) * 100)
+    else:
+        marginal_pct = [float('nan')] * len(player_cum)
+
     plt.figure(figsize=(16, 10))
 
     # --- horizontal reference lines ---
@@ -78,9 +126,8 @@ def plot_player_luck(
     plt.axhline(y=50, color='#555555', linestyle='--', linewidth=0.8, alpha=0.35)
 
     # --- annotations on horizontal lines ---
-    # Offset above/below the line; tune these to taste.
-    _ANNOT_OFFSET_ABOVE = 0.   # positive = above the line
-    _ANNOT_OFFSET_BELOW = 0.   # positive = below the line (used for 99% only)
+    _ANNOT_OFFSET_ABOVE = 0.
+    _ANNOT_OFFSET_BELOW = 0.
 
     step = 1 if max_n_up <= 10 else max(1, max_n_up // 7)
     annot_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
@@ -95,7 +142,6 @@ def plot_player_luck(
                     color = c
                     break
 
-            # 99% line: annotate below to avoid clipping at top of plot
             if abs(a - 0.99) < 0.001:
                 y_pos = pct - _ANNOT_OFFSET_BELOW
                 va = 'top'
@@ -120,8 +166,51 @@ def plot_player_luck(
                      color='black', ha='left', va='bottom',
                      fontsize=9, fontweight='bold', zorder=21)
 
+        # --- marginal annotations on segments ---
+        if show_marginal and n_player >= 2:
+            ax = plt.gca()
+            # Compute display scale from figure/axes geometry (works before draw)
+            fig = ax.figure
+            bbox = ax.get_position()
+            fig_w, fig_h = fig.get_size_inches()
+            ax_w = bbox.width * fig_w * fig.dpi
+            ax_h = bbox.height * fig_h * fig.dpi
+            x_range = ax.get_xlim()[1] - ax.get_xlim()[0]
+            y_range = ax.get_ylim()[1] - ax.get_ylim()[0]
+            sx = ax_w / x_range  # pixels per data unit (x)
+            sy = ax_h / y_range  # pixels per data unit (y)
+
+            for i in range(1, n_player):
+                mp = marginal_pct[i]
+                if np.isnan(mp):
+                    continue
+                x1, x2 = float(up_axis[i - 1]), float(up_axis[i])
+                y1, y2 = player_pct[i - 1], player_pct[i]
+                # Segment vector in display pixels
+                dx = (x2 - x1) * sx
+                dy = (y2 - y1) * sy
+                angle = np.degrees(np.arctan2(dy, dx))
+                # Perpendicular offset ("above" the segment), rotated 90° CCW
+                perp_dx, perp_dy = -dy, dx
+                nrm = np.hypot(perp_dx, perp_dy)
+                if nrm < 1e-9:
+                    continue
+                perp_dx /= nrm
+                perp_dy /= nrm
+                # Midpoint in display coords
+                disp_x_mid = (x1 + x2) / 2 * sx
+                disp_y_mid = (y1 + y2) / 2 * sy
+                offset = 10  # pixels
+                x_pos = (disp_x_mid + perp_dx * offset) / sx
+                y_pos = (disp_y_mid + perp_dy * offset) / sy
+
+                ax.text(x_pos, y_pos, f"非于{mp:.0f}%",
+                        color=_MARGINAL_COLOR, ha='center', va='center',
+                        fontsize=8, fontweight='normal', rotation=angle, alpha=0.7,
+                        zorder=19)
+
     # --- styling ---
-    plt.title(title or "抽卡百分位对照图", fontsize=18, pad=25)
+    plt.title(title or "整体欧非趋势", fontsize=18, pad=25)
     plt.xlabel("限定五星数量", fontsize=12)
     plt.ylabel("比百分之多少的玩家非 (%)", fontsize=12)
     plt.xticks(up_axis, [str(i) for i in up_axis] if max_n_up > 7 else [f"{i-1}命" if i > 1 else "本体" for i in up_axis])
@@ -129,8 +218,6 @@ def plot_player_luck(
     plt.yticks(np.arange(0, 101, 10))
     plt.grid(axis='y', linestyle=':', alpha=0.5)
     plt.grid(axis='x', linestyle=':', alpha=0.5)
-    if n_player > 0:
-        plt.legend(loc='lower right', frameon=True, fontsize=10)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)

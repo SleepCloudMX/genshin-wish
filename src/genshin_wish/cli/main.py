@@ -406,9 +406,12 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False,
               help="稳态分布 (按 STABLE_P 加权)")
+@click.option("--show-marginal/--no-show-marginal", default=True,
+              help="显示每段单抽的边际欧非标注 (默认开启)")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
-                pity: int, loss: int, stable: bool, output: str | None) -> None:
+                pity: int, loss: int, stable: bool, show_marginal: bool,
+                output: str | None) -> None:
     """个人抽卡百分位对照图"""
     from genshin_wish.viz.player_luck import plot_player_luck
 
@@ -425,14 +428,16 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
 
         def pdf_func(n: int) -> np.ndarray:
             return up_distribution(state, n).pdf
-        tag = f"loss={loss}, pity={pity}"
+        tag = f"初始连歪 {loss} 次、垫 {pity} 抽"
 
     stable_suffix = "-stable" if stable else ""
     name = f"player-luck-n{n_up}-loss{loss}-pity{pity}{stable_suffix}.png"
     path = _resolve_output(output, name)
     plot_player_luck(
         pdf_func, pp.cumulative, max_n_up=n_up, save_path=path,
-        title=f"抽卡百分位对照图 ({tag})",
+        title=f"整体欧非趋势 ({tag})",
+        player_pulls=pp, initial_loss=loss,
+        initial_guaranteed=guaranteed, show_marginal=show_marginal,
     )
     click.echo(f"Saved: {path}")
 
