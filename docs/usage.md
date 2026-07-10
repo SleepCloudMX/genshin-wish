@@ -27,7 +27,7 @@ pip install -e .
 | `--loss` | INT | 0 | 连续歪次数，范围 0~3，驱动捕获明光概率 |
 | `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光)。**与 `--loss` 互斥** |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布。**与 `--loss`、`--guaranteed`、`--pity` 互斥**——指定 `--stable` 后这些参数被忽略 |
-| `--method` | `auto`\|`dp-golds`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤500 dp-golds，>500 clt+warning）。`dp-path` 限 n_up ≤ 20 |
+| `--method` | `auto`\|`dp-golds`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤500 dp-golds，>500 clt+warning）。`dp-path` 限 n_up ≤ 20。**`--pre-5.0` 时忽略** |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
 | `--quantile` | FLOAT | — | 查询给定概率的分位点，如 `0.5` = 中位数 |
 | `--quantiles` | STR | — | 多个分位点，逗号分隔，如 `"0.1,0.5,0.9"` |
