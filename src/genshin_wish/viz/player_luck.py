@@ -20,6 +20,35 @@ _PLAYER_COLOR = '#27ae60'
 _MARGINAL_COLOR = '#1e8449'
 
 
+def _resolve_single_up(val: str, n_up: int) -> bool:
+    if val == "auto":
+        return n_up <= 20
+    return val == "true"
+
+
+def _resolve_q(val: str, n_up: int) -> tuple[str, int | None]:
+    """Return (mode, step). mode: "all" | "stepped" | "off"."""
+    if val == "off":
+        return ("off", None)
+    if val == "all":
+        return ("all", 1)
+    # auto
+    if n_up <= 10:
+        return ("all", 1)
+    elif n_up <= 20:
+        return ("stepped", max(1, n_up // 7))
+    else:
+        return ("off", None)
+
+
+def _resolve_width(val: str, n_up: int, has_annotations: bool) -> int:
+    if val == "fixed" or not has_annotations or n_up <= 20:
+        return 16
+    if n_up <= 50:
+        return min(16 + int((n_up - 20) * 0.8), 40)
+    return 40
+
+
 def _reconstruct_states(
     pp: PlayerPulls, initial_loss: int, initial_guaranteed: bool
 ) -> list[tuple[int, bool]]:
@@ -49,7 +78,9 @@ def plot_player_luck(
     player_pulls: PlayerPulls | None = None,
     initial_loss: int = 0,
     initial_guaranteed: bool = False,
-    show_marginal: bool = True,
+    single_up: str = "auto",
+    quantile_annot: str = "auto",
+    width_mode: str = "auto",
 ) -> None:
     """Plot a percentile chart comparing a player's pull history to the distribution.
 
@@ -70,14 +101,24 @@ def plot_player_luck(
         Starting k_miss (0..3) for state reconstruction.
     initial_guaranteed : bool
         Starting guaranteed flag for state reconstruction.
-    show_marginal : bool
-        Show light-green per-segment marginal percentile labels (default True).
+    single_up : str
+        ``"auto"``, ``"true"``, or ``"false"`` — per-segment marginal annotations.
+    quantile_annot : str
+        ``"auto"``, ``"all"``, or ``"off"`` — quantile reference line number labels.
+    width_mode : str
+        ``"auto"`` or ``"fixed"`` — adaptive figure width vs always 16".
     """
     from genshin_wish.character import CharacterState, up_distribution
     from genshin_wish.viz._base import setup_style
     setup_style()
 
+    # --- resolve auto config ---
     up_axis = np.arange(1, max_n_up + 1)
+    show_single_up = _resolve_single_up(single_up, max_n_up)
+    q_mode, q_step = _resolve_q(quantile_annot, max_n_up)
+    has_annotations = show_single_up or (q_mode != "off")
+    fig_w = _resolve_width(width_mode, max_n_up, has_annotations)
+
     target_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
 
     # --- compute percentile reference data ---
@@ -102,7 +143,7 @@ def plot_player_luck(
 
     # --- compute marginal percentiles ---
     marginal_pct: list[float] = []
-    if show_marginal and player_pulls is not None and player_pulls.is_direct_win:
+    if show_single_up and player_pulls is not None and player_pulls.is_direct_win:
         states = _reconstruct_states(player_pulls, initial_loss, initial_guaranteed)
         from genshin_wish.character import CharacterState, up_distribution
         for i, pulls in enumerate(player_pulls.per_up):
@@ -114,7 +155,7 @@ def plot_player_luck(
     else:
         marginal_pct = [float('nan')] * len(player_cum)
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(fig_w, 10))
 
     # --- horizontal reference lines ---
     for a, color in _PERCENTILE_PAIRS:
@@ -126,32 +167,30 @@ def plot_player_luck(
     plt.axhline(y=50, color='#555555', linestyle='--', linewidth=0.8, alpha=0.35)
 
     # --- annotations on horizontal lines ---
-    _ANNOT_OFFSET_ABOVE = 0.
-    _ANNOT_OFFSET_BELOW = 0.
+    if q_mode != "off":
+        step = q_step if q_step is not None else 1
+        annot_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+        for a in annot_alphas:
+            pct = a * 100
+            for i in range(0, max_n_up, step):
+                n = up_axis[i]
+                val = ref_pulls[a][i]
+                color = '#555555' if abs(a - 0.5) < 0.001 else 'black'
+                for lo, c in _PERCENTILE_PAIRS:
+                    if abs(a - lo) < 0.001 or abs(a - (1 - lo)) < 0.001:
+                        color = c
+                        break
 
-    step = 1 if max_n_up <= 10 else max(1, max_n_up // 7)
-    annot_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
-    for a in annot_alphas:
-        pct = a * 100
-        for i in range(0, max_n_up, step):
-            n = up_axis[i]
-            val = ref_pulls[a][i]
-            color = '#555555' if abs(a - 0.5) < 0.001 else 'black'
-            for lo, c in _PERCENTILE_PAIRS:
-                if abs(a - lo) < 0.001 or abs(a - (1 - lo)) < 0.001:
-                    color = c
-                    break
+                if abs(a - 0.99) < 0.001:
+                    y_pos = pct - 0
+                    va = 'top'
+                else:
+                    y_pos = pct + 0
+                    va = 'bottom'
 
-            if abs(a - 0.99) < 0.001:
-                y_pos = pct - _ANNOT_OFFSET_BELOW
-                va = 'top'
-            else:
-                y_pos = pct + _ANNOT_OFFSET_ABOVE
-                va = 'bottom'
-
-            plt.text(n + 0.05, y_pos, f"{val:.0f}",
-                     color=color, ha='left', va=va,
-                     fontsize=7, fontweight='bold', alpha=0.9)
+                plt.text(n + 0.05, y_pos, f"{val:.0f}",
+                         color=color, ha='left', va=va,
+                         fontsize=7, fontweight='bold', alpha=0.9)
 
     # --- player curve ---
     n_player = sum(1 for p in player_pct if not np.isnan(p))
@@ -161,13 +200,13 @@ def plot_player_luck(
                  markersize=7, label='玩家记录', zorder=20)
 
         for i in range(n_player):
-            plt.text(up_axis[i] + 0.05, player_pct[i] + 0.8,
+            plt.text(up_axis[i] + 0.05, player_pct[i] - 1.5,
                      f"{player_pct[i]:.1f}%",
-                     color='black', ha='left', va='bottom',
+                     color='black', ha='left', va='top',
                      fontsize=9, fontweight='bold', zorder=21)
 
         # --- marginal annotations on segments ---
-        if show_marginal and n_player >= 2:
+        if show_single_up and n_player >= 2:
             ax = plt.gca()
             # Compute display scale from figure/axes geometry (works before draw)
             fig = ax.figure
@@ -213,7 +252,21 @@ def plot_player_luck(
     plt.title(title or "整体欧非趋势", fontsize=18, pad=25)
     plt.xlabel("限定五星数量", fontsize=12)
     plt.ylabel("比百分之多少的玩家非 (%)", fontsize=12)
-    plt.xticks(up_axis, [str(i) for i in up_axis] if max_n_up > 7 else [f"{i-1}命" if i > 1 else "本体" for i in up_axis])
+
+    # xtick labels
+    if max_n_up <= 7:
+        tick_labels = [f"{i-1}命" if i > 1 else "本体" for i in up_axis]
+        tick_positions = up_axis
+    elif max_n_up <= 40:
+        tick_labels = [str(i) for i in up_axis]
+        tick_positions = up_axis
+    else:
+        step = 5
+        tick_positions = up_axis[::step]
+        tick_labels = [str(i) for i in tick_positions]
+    plt.xticks(tick_positions, tick_labels,
+               fontsize=8 if max_n_up > 40 else None)
+
     plt.ylim(0, 100)
     plt.yticks(np.arange(0, 101, 10))
     plt.grid(axis='y', linestyle=':', alpha=0.5)

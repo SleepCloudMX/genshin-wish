@@ -45,6 +45,18 @@ def _resolve_output(output: str | None, default_name: str) -> Path:
     return p / default_name
 
 
+def _parse_plot_config(raw: str) -> dict:
+    """Parse "single-up: true; q: auto" → {"single_up": "true", "q": "auto"}."""
+    result = {}
+    for part in raw.split(";"):
+        part = part.strip()
+        if not part or ":" not in part:
+            continue
+        k, v = part.split(":", 1)
+        result[k.strip().replace("-", "_")] = v.strip()
+    return result
+
+
 def _format_pct(p: float, fmt: str = "auto") -> str:
     """Format a probability [0, 1] as a percentage string."""
     if fmt != "auto":
@@ -406,11 +418,11 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False,
               help="稳态分布 (按 STABLE_P 加权)")
-@click.option("--show-marginal/--no-show-marginal", default=True,
-              help="显示每段单抽的边际欧非标注 (默认开启)")
+@click.option("--plot-config", default="single-up: auto; q: auto; width: auto",
+              help="绘图细节: single-up: auto|true|false; q: auto|all|off; width: auto|fixed")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
-                pity: int, loss: int, stable: bool, show_marginal: bool,
+                pity: int, loss: int, stable: bool, plot_config: str,
                 output: str | None) -> None:
     """个人抽卡百分位对照图"""
     from genshin_wish.viz.player_luck import plot_player_luck
@@ -418,6 +430,8 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
     pp = parse_pulls_seq(pulls_seq)
     if n_up is None:
         n_up = len(pp.cumulative)
+
+    config = _parse_plot_config(plot_config)
 
     if stable:
         def pdf_func(n: int) -> np.ndarray:
@@ -437,7 +451,10 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
         pdf_func, pp.cumulative, max_n_up=n_up, save_path=path,
         title=f"整体欧非趋势 ({tag})",
         player_pulls=pp, initial_loss=loss,
-        initial_guaranteed=guaranteed, show_marginal=show_marginal,
+        initial_guaranteed=guaranteed,
+        single_up=config.get("single_up", "auto"),
+        quantile_annot=config.get("q", "auto"),
+        width_mode=config.get("width", "auto"),
     )
     click.echo(f"Saved: {path}")
 
