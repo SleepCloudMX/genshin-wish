@@ -72,3 +72,4 @@ python scripts/main_plot.py
 - **`output/analysis/task*/` 数据不得被测试污染**。改完分析脚本后如需验证，用 `temp/` 目录输出，禁止覆盖正式 data.json 和图表。确认无误后再正式运行。
 - **耗时操作前先征求确认**。重跑基准测试（>1 分钟）、大批量文件操作、可能覆盖已有数据的操作，先说明原因和预估时间，等用户确认。
 - **`scripts/` 约定**：见 `scripts/CLAUDE.md`。分析脚本只输出图表 + data.json，不嵌入分析文本。
+- **`docs/ai-output/` 是独立 git 仓库**。修改其中文件后必须 `cd docs/ai-output && git add ... && git commit`，与主项目提交分开。不得遗漏。
