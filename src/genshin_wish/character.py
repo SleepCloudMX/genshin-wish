@@ -10,7 +10,7 @@ from scipy.stats import norm
 from ._constants import CHARACTER_POOL, STABLE_P, CLT_THRESHOLD, CAPTURE_RADIANCE_WIN_RATE
 from ._capture_radiance import guarantee_seq
 from ._gold import get_gold_pdfs
-from .long_term import _post50_moments, _solve_exact
+from .long_term import _post50_moments, _pre50_moments, _solve_exact, _solve_pre50
 
 
 @dataclass
@@ -385,3 +385,151 @@ def _up_distribution_clt_impl(
     cdf = np.cumsum(pdf)
     return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
 
+
+# ---------------------------------------------------------------------------
+# Pre-5.0 (no Capture Radiance) distribution functions
+# ---------------------------------------------------------------------------
+
+
+def up_distribution_pre50(
+    state: CharacterState, n_up: int, method: str = "auto",
+) -> UpDistribution:
+    """Pre-5.0 distribution: each 50/50 is independent, no Capture Radiance.
+
+    State only tracks ``guaranteed`` and ``pity``; ``consecutive_loss`` is
+    ignored (always treated as 0).
+    """
+    if n_up < 0:
+        raise ValueError(f"n_up must be >= 0, got {n_up}")
+
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+    pdfs = get_gold_pdfs(CHARACTER_POOL, min_gold=3 if n_uncertain == 0 else n_uncertain * 2 + 3)
+    p_gold = pdfs[1]
+
+    if n_uncertain == 0:
+        shifted = np.insert(
+            p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
+        )
+        if not state.guaranteed and n_up == 0:
+            return UpDistribution(pdf=np.array([1.0]), cdf=np.array([1.0]))
+        cdf = np.cumsum(shifted)
+        return UpDistribution(pdf=shifted, cdf=cdf)
+
+    p_gold2 = np.convolve(p_gold, p_gold)
+
+    if method == "auto":
+        eff_method = "exact" if n_uncertain <= 500 else "clt"
+    elif method == "exact":
+        eff_method = "exact"
+    elif method == "clt":
+        eff_method = "clt"
+    else:
+        raise ValueError(
+            f"Unknown method: {method!r}. Valid: 'auto', 'exact', 'clt'."
+        )
+
+    if eff_method == "exact":
+        if state.pity == 0:
+            pre50_pdfs = _solve_pre50(n_uncertain, p_gold, p_gold2)
+            result_pdf = pre50_pdfs[n_uncertain]
+        else:
+            # pity>0: first gold shifted, rest from pity=0
+            p_gold_pity = np.insert(
+                p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
+            )
+            p_two = np.convolve(p_gold_pity, p_gold)
+            max_len = max(len(p_gold_pity), len(p_two))
+            p1 = np.zeros(max_len, dtype=np.float64)
+            p2 = np.zeros(max_len, dtype=np.float64)
+            p1[: len(p_gold_pity)] = p_gold_pity
+            p2[: len(p_two)] = p_two
+            first_up = 0.5 * p1 + 0.5 * p2
+            if n_uncertain == 1:
+                result_pdf = first_up
+            else:
+                rest = _solve_pre50(n_uncertain - 1, p_gold, p_gold2)
+                result_pdf = np.convolve(first_up, rest[n_uncertain - 1])
+    else:
+        return _up_distribution_clt_impl_pre50(state, n_up)
+
+    if state.guaranteed:
+        result_pdf = np.convolve(result_pdf, p_gold)
+
+    cdf = np.cumsum(result_pdf)
+    return UpDistribution(pdf=result_pdf, cdf=cdf, method="exact")
+
+
+def _up_distribution_clt_impl_pre50(
+    state: CharacterState, n_up: int,
+) -> UpDistribution:
+    """CLT approximation for pre-5.0: all uncertain UPs are i.i.d."""
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+
+    pdfs = get_gold_pdfs(CHARACTER_POOL)
+    p_gold = pdfs[1]
+    p_gold2 = np.convolve(p_gold, p_gold)
+
+    mu_steady, var_steady = _pre50_moments(p_gold, p_gold2)
+    mu_n = n_uncertain * mu_steady
+    var_n = n_uncertain * var_steady
+    std_n = np.sqrt(max(var_n, 0.0))
+
+    lo = max(0, int(mu_n - 6 * std_n))
+    hi = int(mu_n + 6 * std_n)
+    edges = np.arange(lo - 0.5, hi + 1.0, dtype=np.float64)
+    pdf_clt = np.diff(norm.cdf(edges, loc=mu_n, scale=std_n))
+
+    pdf = np.zeros(hi + 1, dtype=np.float64)
+    pdf[lo: hi + 1] = pdf_clt
+
+    if state.pity > 0:
+        shifted_first = np.insert(
+            p_gold[state.pity + 1:] / p_gold[state.pity + 1:].sum(), 0, 0,
+        )
+        pdf = np.convolve(pdf, shifted_first)
+    if state.guaranteed:
+        pdf = np.convolve(pdf, p_gold)
+
+    cdf = np.cumsum(pdf)
+    return UpDistribution(pdf=pdf, cdf=cdf, method="clt")
+
+
+def stable_up_distribution_pre50(
+    n_up: int, method: str = "auto",
+) -> UpDistribution:
+    """Pre-5.0 steady-state distribution.
+
+    In pre-5.0 the system always resets to non-guaranteed after each UP,
+    so the steady state is simply state 0.
+    """
+    return up_distribution_pre50(
+        CharacterState(guaranteed=False, pity=0), n_up, method=method,
+    )
+
+
+def n_std_distribution_pre50(
+    state: CharacterState, n_up: int,
+) -> dict[int, float]:
+    """Pre-5.0 n_std distribution: Binomial(n_uncertain, 0.5)."""
+    from math import comb
+
+    if n_up < 0:
+        raise ValueError(f"n_up must be >= 0, got {n_up}")
+    if state.pity != 0:
+        raise ValueError(f"pity must be 0 (not yet supported), got {state.pity}")
+
+    n_uncertain = n_up - (1 if state.guaranteed else 0)
+    if n_uncertain <= 0:
+        return {0: 1.0}
+
+    result = {}
+    for k in range(n_uncertain + 1):
+        result[k] = comb(n_uncertain, k) * (0.5 ** n_uncertain)
+    return result
+
+
+def radiance_distribution_pre50(
+    state: CharacterState, n_up: int,
+) -> dict[int, float]:
+    """Pre-5.0: no Capture Radiance, always 0 triggers."""
+    return {0: 1.0}

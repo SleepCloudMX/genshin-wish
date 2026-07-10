@@ -14,8 +14,13 @@ from genshin_wish.character import (
     UpDistribution,
     n_std_conditional_pulls,
     n_std_distribution,
+    n_std_distribution_pre50,
+    radiance_distribution,
+    radiance_distribution_pre50,
     stable_up_distribution,
+    stable_up_distribution_pre50,
     up_distribution,
+    up_distribution_pre50,
 )
 from genshin_wish.standard import StandardState, standard_distribution
 from genshin_wish.weapon import (
@@ -118,6 +123,8 @@ def main() -> None:
 @click.option("--pity", type=int, default=0, help="已垫抽数")
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False, help="使用稳态分布")
+@click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
+              help="使用 5.0 前机制 (无捕获明光)")
 @click.option("--method", type=click.Choice(["auto", "dp-golds", "dp-path", "dp-state", "clt"]),
               default="auto", help="计算方法 (默认 auto)")
 @click.option("--pct-fmt", default="auto",
@@ -132,16 +139,21 @@ def char(
     pity: int,
     loss: int,
     stable: bool,
+    pre_5_0: bool,
     method: str,
     pct_fmt: str,
     fmt: str,
 ) -> None:
     """角色池概率查询"""
+    if pre_5_0 and loss != 0:
+        raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
     if stable:
-        dist = stable_up_distribution(n_up, method=method)
+        dist = (stable_up_distribution_pre50(n_up, method=method)
+                if pre_5_0 else stable_up_distribution(n_up, method=method))
     else:
         state = CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=loss)
-        dist = up_distribution(state, n_up, method=method)
+        dist = (up_distribution_pre50(state, n_up, method=method)
+                if pre_5_0 else up_distribution(state, n_up, method=method))
 
     text_parts = [_format_dist("角色池", dist, pulls, pct_fmt)]
 
@@ -358,25 +370,32 @@ def char_pdf(n_up: int, guaranteed: bool, pity: int, loss: int, output: str | No
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False,
               help="稳态分布 (按 STABLE_P 加权)")
+@click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
+              help="使用 5.0 前机制 (无捕获明光)")
 @click.option("--interval", type=click.Choice(["3", "5"]), default="3",
               help="区间层数 (默认 3)")
 @click.option("--pulls-seq", default=None,
               help='个人抽卡序列, e.g. "68,79+11,77+80,..."')
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
-             stable: bool, pulls_seq: str | None, output: str | None) -> None:
+             stable: bool, pre_5_0: bool, pulls_seq: str | None,
+             output: str | None) -> None:
     """角色池幸运扇形图"""
     from genshin_wish.viz.fan import plot_luck_fan
 
+    if pre_5_0 and loss != 0:
+        raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
     if stable:
         def pdf_func(n: int) -> np.ndarray:
-            return stable_up_distribution(n).pdf
+            return (stable_up_distribution_pre50(n).pdf if pre_5_0
+                    else stable_up_distribution(n).pdf)
         tag = "稳态"
     else:
         state = _state(guaranteed, pity, loss)
 
         def pdf_func(n: int) -> np.ndarray:
-            return up_distribution(state, n).pdf
+            return (up_distribution_pre50(state, n).pdf if pre_5_0
+                    else up_distribution(state, n).pdf)
         tag = f"loss={loss}, pity={pity}"
 
     player_avg = None
@@ -465,13 +484,19 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
 @click.option("--n-up", type=int, required=True, help="目标 UP 数")
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+@click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
+              help="使用 5.0 前机制 (无捕获明光)")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
-def nstd_bar(n_up: int, guaranteed: bool, loss: int, output: str | None) -> None:
+def nstd_bar(n_up: int, guaranteed: bool, loss: int, pre_5_0: bool,
+             output: str | None) -> None:
     """n_std 分布柱状图 (仅支持 pity=0)"""
     from genshin_wish.viz.nstd import plot_nstd_bar
 
+    if pre_5_0 and loss != 0:
+        raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
     state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
-    dist = n_std_distribution(state, n_up)
+    dist = (n_std_distribution_pre50(state, n_up) if pre_5_0
+            else n_std_distribution(state, n_up))
     suffix = f"-guaranteed" if guaranteed else ""
     name = f"nstd-bar-n{n_up}-loss{loss}{suffix}.png"
     path = _resolve_output(output, name)
@@ -552,15 +577,19 @@ def radiance_seq(seq: str, output: str | None) -> None:
 @click.option("--n-up", type=int, required=True, help="目标 UP 数")
 @click.option("--guaranteed/--no-guaranteed", default=False)
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
+@click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
+              help="使用 5.0 前机制 (无捕获明光)")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
-def radiance_bar(n_up: int, guaranteed: bool, loss: int,
+def radiance_bar(n_up: int, guaranteed: bool, loss: int, pre_5_0: bool,
                  output: str | None) -> None:
     """捕获明光次数分布 (给定 n_up)"""
-    from genshin_wish.character import radiance_distribution, CharacterState
     from genshin_wish.viz.radiance import plot_radiance_bar
 
+    if pre_5_0 and loss != 0:
+        raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
     state = CharacterState(guaranteed=guaranteed, pity=0, consecutive_loss=loss)
-    dist = radiance_distribution(state, n_up)
+    dist = (radiance_distribution_pre50(state, n_up) if pre_5_0
+            else radiance_distribution(state, n_up))
     suffix = f"-guaranteed" if guaranteed else ""
     name = f"radiance-bar-n{n_up}-loss{loss}{suffix}.png"
     path = _resolve_output(output, name)
