@@ -181,14 +181,14 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 | 选项 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `--pulls-seq` | TEXT | **必填** | 抽卡序列, e.g. `"68,79+11,77+80,..."` |
+| `--pulls-seq` | TEXT | — | 抽卡序列 (可与 `--pre-5.0-seq` 同时使用，至少指定一个) |
 | `--n-up` | INT | 序列长度 | 最大 UP 数 |
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
 | `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光) |
-| `--pre-5.0-seq` | TEXT | — | 5.0 前抽卡序列 (须为 `--pulls-seq` 前缀) |
+| `--pre-5.0-seq` | TEXT | — | 5.0 前抽卡序列。无 `--pulls-seq` 时即全序列；有 `--pulls-seq` 时须为其前缀 |
 | `--plot-config` | TEXT | `"single-up: auto; q: auto; node: auto; width: auto"` | 绘图细节配置，见下表 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
