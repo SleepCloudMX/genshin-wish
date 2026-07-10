@@ -495,7 +495,7 @@ def player_luck(pulls_seq: str | None, n_up: int | None, guaranteed: bool,
         def pdf_func(n: int) -> np.ndarray:
             return (stable_up_distribution_pre50(n).pdf if n_pre
                     else stable_up_distribution(n).pdf)
-        tag = "稳态"
+        tag = "稳态)"
     else:
         state = _state(guaranteed, pity, loss)
 
@@ -503,22 +503,25 @@ def player_luck(pulls_seq: str | None, n_up: int | None, guaranteed: bool,
             return (up_distribution_pre50(state, n).pdf if n_pre
                     else up_distribution(state, n).pdf)
         # win rate (excluding guaranteed)
-        def _win_pct_str(pl: PlayerPulls) -> str:
+        def _win_pct(pl: PlayerPulls) -> float | None:
             if not pl.is_direct_win:
-                return "-"
+                return None
             wins = sum(1 for w in pl.is_direct_win if w)
-            return f"{wins / len(pl.is_direct_win) * 100:.1f}%"
+            return wins / len(pl.is_direct_win) * 100
+
+        def _wr(pct: float | None) -> str:
+            return f"不歪率 {pct:.1f}%" if pct is not None else ""
 
         if pp_pre is not None and pp_post is not None:
-            tag = (f"不歪率 {_win_pct_str(pp)} "
-                   f"(5.0前 {_win_pct_str(pp_pre)}, 5.0后 {_win_pct_str(pp_post)}), "
-                   f"前 {n_pre} 次 UP 为 5.0 前机制")
+            tag = (f"前 {n_pre} 次 UP 为 5.0 前机制"
+                   f")  {_wr(_win_pct(pp))}"
+                   f" (5.0 前 {_win_pct(pp_pre):.1f}%, 5.0 后 {_win_pct(pp_post):.1f}%)")
         elif n_pre >= n_up:
-            tag = f"不歪率 {_win_pct_str(pp)}, 5.0 前机制"
+            tag = f"5.0 前机制)  {_wr(_win_pct(pp))}"
         elif n_pre > 0:
-            tag = f"不歪率 {_win_pct_str(pp)}, 前 {n_pre} 次 UP 为 5.0 前机制"
+            tag = f"前 {n_pre} 次 UP 为 5.0 前机制)  {_wr(_win_pct(pp))}"
         else:
-            tag = f"不歪率 {_win_pct_str(pp)}, 初始连歪 {loss} 次、垫 {pity} 抽"
+            tag = f"初始连歪 {loss} 次、垫 {pity} 抽)  {_wr(_win_pct(pp))}"
 
     name = f"player-luck-n{n_up}-loss{loss}-pity{pity}"
     if stable:
@@ -529,7 +532,7 @@ def player_luck(pulls_seq: str | None, n_up: int | None, guaranteed: bool,
     path = _resolve_output(output, name)
     plot_player_luck(
         pdf_func, pp.cumulative, max_n_up=n_up, save_path=path,
-        title=f"整体欧非趋势 ({tag})",
+        title=f"整体欧非趋势 ({tag}",
         player_pulls=pp, initial_loss=loss,
         initial_guaranteed=guaranteed,
         n_pre_50_up=n_pre,
