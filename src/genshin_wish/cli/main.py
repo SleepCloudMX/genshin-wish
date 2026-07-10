@@ -418,8 +418,8 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False,
               help="稳态分布 (按 STABLE_P 加权)")
-@click.option("--plot-config", default="single-up: auto; q: auto; width: auto",
-              help="绘图细节: single-up: auto|true|false; q: auto|all|off; width: auto|fixed")
+@click.option("--plot-config", default="single-up: auto; q: auto; node: auto; width: auto",
+              help="绘图细节: single-up: auto|true|false; q: auto|all|off; node: auto|true|false; width: auto|fixed")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
                 pity: int, loss: int, stable: bool, plot_config: str,
@@ -454,6 +454,7 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
         initial_guaranteed=guaranteed,
         single_up=config.get("single_up", "auto"),
         quantile_annot=config.get("q", "auto"),
+        node_pct=config.get("node", "auto"),
         width_mode=config.get("width", "auto"),
     )
     click.echo(f"Saved: {path}")

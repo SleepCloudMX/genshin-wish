@@ -194,9 +194,10 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 |-----|-----|------|------|
 | `single-up` | `auto` / `true` / `false` | `auto` | 折线段 "非于xx%" 边际标注 |
 | `q` | `auto` / `all` / `off` | `auto` | 分位数横线数字标注密度 |
-| `width` | `auto` / `fixed` | `auto` | 图宽自适应 (n_up>20 时扩图) vs 始终 16" |
+| `node` | `auto` / `true` / `false` | `auto` | 节点百分位标注（黑色） |
+| `width` | `auto` / `fixed` | `auto` | 图宽自适应 vs 始终 16" |
 
-`auto` 行为：n_up ≤ 20 → 全标注/16"；21–50 → 边际开 + 分位数步长标注 + 自适应扩图；>50 → 无标注/16"（仅曲线+节点+虚线）。
+`auto` 行为：n_up ≤ 50 → 全标注 + 自适应扩图（封顶 40"）；>50 → 无 single-up/无 node/分位数稀疏标注/40" 固定宽。
 
 Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。节点百分位标注在曲线下方。
 

@@ -401,6 +401,7 @@ def plot_player_luck(
     initial_guaranteed: bool = False,
     single_up: str = "auto",
     quantile_annot: str = "auto",
+    node_pct: str = "auto",
     width_mode: str = "auto",
 ) -> None
 ```
@@ -417,6 +418,7 @@ def plot_player_luck(
 | `initial_guaranteed` | 初始是否大保底 |
 | `single_up` | `"auto"` / `"true"` / `"false"` — 折线段边际 "非于xx%" 标注 |
 | `quantile_annot` | `"auto"` / `"all"` / `"off"` — 分位数横线数字标注密度 |
+| `node_pct` | `"auto"` / `"true"` / `"false"` — 节点百分位标注（黑色） |
 | `width_mode` | `"auto"` / `"fixed"` — 图宽自适应 vs 始终 16" |
 
 图表内容：
@@ -424,10 +426,9 @@ def plot_player_luck(
 - 10 条水平参考虚线 (1%/10%/20%/30%/40% 及对称的 60%/70%/80%/90%/99%)，颜色与 fan chart 分位带一致
 - 50% 中位线（灰色）
 - 分位数横线数字标注由 `quantile_annot` 控制
-- 绿色曲线 = 玩家累计百分位记录，黑色节点标注在曲线下方
-- 浅绿色 ("非于xx%") 折线段边际标注由 `single_up` 控制
-- `auto` 模式：≤20 UP 全标注，21–50 边际+步长分位数+扩图，>50 极简（仅曲线+虚线）
-- 深绿色旋转文字 = 每段折线的边际欧非标注（"非于 X%"），位于线段中垂线上方，角度与线段一致
+- 绿色曲线 = 玩家累计百分位记录，黑色节点标注在曲线下方（由 `node_pct` 控制）
+- 浅绿色 ("非于xx%") 折线段边际标注由 `single_up` 控制，位于线段中垂线上方，角度与线段一致
+- `auto` 模式：≤50 UP 全标注 + 自适应扩图（封顶 40"），>50 极简（无 single-up/node、q 稀疏标注、40" 封顶）
 
 ---
 

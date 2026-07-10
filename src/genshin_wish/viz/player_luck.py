@@ -32,21 +32,22 @@ def _resolve_q(val: str, n_up: int) -> tuple[str, int | None]:
         return ("off", None)
     if val == "all":
         return ("all", 1)
-    # auto
-    if n_up <= 20:
-        return ("all", 1)
-    elif n_up <= 50:
-        return ("stepped", max(1, n_up // 7))
-    else:
-        return ("off", None)
-
-
-def _resolve_width(val: str, n_up: int, has_annotations: bool) -> int:
-    if val == "fixed" or not has_annotations or n_up <= 20:
-        return 16
+    # auto: ≤50 full, >50 stepped
     if n_up <= 50:
-        return min(16 + int((n_up - 20) * 0.8), 40)
-    return 40
+        return ("all", 1)
+    return ("stepped", max(1, n_up // 7))
+
+
+def _resolve_node(val: str, n_up: int) -> bool:
+    if val == "auto":
+        return n_up <= 50
+    return val == "true"
+
+
+def _resolve_width(val: str, n_up: int) -> int:
+    if val == "fixed" or n_up <= 20:
+        return 16
+    return min(16 + int((n_up - 20) * 0.8), 40)
 
 
 def _reconstruct_states(
@@ -80,6 +81,7 @@ def plot_player_luck(
     initial_guaranteed: bool = False,
     single_up: str = "auto",
     quantile_annot: str = "auto",
+    node_pct: str = "auto",
     width_mode: str = "auto",
 ) -> None:
     """Plot a percentile chart comparing a player's pull history to the distribution.
@@ -105,6 +107,8 @@ def plot_player_luck(
         ``"auto"``, ``"true"``, or ``"false"`` — per-segment marginal annotations.
     quantile_annot : str
         ``"auto"``, ``"all"``, or ``"off"`` — quantile reference line number labels.
+    node_pct : str
+        ``"auto"``, ``"true"``, or ``"false"`` — node percentile labels (black).
     width_mode : str
         ``"auto"`` or ``"fixed"`` — adaptive figure width vs always 16".
     """
@@ -116,8 +120,8 @@ def plot_player_luck(
     up_axis = np.arange(1, max_n_up + 1)
     show_single_up = _resolve_single_up(single_up, max_n_up)
     q_mode, q_step = _resolve_q(quantile_annot, max_n_up)
-    has_annotations = show_single_up or (q_mode != "off")
-    fig_w = _resolve_width(width_mode, max_n_up, has_annotations)
+    show_node_pct = _resolve_node(node_pct, max_n_up)
+    fig_w = _resolve_width(width_mode, max_n_up)
 
     target_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
 
@@ -199,11 +203,12 @@ def plot_player_luck(
                  color=_PLAYER_COLOR, linewidth=2.5, marker='o',
                  markersize=7, label='玩家记录', zorder=20)
 
-        for i in range(n_player):
-            plt.text(up_axis[i] + 0.05, player_pct[i] - 1.5,
-                     f"{player_pct[i]:.1f}%",
-                     color='black', ha='left', va='top',
-                     fontsize=9, fontweight='bold', zorder=21)
+        if show_node_pct:
+            for i in range(n_player):
+                plt.text(up_axis[i] + 0.05, player_pct[i] - 1.5,
+                         f"{player_pct[i]:.1f}%",
+                         color='black', ha='left', va='top',
+                         fontsize=9, fontweight='bold', zorder=21)
 
         # --- marginal annotations on segments ---
         if show_single_up and n_player >= 2:
