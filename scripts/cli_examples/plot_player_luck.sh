@@ -28,19 +28,23 @@ genshin-wish plot player-luck --pulls-seq "$PULLS_MID"
 
 echo "=== 中序列 仅关闭分位数标注 ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_MID" \
-  --plot-config "q: off"
+  --plot-config "q: off" \
+  -o output/cli/player-luck-n23-loss0-pity0-no-q.png
 
 echo "=== 中序列 仅关闭节点标注 ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_MID" \
-  --plot-config "node: false"
+  --plot-config "node: false" \
+  -o output/cli/player-luck-n23-loss0-pity0-no-node.png
 
 echo "=== 中序列 极简 (全关) ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_MID" \
-  --plot-config "single-up: false; q: off; node: false"
+  --plot-config "single-up: false; q: off; node: false" \
+  -o output/cli/player-luck-n23-loss0-pity0-minimal.png
 
 echo "=== 中序列 固定宽度 16 英寸 ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_MID" \
-  --plot-config "width: fixed"
+  --plot-config "width: fixed" \
+  -o output/cli/player-luck-n23-loss0-pity0-fixed.png
 
 # --- 长序列 (>50 UP) ---
 
@@ -51,11 +55,13 @@ genshin-wish plot player-luck --pulls-seq "$PULLS_LONG"
 
 echo "=== 长序列 强制全标注 + 扩图 ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_LONG" \
-  --plot-config "single-up: true; q: all; node: true; width: auto"
+  --plot-config "single-up: true; q: all; node: true; width: auto" \
+  -o output/cli/player-luck-n55-loss0-pity0-full.png
 
 echo "=== 长序列 关闭分位数标注 ==="
 genshin-wish plot player-luck --pulls-seq "$PULLS_LONG" \
-  --plot-config "q: off"
+  --plot-config "width: fixed" \
+  -o output/cli/player-luck-n55-loss0-pity0-fixed.png
 
 echo ""
 echo "Done — output/cli/"
