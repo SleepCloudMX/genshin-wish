@@ -438,11 +438,16 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
 @click.option("--loss", type=int, default=0, help="连续歪次数 0~3")
 @click.option("--stable/--no-stable", default=False,
               help="稳态分布 (按 STABLE_P 加权)")
+@click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
+              help="使用 5.0 前机制 (无捕获明光)")
+@click.option("--pre-5.0-up", "pre_5_0_up", type=int, default=0,
+              help="前 N 次 UP 为 5.0 前机制 (0=不使用)")
 @click.option("--plot-config", default="single-up: auto; q: auto; node: auto; width: auto",
               help="绘图细节: single-up: auto|true|false; q: auto|all|off; node: auto|true|false; width: auto|fixed")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
-                pity: int, loss: int, stable: bool, plot_config: str,
+                pity: int, loss: int, stable: bool, pre_5_0: bool,
+                pre_5_0_up: int, plot_config: str,
                 output: str | None) -> None:
     """个人抽卡百分位对照图"""
     from genshin_wish.viz.player_luck import plot_player_luck
@@ -451,27 +456,47 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
     if n_up is None:
         n_up = len(pp.cumulative)
 
+    if pre_5_0 and pre_5_0_up > 0:
+        raise click.UsageError("--pre-5.0 与 --pre-5.0-up 不能同时使用")
+    if pre_5_0 and loss != 0:
+        raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
+    if pre_5_0_up > 0 and loss != 0:
+        raise click.UsageError("--pre-5.0-up 与 --loss 互斥 (5.0 前无连续歪机制)")
+    n_pre = pre_5_0_up if pre_5_0_up > 0 else (n_up if pre_5_0 else 0)
+
     config = _parse_plot_config(plot_config)
 
     if stable:
         def pdf_func(n: int) -> np.ndarray:
-            return stable_up_distribution(n).pdf
+            return (stable_up_distribution_pre50(n).pdf if n_pre
+                    else stable_up_distribution(n).pdf)
         tag = "稳态"
     else:
         state = _state(guaranteed, pity, loss)
 
         def pdf_func(n: int) -> np.ndarray:
-            return up_distribution(state, n).pdf
-        tag = f"初始连歪 {loss} 次、垫 {pity} 抽"
+            return (up_distribution_pre50(state, n).pdf if n_pre
+                    else up_distribution(state, n).pdf)
+        if n_pre >= n_up:
+            tag = "5.0 前机制"
+        elif n_pre > 0:
+            tag = f"前 {n_pre} 次 UP 为 5.0 前机制"
+        else:
+            tag = f"初始连歪 {loss} 次、垫 {pity} 抽"
 
-    stable_suffix = "-stable" if stable else ""
-    name = f"player-luck-n{n_up}-loss{loss}-pity{pity}{stable_suffix}.png"
+    name = f"player-luck-n{n_up}-loss{loss}-pity{pity}"
+    if stable:
+        name += "-stable"
+    if n_pre > 0:
+        name += f"-pre50up{n_pre}"
+    name += ".png"
     path = _resolve_output(output, name)
     plot_player_luck(
         pdf_func, pp.cumulative, max_n_up=n_up, save_path=path,
         title=f"整体欧非趋势 ({tag})",
         player_pulls=pp, initial_loss=loss,
         initial_guaranteed=guaranteed,
+        n_pre_50_up=n_pre,
         single_up=config.get("single_up", "auto"),
         quantile_annot=config.get("q", "auto"),
         node_pct=config.get("node", "auto"),

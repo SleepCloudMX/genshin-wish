@@ -83,13 +83,14 @@ def plot_player_luck(
     quantile_annot: str = "auto",
     node_pct: str = "auto",
     width_mode: str = "auto",
+    n_pre_50_up: int = 0,
 ) -> None:
     """Plot a percentile chart comparing a player's pull history to the distribution.
 
     Parameters
     ----------
     pdf_func : callable
-        ``pdf_func(n_up: int) -> np.ndarray``
+        ``pdf_func(n_up: int) -> np.ndarray`` — ignored when n_pre_50_up > 0.
     player_cum : list[int]
         Cumulative total pulls after each UP.
     max_n_up : int
@@ -111,8 +112,15 @@ def plot_player_luck(
         ``"auto"``, ``"true"``, or ``"false"`` — node percentile labels (black).
     width_mode : str
         ``"auto"`` or ``"fixed"`` — adaptive figure width vs always 16".
+    n_pre_50_up : int
+        Number of first UPs under pre-5.0 rules (0 = all post-5.0).
     """
-    from genshin_wish.character import CharacterState, up_distribution
+    from genshin_wish.character import (
+        CharacterState, up_distribution, up_distribution_pre50,
+    )
+    from genshin_wish._constants import CAPTURE_RADIANCE_WIN_RATE, CHARACTER_POOL
+    from genshin_wish._gold import get_gold_pdfs
+    from genshin_wish.long_term import _solve_pre50, _solve_exact
     from genshin_wish.viz._base import setup_style
     setup_style()
 
@@ -125,10 +133,27 @@ def plot_player_luck(
 
     target_alphas = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
 
+    # --- build per-UP PDFs (handle two-phase mixing) ---
+    n_pre = n_pre_50_up
+    if n_pre > 0:
+        pdfs_gold = get_gold_pdfs(CHARACTER_POOL, min_gold=max_n_up * 2 + 3)
+        p_gold = pdfs_gold[1]
+        p_gold2 = np.convolve(p_gold, p_gold)
+        pre_pdfs = _solve_pre50(n_pre, p_gold, p_gold2)
+        post_pdfs = _solve_exact(max_n_up, list(CAPTURE_RADIANCE_WIN_RATE),
+                                 p_gold, p_gold2)
+        def _get_pdf(n: int) -> np.ndarray:
+            if n <= n_pre:
+                return pre_pdfs[n]
+            return np.convolve(pre_pdfs[n_pre], post_pdfs[n - n_pre])
+    else:
+        def _get_pdf(n: int) -> np.ndarray:
+            return pdf_func(n)
+
     # --- compute percentile reference data ---
     ref_pulls: dict[float, list[float]] = {a: [] for a in target_alphas}
     for n in up_axis:
-        pdf = pdf_func(n)
+        pdf = _get_pdf(n)
         cdf = np.cumsum(pdf)
         for a in target_alphas:
             ref_pulls[a].append(float(np.searchsorted(cdf, a)))
@@ -137,7 +162,7 @@ def plot_player_luck(
     player_pct: list[float] = []
     for i, n in enumerate(up_axis):
         if i < len(player_cum):
-            pdf = pdf_func(n)
+            pdf = _get_pdf(n)
             cdf = np.cumsum(pdf)
             total = player_cum[i]
             pct = float(cdf[min(total, len(cdf) - 1)]) * 100
@@ -148,14 +173,36 @@ def plot_player_luck(
     # --- compute marginal percentiles ---
     marginal_pct: list[float] = []
     if show_single_up and player_pulls is not None and player_pulls.is_direct_win:
-        states = _reconstruct_states(player_pulls, initial_loss, initial_guaranteed)
-        from genshin_wish.character import CharacterState, up_distribution
-        for i, pulls in enumerate(player_pulls.per_up):
-            km, gtd = states[i]
-            state = CharacterState(guaranteed=gtd, pity=0, consecutive_loss=km)
-            dist = up_distribution(state, n_up=1)
+        from genshin_wish.character import CharacterState, up_distribution, up_distribution_pre50
+        # Two-phase state reconstruction
+        gtd = initial_guaranteed
+        km = initial_loss
+        for i, is_win in enumerate(player_pulls.is_direct_win):
+            if n_pre > 0 and i < n_pre:
+                # pre-5.0 phase: track guaranteed only, km always 0
+                dist = up_distribution_pre50(
+                    CharacterState(guaranteed=gtd, pity=0), n_up=1)
+            else:
+                if n_pre > 0 and i == n_pre:
+                    km = 0  # reset at boundary
+                dist = up_distribution(
+                    CharacterState(guaranteed=gtd, pity=0, consecutive_loss=km),
+                    n_up=1)
+
+            pulls = player_pulls.per_up[i]
             idx = min(pulls, len(dist.cdf) - 1)
             marginal_pct.append(float(dist.cdf[idx]) * 100)
+
+            # advance state
+            if is_win:
+                km = 0
+                gtd = False
+            else:
+                if n_pre > 0 and i < n_pre:
+                    km = 0  # pre-5.0: no km tracking
+                else:
+                    km = min(km + 1, 3)
+                gtd = False
     else:
         marginal_pct = [float('nan')] * len(player_cum)
 
@@ -252,6 +299,11 @@ def plot_player_luck(
                         color=_MARGINAL_COLOR, ha='center', va='center',
                         fontsize=8, fontweight='normal', rotation=angle, alpha=0.7,
                         zorder=19)
+
+        # --- phase boundary (pre-5.0 / post-5.0) ---
+        if n_pre > 0 and n_pre < n_player:
+            plt.axvline(x=n_pre + 0.5, color='#e74c3c', linestyle='--',
+                        linewidth=1.5, alpha=0.7, zorder=15)
 
     # --- styling ---
     plt.title(title or "整体欧非趋势", fontsize=18, pad=25)
