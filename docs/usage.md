@@ -25,6 +25,7 @@ pip install -e .
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | 下一个金是否大保底 |
 | `--pity` | INT | 0 | 已垫抽数，范围 0~89 |
 | `--loss` | INT | 0 | 连续歪次数，范围 0~3，驱动捕获明光概率 |
+| `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光)。**与 `--loss` 互斥** |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 使用稳态分布。**与 `--loss`、`--guaranteed`、`--pity` 互斥**——指定 `--stable` 后这些参数被忽略 |
 | `--method` | `auto`\|`dp-golds`\|`dp-path`\|`dp-state`\|`clt` | `auto` | 计算方法。`auto` 自动选择（≤500 dp-golds，>500 clt+warning）。`dp-path` 限 n_up ≤ 20 |
 | `--pulls` | INT | — | 查询给定抽数内的达成概率 |
@@ -168,6 +169,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
+| `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光) |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 (按 STABLE_P 加权) |
 | `--interval` | `3`\|`5` | `3` | 区间层数 |
 | `--pulls-seq` | TEXT | — | 个人抽卡序列, e.g. `"68,79+11,77+80,..."`（叠加绿色玩家曲线） |
@@ -185,7 +187,9 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
-| `--plot-config` | TEXT | `"single-up: auto; q: auto; width: auto"` | 绘图细节配置，见下表 |
+| `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光) |
+| `--pre-5.0-up` | INT | 0 | 前 N 次 UP 为 5.0 前机制 |
+| `--plot-config` | TEXT | `"single-up: auto; q: auto; node: auto; width: auto"` | 绘图细节配置，见下表 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
 `--plot-config` key：

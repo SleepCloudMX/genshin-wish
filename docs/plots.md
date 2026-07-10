@@ -420,6 +420,7 @@ def plot_player_luck(
 | `quantile_annot` | `"auto"` / `"all"` / `"off"` — 分位数横线数字标注密度 |
 | `node_pct` | `"auto"` / `"true"` / `"false"` — 节点百分位标注（黑色） |
 | `width_mode` | `"auto"` / `"fixed"` — 图宽自适应 vs 始终 16" |
+| `n_pre_50_up` | 前 N 次 UP 为 5.0 前机制，0 = 全部 post-5.0（默认） |
 
 图表内容：
 - Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量
@@ -428,6 +429,7 @@ def plot_player_luck(
 - 分位数横线数字标注由 `quantile_annot` 控制
 - 绿色曲线 = 玩家累计百分位记录，黑色节点标注在曲线下方（由 `node_pct` 控制）
 - 浅绿色 ("非于xx%") 折线段边际标注由 `single_up` 控制，位于线段中垂线上方，角度与线段一致
+- `n_pre_50_up > 0` 时：红色垂直虚线分隔两个阶段，分阶段计算分位数和边际百分位
 - `auto` 模式：≤50 UP 全标注 + 自适应扩图（封顶 40"），>50 极简（无 single-up/node、q 稀疏标注、40" 封顶）
 
 ---
