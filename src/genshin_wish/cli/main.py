@@ -38,11 +38,12 @@ def _plot_setup() -> None:
 def _resolve_output(output: str | None, default_name: str) -> Path:
     """Resolve -o flag: basename with '.' → file path, otherwise directory."""
     if output is None:
-        return CLI_OUTPUT / default_name
-    p = Path(output)
-    if "." in p.name:
-        return p
-    return p / default_name
+        path = CLI_OUTPUT / default_name
+    else:
+        p = Path(output)
+        path = p if "." in p.name else p / default_name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _parse_plot_config(raw: str) -> dict:
