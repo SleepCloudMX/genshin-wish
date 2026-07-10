@@ -24,7 +24,8 @@ genshin-wish plot player-luck --pulls-seq "$PULLS" --pre-5.0 \
   -o output/cli/player-luck-n11-pre50-all.png
 
 echo "=== player-luck 两阶段 (前 5 次为 Pre-5.0) ==="
-genshin-wish plot player-luck --pulls-seq "$PULLS" --pre-5.0-up 5 \
+genshin-wish plot player-luck --pulls-seq "$PULLS" \
+  --pre-5.0-seq "68,79+11,77+80,77" \
   -o output/cli/player-luck-n11-pre50up5.png
 
 echo "=== player-luck 全 Post-5.0 (对比) ==="
@@ -32,7 +33,8 @@ genshin-wish plot player-luck --pulls-seq "$PULLS" \
   -o output/cli/player-luck-n11-loss0-pity0.png
 
 echo "=== player-luck 长序列 两阶段 (前 10 次为 Pre-5.0) ==="
-genshin-wish plot player-luck --pulls-seq "$PULLS_LONG" --pre-5.0-up 10 \
+genshin-wish plot player-luck --pulls-seq "$PULLS_LONG" \
+  --pre-5.0-seq "78,19,55+11,74,76,80,72,43+79,67" \
   -o output/cli/player-luck-n23-pre50up10.png
 
 echo ""

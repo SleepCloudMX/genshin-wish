@@ -440,14 +440,14 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
               help="稳态分布 (按 STABLE_P 加权)")
 @click.option("--pre-5.0/--no-pre-5.0", "pre_5_0", default=False,
               help="使用 5.0 前机制 (无捕获明光)")
-@click.option("--pre-5.0-up", "pre_5_0_up", type=int, default=0,
-              help="前 N 次 UP 为 5.0 前机制 (0=不使用)")
+@click.option("--pre-5.0-seq", "pre_5_0_seq", default=None,
+              help='5.0 前抽卡序列 (须为 --pulls-seq 前缀), e.g. "68,79+11,..."')
 @click.option("--plot-config", default="single-up: auto; q: auto; node: auto; width: auto",
               help="绘图细节: single-up: auto|true|false; q: auto|all|off; node: auto|true|false; width: auto|fixed")
 @click.option("--output", "-o", default=None, help="输出路径 (目录或文件)")
 def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
                 pity: int, loss: int, stable: bool, pre_5_0: bool,
-                pre_5_0_up: int, plot_config: str,
+                pre_5_0_seq: str | None, plot_config: str,
                 output: str | None) -> None:
     """个人抽卡百分位对照图"""
     from genshin_wish.viz.player_luck import plot_player_luck
@@ -456,13 +456,31 @@ def player_luck(pulls_seq: str, n_up: int | None, guaranteed: bool,
     if n_up is None:
         n_up = len(pp.cumulative)
 
-    if pre_5_0 and pre_5_0_up > 0:
-        raise click.UsageError("--pre-5.0 与 --pre-5.0-up 不能同时使用")
+    if pre_5_0 and pre_5_0_seq is not None:
+        raise click.UsageError("--pre-5.0 与 --pre-5.0-seq 不能同时使用")
     if pre_5_0 and loss != 0:
         raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
-    if pre_5_0_up > 0 and loss != 0:
-        raise click.UsageError("--pre-5.0-up 与 --loss 互斥 (5.0 前无连续歪机制)")
-    n_pre = pre_5_0_up if pre_5_0_up > 0 else (n_up if pre_5_0 else 0)
+    if pre_5_0_seq is not None and loss != 0:
+        raise click.UsageError("--pre-5.0-seq 与 --loss 互斥 (5.0 前无连续歪机制)")
+
+    if pre_5_0_seq is not None:
+        pp_pre = parse_pulls_seq(pre_5_0_seq)
+        n_pre = len(pp_pre.per_up)
+        if n_pre > len(pp.per_up):
+            raise click.UsageError(
+                f"--pre-5.0-seq ({n_pre} UP) 超过了 --pulls-seq ({len(pp.per_up)} UP)"
+            )
+        # Validate prefix match
+        raw_all = [s.strip() for s in pulls_seq.split(",") if s.strip()]
+        raw_pre = [s.strip() for s in pre_5_0_seq.split(",") if s.strip()]
+        if raw_all[:len(raw_pre)] != raw_pre:
+            raise click.UsageError(
+                "--pre-5.0-seq 必须是 --pulls-seq 的前缀 (逐项匹配)"
+            )
+    elif pre_5_0:
+        n_pre = n_up
+    else:
+        n_pre = 0
 
     config = _parse_plot_config(plot_config)
 

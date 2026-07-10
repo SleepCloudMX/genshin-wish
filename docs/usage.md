@@ -188,7 +188,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 | `--loss` | INT | 0 | |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
 | `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光) |
-| `--pre-5.0-up` | INT | 0 | 前 N 次 UP 为 5.0 前机制 |
+| `--pre-5.0-seq` | TEXT | — | 5.0 前抽卡序列 (须为 `--pulls-seq` 前缀) |
 | `--plot-config` | TEXT | `"single-up: auto; q: auto; node: auto; width: auto"` | 绘图细节配置，见下表 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
