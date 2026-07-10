@@ -502,12 +502,23 @@ def player_luck(pulls_seq: str | None, n_up: int | None, guaranteed: bool,
         def pdf_func(n: int) -> np.ndarray:
             return (up_distribution_pre50(state, n).pdf if n_pre
                     else up_distribution(state, n).pdf)
-        if n_pre >= n_up:
-            tag = "5.0 前机制"
+        # win rate (excluding guaranteed)
+        def _win_pct_str(pl: PlayerPulls) -> str:
+            if not pl.is_direct_win:
+                return "-"
+            wins = sum(1 for w in pl.is_direct_win if w)
+            return f"{wins / len(pl.is_direct_win) * 100:.1f}%"
+
+        if pp_pre is not None and pp_post is not None:
+            tag = (f"不歪率 {_win_pct_str(pp)} "
+                   f"(5.0前 {_win_pct_str(pp_pre)}, 5.0后 {_win_pct_str(pp_post)}), "
+                   f"前 {n_pre} 次 UP 为 5.0 前机制")
+        elif n_pre >= n_up:
+            tag = f"不歪率 {_win_pct_str(pp)}, 5.0 前机制"
         elif n_pre > 0:
-            tag = f"前 {n_pre} 次 UP 为 5.0 前机制"
+            tag = f"不歪率 {_win_pct_str(pp)}, 前 {n_pre} 次 UP 为 5.0 前机制"
         else:
-            tag = f"初始连歪 {loss} 次、垫 {pity} 抽"
+            tag = f"不歪率 {_win_pct_str(pp)}, 初始连歪 {loss} 次、垫 {pity} 抽"
 
     name = f"player-luck-n{n_up}-loss{loss}-pity{pity}"
     if stable:
