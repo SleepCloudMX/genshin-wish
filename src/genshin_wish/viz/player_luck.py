@@ -22,7 +22,7 @@ _MARGINAL_COLOR = '#1e8449'
 
 def _resolve_single_up(val: str, n_up: int) -> bool:
     if val == "auto":
-        return n_up <= 20
+        return n_up <= 50
     return val == "true"
 
 
@@ -33,9 +33,9 @@ def _resolve_q(val: str, n_up: int) -> tuple[str, int | None]:
     if val == "all":
         return ("all", 1)
     # auto
-    if n_up <= 10:
+    if n_up <= 20:
         return ("all", 1)
-    elif n_up <= 20:
+    elif n_up <= 50:
         return ("stepped", max(1, n_up // 7))
     else:
         return ("off", None)
