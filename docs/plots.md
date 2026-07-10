@@ -403,6 +403,7 @@ def plot_player_luck(
     quantile_annot: str = "auto",
     node_pct: str = "auto",
     width_mode: str = "auto",
+    n_pre_50_up: int = 0,
 ) -> None
 ```
 

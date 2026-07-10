@@ -50,25 +50,6 @@ def _resolve_width(val: str, n_up: int) -> int:
     return min(16 + int((n_up - 20) * 0.8), 40)
 
 
-def _reconstruct_states(
-    pp: PlayerPulls, initial_loss: int, initial_guaranteed: bool
-) -> list[tuple[int, bool]]:
-    """Reconstruct (k_miss, guaranteed) state before each UP."""
-    km = initial_loss
-    gtd = initial_guaranteed
-    states: list[tuple[int, bool]] = []
-    for is_win in pp.is_direct_win:
-        states.append((km, gtd))
-        if is_win:
-            km = 0
-            gtd = False
-        else:
-            km = min(km + 1, 3)
-            km = 0
-            gtd = False
-    return states
-
-
 def plot_player_luck(
     pdf_func,
     player_cum: list[int],

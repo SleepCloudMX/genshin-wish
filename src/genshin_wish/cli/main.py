@@ -148,11 +148,11 @@ def char(
     if pre_5_0 and loss != 0:
         raise click.UsageError("--pre-5.0 与 --loss 互斥 (5.0 前无连续歪机制)")
     if stable:
-        dist = (stable_up_distribution_pre50(n_up, method=method)
+        dist = (stable_up_distribution_pre50(n_up)
                 if pre_5_0 else stable_up_distribution(n_up, method=method))
     else:
         state = CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=loss)
-        dist = (up_distribution_pre50(state, n_up, method=method)
+        dist = (up_distribution_pre50(state, n_up)
                 if pre_5_0 else up_distribution(state, n_up, method=method))
 
     text_parts = [_format_dist("角色池", dist, pulls, pct_fmt)]
