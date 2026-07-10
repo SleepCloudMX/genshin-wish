@@ -181,14 +181,14 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 | 选项 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `--pulls-seq` | TEXT | — | 抽卡序列 (可与 `--pre-5.0-seq` 同时使用，至少指定一个) |
+| `--pulls-seq` | TEXT | — | 5.0 后抽卡序列 (与 `--pre-5.0-seq` 首尾相接，至少指定一个) |
 | `--n-up` | INT | 序列长度 | 最大 UP 数 |
 | `--guaranteed` / `--no-guaranteed` | flag | `--no-guaranteed` | |
 | `--pity` | INT | 0 | |
 | `--loss` | INT | 0 | |
 | `--stable` / `--no-stable` | flag | `--no-stable` | 稳态分布 |
 | `--pre-5.0` / `--no-pre-5.0` | flag | `--no-pre-5.0` | 5.0 前机制 (无捕获明光) |
-| `--pre-5.0-seq` | TEXT | — | 5.0 前抽卡序列。无 `--pulls-seq` 时即全序列；有 `--pulls-seq` 时须为其前缀 |
+| `--pre-5.0-seq` | TEXT | — | 5.0 前抽卡序列。与 `--pulls-seq` 拼接为完整序列，中间以红色虚线分隔 |
 | `--plot-config` | TEXT | `"single-up: auto; q: auto; node: auto; width: auto"` | 绘图细节配置，见下表 |
 | `-o` / `--output` | PATH | `output/cli/` | 输出路径 |
 
@@ -205,7 +205,7 @@ genshin-wish joint --char-up 2 --weapon-count 1 \
 
 Y 轴 = 百分位 (比百分之多少的玩家非)，X 轴 = 限定五星数量。10 条水平参考线 (1%/10%/…/99%) 标注各 UP 所需抽数。节点百分位标注在曲线下方。
 
-> **使用 `--pre-5.0-seq` 注意**：应从 5.0 后**第一个小保底**开始划分。若 5.0 前歪了（小保底出常驻），后续的大保底仍属 5.0 前——因为歪发生在旧机制下，`A+B` 不可拆开。例如序列 `"78+12, 80, 75+81"` 中「歪」在 5.0 前，则第一个 `78+12` 属旧机制，即使 `12` 抽实际发生在 5.0 时间线之后。
+> **使用 `--pre-5.0-seq` 注意**：应从 5.0 后**第一个小保底**开始划分。若 5.0 前歪了，后续大保底仍属 5.0 前——`A+B` 不可拆。两条序列独立指定，`--pre-5.0-seq` 放 5.0 前的 UP，`--pulls-seq` 放 5.0 后的 UP，图表按 pre → post 顺序拼接，中间以红色虚线分隔。
 
 #### `plot nstd-bar` — n_std 分布柱状图
 

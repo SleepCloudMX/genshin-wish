@@ -30,7 +30,7 @@ from genshin_wish.weapon import (
     weapon_up_distribution,
 )
 from genshin_wish.joint import joint_distribution
-from genshin_wish._player_pulls import parse_pulls_seq
+from genshin_wish._player_pulls import PlayerPulls, parse_pulls_seq
 
 CLI_OUTPUT = Path("output/cli")
 
@@ -430,7 +430,7 @@ def char_fan(n_up: int, guaranteed: bool, pity: int, loss: int, interval: str,
 
 @plot.command()
 @click.option("--pulls-seq", type=str, default=None,
-              help='个人抽卡序列 (可与 --pre-5.0-seq 同时使用), e.g. "68,79+11,77+80,..."')
+              help='5.0 后抽卡序列, e.g. "68,79+11,77+80,..."')
 @click.option("--n-up", type=int, default=None,
               help="最大 UP 数 (默认取序列长度)")
 @click.option("--guaranteed/--no-guaranteed", default=False)
@@ -462,33 +462,32 @@ def player_luck(pulls_seq: str | None, n_up: int | None, guaranteed: bool,
     if pre_5_0_seq is not None and loss != 0:
         raise click.UsageError("--pre-5.0-seq 与 --loss 互斥 (5.0 前无连续歪机制)")
 
-    if pulls_seq is None:
-        # Only pre-5.0-seq — use as full sequence, all pre-5.0
-        pp = parse_pulls_seq(pre_5_0_seq)
+    pp_pre = parse_pulls_seq(pre_5_0_seq) if pre_5_0_seq is not None else None
+    pp_post = parse_pulls_seq(pulls_seq) if pulls_seq is not None else None
+
+    if pp_pre is not None and pp_post is not None:
+        # Concatenate: pre-5.0 then post-5.0
+        offset = pp_pre.cumulative[-1] if pp_pre.cumulative else 0
+        pp = PlayerPulls(
+            per_up=pp_pre.per_up + pp_post.per_up,
+            cumulative=pp_pre.cumulative + [c + offset for c in pp_post.cumulative],
+            is_direct_win=pp_pre.is_direct_win + pp_post.is_direct_win,
+        )
+        n_pre = len(pp_pre.cumulative)
+    elif pp_pre is not None:
+        pp = pp_pre
         n_pre = len(pp.cumulative)
-    elif pre_5_0_seq is not None:
-        pp = parse_pulls_seq(pulls_seq)
-        pp_pre = parse_pulls_seq(pre_5_0_seq)
-        n_pre = len(pp_pre.per_up)
-        if n_pre > len(pp.per_up):
-            raise click.UsageError(
-                f"--pre-5.0-seq ({n_pre} UP) 超过了 --pulls-seq ({len(pp.per_up)} UP)"
-            )
-        raw_all = [s.strip() for s in pulls_seq.split(",") if s.strip()]
-        raw_pre = [s.strip() for s in pre_5_0_seq.split(",") if s.strip()]
-        if raw_all[:len(raw_pre)] != raw_pre:
-            raise click.UsageError(
-                "--pre-5.0-seq 必须是 --pulls-seq 的前缀 (逐项匹配)"
-            )
     elif pre_5_0:
-        pp = parse_pulls_seq(pulls_seq)
-        n_pre = n_up
+        pp = pp_post  # type: ignore[assignment]
+        n_pre = -1  # placeholder, resolved below
     else:
-        pp = parse_pulls_seq(pulls_seq)
+        pp = pp_post  # type: ignore[assignment]
         n_pre = 0
 
     if n_up is None:
         n_up = len(pp.cumulative)
+    if n_pre == -1:
+        n_pre = n_up  # --pre-5.0: all UPs
 
     config = _parse_plot_config(plot_config)
 
