@@ -173,18 +173,11 @@
     var acc = el('section', 'card accuracy');
     acc.innerHTML =
       '<h2>数据准确度</h2>' +
-      '<p>官方从未公布逐抽概率，本项目使用的机制参数是玩家群体统计反推出来的，' +
-      '与官方实现可能有出入，<b>结果仅供参考</b>。</p>' +
-      '<div class="tablewrap"><table class="dtable dtable--plain">' +
-      '<thead><tr><th>指标</th><th>按官方公布的综合概率 1.6% 折算</th><th>本项目模型</th></tr></thead>' +
-      '<tbody>' +
-      '<tr><th>平均多少抽出金</th><td>62.5 抽</td><td>62.3 抽</td></tr>' +
-      '<tr><th>平均多少抽一个限定</th><td>约 90.6 抽</td><td>90.3 抽</td></tr>' +
-      '</tbody></table></div>' +
-      '<p>两者相差约 0.3 抽。官方给出的 1.6% 只精确到一位小数，' +
-      '因此这个差距既可能来自机制假设的偏差，也可能只是官方取整；' +
-      '真实误差有多大，仅凭公开信息无法确定。' +
-      '误差来源、适用范围与使用建议见 <a href="#/about">模型与误差说明</a>。</p>';
+      '<p>官方从未公布逐抽概率，本站的机制参数是玩家统计反推出来的，' +
+      '与官方实现可能有出入，结果仅供参考。</p>' +
+      '<p>按官方公布的综合概率 1.6% 折算，平均 62.5 抽一金、约 90.6 抽一个限定；' +
+      '本站模型给出 62.3 抽与 90.3 抽，相差约 0.3 抽。' +
+      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
     page.appendChild(acc);
 
     var entries = el('div', 'cardgrid');
@@ -263,8 +256,7 @@
     colMain.appendChild(viewHost);
     if (hasControls) colMain.appendChild(status);
     colMain.appendChild(el('p', 'disclaimer',
-      '机制参数来自玩家统计，官方未公布逐抽概率，结果仅供参考 · ' +
-      '<a href="#/about">误差说明</a>'));
+      '机制参数来自玩家统计，结果仅供参考 · <a href="#/about">误差说明</a>'));
     grid.appendChild(colMain);
 
     if (!hasControls) {

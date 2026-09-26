@@ -107,18 +107,6 @@ a:hover { text-decoration: underline; }
 }
 .skip:focus { top: var(--sp-2); }
 
-/* --- 误差提示条 ----------------------------------------------------------- */
-.notice {
-  display: flex; align-items: flex-start; gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-6);
-  background: color-mix(in srgb, var(--warn) 9%, var(--bg));
-  border-bottom: 1px solid var(--border);
-  font-size: var(--fs-xs); color: var(--text-dim);
-}
-.notice__icon { flex: none; margin-top: 3px; color: var(--warn); }
-.notice b { color: var(--text); font-weight: 600; }
-.notice a { font-weight: 600; }
-
 /* --- 顶栏 ---------------------------------------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 40;
@@ -306,20 +294,14 @@ a:hover { text-decoration: underline; }
 .stat-card__h { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-dim); }
 
 /* 首页「数据准确度」区块 */
-.accuracy {
-  padding: var(--sp-5);
-  margin-bottom: var(--sp-5);
-  border-left: 2px solid var(--warn);
-}
-.accuracy h2 { font-size: var(--fs-lg); }
+.accuracy { padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
+.accuracy h2 { font-size: var(--fs-sm); font-weight: 650; }
 .accuracy p {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-2) 0 0;
   max-width: 74ch;
   font-size: var(--fs-sm); color: var(--text-dim);
 }
-.accuracy p b { color: var(--text); }
-.accuracy .tablewrap { margin-top: var(--sp-4); }
-.accuracy p + .tablewrap { margin-top: var(--sp-4); }
+.accuracy__more { margin-left: var(--sp-1); font-weight: 600; white-space: nowrap; }
 
 .entry { display: block; color: var(--text); transition: transform var(--dur), border-color var(--dur); }
 .entry:hover { text-decoration: none; border-color: var(--gold); transform: translateY(-1px); }
