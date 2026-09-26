@@ -293,9 +293,14 @@ a:hover { text-decoration: underline; }
 .cardgrid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--sp-4);
-  margin-bottom: var(--sp-5);
 }
-.stat-card, .entry {
+
+/* 首页分区：读数与入口是两类信息，用不同的小标题与框样式分开 */
+.home__sec { margin-bottom: var(--sp-6); }
+.home__h { font-size: var(--fs-lg); font-weight: 650; margin-bottom: var(--sp-3); }
+
+/* 读数：抬起的卡片 */
+.stat-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-md); box-shadow: var(--shadow-1);
   padding: var(--sp-5);
@@ -313,13 +318,8 @@ a:hover { text-decoration: underline; }
   font-size: var(--fs-xs); color: var(--text-dim);
 }
 
-/* 首页「数据准确度」区块：一段说明，占满整行 */
-.accuracy { padding: var(--sp-5); }
-.accuracy h2 { font-size: var(--fs-lg); }
-.accuracy p {
-  margin: var(--sp-3) 0 0;
-  font-size: var(--fs-sm); color: var(--text-dim);
-}
+/* 首页「数据准确度」：一段说明，不用卡片框 */
+.accuracy p { font-size: var(--fs-sm); color: var(--text-dim); }
 .accuracy__more { margin-left: var(--sp-1); font-weight: 600; white-space: nowrap; }
 
 /* 首页「抽到 1 个限定」的双口径对比行 */
@@ -336,9 +336,18 @@ a:hover { text-decoration: underline; }
 .statcmp__tag { font-size: var(--fs-xs); color: var(--text-dim); text-align: right; }
 a.statcmp__tag { font-weight: 600; }
 
-.entry { display: block; color: var(--text); transition: transform var(--dur), border-color var(--dur); }
-.entry:hover { text-decoration: none; border-color: var(--gold); transform: translateY(-1px); }
-.entry h2 { font-size: var(--fs-lg); }
+/* 入口：平铺的浅色块，与抬起的读数卡片区分开 */
+.entry {
+  display: block; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: var(--sp-5);
+  transition: transform var(--dur), border-color var(--dur), background var(--dur);
+}
+.entry:hover {
+  text-decoration: none; border-color: var(--gold);
+  background: var(--surface); transform: translateY(-1px);
+}
+.entry h3 { font-size: var(--fs-lg); }
 .entry p { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--text-dim); }
 .entry__go {
   display: inline-block; margin-top: var(--sp-4);

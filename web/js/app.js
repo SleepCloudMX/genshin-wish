@@ -139,6 +139,14 @@
     });
   }
 
+  /* 首页按信息类型分区：小标题 + 该区的框（读数用卡片，入口用平铺块） */
+  function homeSection(title, body, plain) {
+    var sec = el('section', 'home__sec' + (plain ? ' home__sec--plain' : ''));
+    sec.appendChild(el('h2', 'home__h', title));
+    sec.appendChild(body);
+    return sec;
+  }
+
   function renderHome(stage) {
     renderNav('');
     var page = el('div', 'page');
@@ -184,7 +192,15 @@
         '<p class="stat-card__note">官方未公示具体概率，无法计算</p>';
       stats.appendChild(card);
     });
-    page.appendChild(stats);
+    page.appendChild(homeSection('期望抽数', stats));
+
+    var acc = el('section', 'accuracy');
+    acc.innerHTML =
+      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
+      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
+      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
+      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
+    page.appendChild(homeSection('数据准确度', acc, true));
 
     var entries = el('div', 'cardgrid');
     [
@@ -200,20 +216,11 @@
     ].forEach(function (it) {
       var entry = el('a', 'entry');
       entry.href = '#/' + it[1];
-      entry.innerHTML = '<h2>' + it[0] + '</h2><p>' + it[2] + '</p>' +
+      entry.innerHTML = '<h3>' + it[0] + '</h3><p>' + it[2] + '</p>' +
                         '<span class="entry__go">进入 →</span>';
       entries.appendChild(entry);
     });
-    page.appendChild(entries);
-
-    var acc = el('section', 'card accuracy');
-    acc.innerHTML =
-      '<h2>数据准确度</h2>' +
-      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
-      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
-      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
-      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
-    page.appendChild(acc);
+    page.appendChild(homeSection('可视化', entries));
 
     stage.appendChild(page);
   }
