@@ -149,7 +149,7 @@
           var wins = parsed.isDirectWin.filter(Boolean).length;
           host.appendChild(P.statRow([
             ['记录 UP 数', a.n + ' 个'],
-            ['平均每 UP', P.num(total / a.n, 1) + ' 抽'],
+            ['平均每 UP', P.num(total / a.n, 1) + '抽'],
             ['不歪率', P.pct(wins / a.n)],
             ['当前百分位', P.pct(a.cumulativePct[a.n - 1] / 100)]
           ]));
@@ -202,7 +202,7 @@
             format: function (v, j) {
               if (j === 1) return v ? '是' : '歪';
               if (j === 2 || j === 4) return v.toFixed(1) + '%';
-              return String(v) + (j === 0 ? ' 抽' : '');
+              return String(v) + (j === 0 ? '抽' : '');
             },
             note: '「本次分位」以记录倒推出的当时状态（是否大保底、连歪几次）为基准，' +
                   '表示这一次出金的运气；「累计分位」不依赖状态，表示到此为止的总运气。'

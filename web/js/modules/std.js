@@ -51,16 +51,16 @@
             var q = dist.quantile(a);
             return {
               x: String(Math.min(q, xMax)), y: a, color: C.COLORS.alpha6[k],
-              text: 'α=' + a + '\n' + q + ' 抽', pos: 'insideEndTop'
+              text: 'α=' + a + '\n' + q + '抽', pos: 'insideEndTop'
             };
           });
 
           var chart = P.chart(host);
           host.appendChild(P.statRow([
             ['期望抽数', P.num(dist.expected, 1)],
-            ['50% 分位', dist.quantile(0.5) + ' 抽'],
-            ['90% 分位', dist.quantile(0.9) + ' 抽'],
-            ['99% 分位', dist.quantile(0.99) + ' 抽']
+            ['50% 分位', dist.quantile(0.5) + '抽'],
+            ['90% 分位', dist.quantile(0.9) + '抽'],
+            ['99% 分位', dist.quantile(0.99) + '抽']
           ]));
 
           ctx.charts.line(chart, {
@@ -73,10 +73,10 @@
             tooltipFormatter: function (params) {
               var i = params[0].dataIndex;
               return '≤ <b>' + params[0].axisValue + '</b> 抽拿到 ' + ctx.state.nGold +
-                     ' 个五星：<b>' + P.pct(y[i]) + '</b>';
+                     ' 个五星：<b>' + P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + ' 抽');
+          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + '抽');
         }
       },
 
@@ -98,8 +98,8 @@
           host.appendChild(P.statRow([
             ['期望抽数', P.num(dist.expected, 1)],
             ['标准差', P.num(Math.sqrt(S.moments(dist.pdf).variance), 1)],
-            ['最可能抽数', mode + ' 抽'],
-            ['≤期望的概率', P.pct(dist.probability(eIdx))]
+            ['最可能抽数', mode + '抽'],
+            ['≤期望的概率', P.pctAdaptive(dist.probability(eIdx))]
           ]));
 
           ctx.charts.line(chart, {
@@ -109,7 +109,7 @@
               x: String(Math.min(eIdx, xMax)),
               y: Math.min(eIdx < dist.pdf.length ? dist.pdf[eIdx] : 0, dist.pdf[mode]) * 1.02,
               color: '#ff7f0e',
-              text: '期望 ' + P.num(dist.expected, 1) + ' 抽',
+              text: '期望 ' + P.num(dist.expected, 1) + '抽',
               pos: 'insideEndTop'
             }],
             xLabel: '抽数',
@@ -119,7 +119,7 @@
             tooltipFormatter: function (params) {
               var i = params[0].dataIndex;
               return '恰好 <b>' + params[0].axisValue + '</b> 抽达成：<b>' +
-                     (y[i] * 100).toFixed(3) + '%</b>';
+                     P.pctAdaptive(y[i]) + '</b>';
             }
           });
           ctx.setStatus('多个五星为同一出金过程的高次卷积');

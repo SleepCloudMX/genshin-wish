@@ -247,7 +247,7 @@
             tooltipHtml: function (i) {
               var n = xs[i];
               var rows = [['期望', exps[i].toFixed(1)],
-                          ['合计抽数', Math.round(exps[i] * n) + ' 抽']];
+                          ['合计抽数', Math.round(exps[i] * n) + '抽']];
               FAN_ALPHAS.forEach(function (a) {
                 rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
                            bounds[a][i].toFixed(1) + ' – ' + bounds[1 - a][i].toFixed(1)]);

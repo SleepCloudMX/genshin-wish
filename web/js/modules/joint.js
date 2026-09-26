@@ -86,16 +86,16 @@
             var q = dist.quantile(a);
             return {
               x: String(Math.min(q, xMax)), y: a, color: C.COLORS.alpha6[k],
-              text: 'α=' + a + '\n' + q + ' 抽', pos: 'insideEndTop'
+              text: 'α=' + a + '\n' + q + '抽', pos: 'insideEndTop'
             };
           });
 
           var chart = P.chart(host);
           host.appendChild(P.statRow([
             ['期望抽数', P.num(dist.expected, 1)],
-            ['50% 分位', dist.quantile(0.5) + ' 抽'],
-            ['90% 分位', dist.quantile(0.9) + ' 抽'],
-            ['99% 分位', dist.quantile(0.99) + ' 抽']
+            ['50% 分位', dist.quantile(0.5) + '抽'],
+            ['90% 分位', dist.quantile(0.9) + '抽'],
+            ['99% 分位', dist.quantile(0.99) + '抽']
           ]));
 
           ctx.charts.line(chart, {
@@ -107,10 +107,11 @@
             yTickFormatter: function (v) { return v > 1.001 ? '' : (v * 100).toFixed(0) + '%'; },
             tooltipFormatter: function (params) {
               var i = params[0].dataIndex;
-              return '合计 ≤ <b>' + params[0].axisValue + '</b> 抽全部达成：<b>' + P.pct(y[i]) + '</b>';
+              return '合计 ≤ <b>' + params[0].axisValue + '</b> 抽全部达成：<b>' +
+                     P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + ' 抽');
+          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + '抽');
         }
       },
 
@@ -140,8 +141,8 @@
             note: '单元格为达到该概率所需的抽数（期望列单位为抽）。合计行的期望等于两行之和；' +
                   '分位点因两者独立而不可直接相加。本组合中角色占期望的 ' + share + '%。'
           });
-          ctx.setStatus('角色期望 ' + joint.char.expected.toFixed(0) + ' 抽 · 武器期望 ' +
-                        joint.weapon.expected.toFixed(0) + ' 抽');
+          ctx.setStatus('角色期望 ' + joint.char.expected.toFixed(0) + '抽 · 武器期望 ' +
+                        joint.weapon.expected.toFixed(0) + '抽');
         }
       }
     }

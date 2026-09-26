@@ -135,9 +135,9 @@
           var sel = dists[p.nStd];
           if (sel) {
             host.appendChild(P.statRow([
-              ['歪 ' + p.nStd + ' 个的期望', P.num(sel.expected, 1) + ' 抽'],
-              ['50% 分位', sel.quantile(0.5) + ' 抽'],
-              ['90% 分位', sel.quantile(0.9) + ' 抽'],
+              ['歪 ' + p.nStd + ' 个的期望', P.num(sel.expected, 1) + '抽'],
+              ['50% 分位', sel.quantile(0.5) + '抽'],
+              ['90% 分位', sel.quantile(0.9) + '抽'],
               ['该情形占比', P.pct(marginal[p.nStd] || 0)]
             ]));
           }

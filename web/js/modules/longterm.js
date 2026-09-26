@@ -115,7 +115,7 @@
               var rows = [
                 ['理论均值', solver.muSingle.toFixed(2)],
                 ['中位数', median.toFixed(1)],
-                ['合计（中位）', Math.round(median * n) + ' 抽']
+                ['合计（中位）', Math.round(median * n) + '抽']
               ];
               BANDS.forEach(function (a) {
                 rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
