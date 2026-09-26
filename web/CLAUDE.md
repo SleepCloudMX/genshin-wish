@@ -19,13 +19,17 @@
 web/
 ├── css/app.css          设计令牌 + 布局 + 组件 + 暗色 + 响应式（单文件）
 ├── vendor/echarts.min.js  ECharts 5.5.1 UMD（本地 vendored）
-├── js/core/             概率内核：constants / stats / gold / character / banners / longterm
-├── js/ui/               charts（ECharts 封装） / controls（参数控件工厂）
-├── js/modules/          每个页面模块：{id, title, controls(), views:{}, compute()}
+├── js/core/             概率内核：constants / stats / gold / character（后续 banners / longterm）
+├── js/ui/               charts（ECharts 封装：line / curve / bars / table） / controls
+├── js/modules/          每个页面模块：{id, title, controls(), views:{render}}
+│                        character 角色池 / about 模型与误差 / algorithms 算法 / perf 性能与验证
 ├── js/app.js            hash 路由、外壳渲染、主题、状态条
-├── data/gallery.js      画廊索引（生成物，写进 js 以免 fetch）
+├── data/analysis.js     实验数据（由 scripts/build_web_data.py 生成，勿手改）
 └── dev/parity.html      浏览器内一致性自检（基准 baselines.js 由 scripts/parity.py 生成，gitignore）
 ```
+
+`js/modules/*` 里没有控件的模块（about / algorithms / perf）会自动隐藏参数面板与状态条，
+标题下也不显示视图切换。
 
 ## 分层规则
 

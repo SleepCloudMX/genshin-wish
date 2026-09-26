@@ -461,6 +461,22 @@ input[type="range"] {
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px;
 }
 .prose .tablewrap { margin: var(--sp-4) 0; }
+.prose h3 {
+  margin: var(--sp-5) 0 var(--sp-2);
+  font-size: var(--fs-base); font-weight: 650;
+}
+
+/* 性能与验证页 */
+.perf__h {
+  margin: var(--sp-6) 0 var(--sp-3);
+  padding-bottom: var(--sp-2);
+  font-size: var(--fs-lg);
+  border-bottom: 1px solid var(--border);
+}
+.perf__h:first-child { margin-top: 0; }
+.perf .chart { margin-top: var(--sp-3); }
+.chart--perf { height: 380px; }
+.chart--tall { height: 460px; }
 
 .dtable--plain { font-family: var(--font); font-variant-numeric: normal; }
 .dtable--plain th, .dtable--plain td { text-align: left; white-space: normal; line-height: 1.55; }

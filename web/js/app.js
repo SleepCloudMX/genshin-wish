@@ -34,7 +34,8 @@
     ] },
     { group: '关于', items: [
       { id: 'about', icon: 'info', label: '模型与误差', ready: true },
-      { id: 'logic', icon: 'info', label: '计算逻辑', ready: true }
+      { id: 'algo', icon: 'info', label: '算法', ready: true },
+      { id: 'perf', icon: 'info', label: '性能与验证', ready: true }
     ] }
   ];
 
