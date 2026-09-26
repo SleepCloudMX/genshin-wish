@@ -102,6 +102,8 @@ CLT 是唯一的近似通道，**仅在 n > 500 时启用**（Python 侧 `CLT_TH
 
 - 界面中文，代码英文；不加 emoji 图标，图标用内联 SVG（`app.js` 的 `ICONS`，24 格 viewBox、
   1.8 描边、不填充）。导航一页一个图标，取该页计算对象的形状；首页入口复用同一套（`navIcon(id)`）。
+  **图标要在 18px 下能认**：细碎图案（点阵、圆内套小星、并排的小人）会糊成一团，
+  宁可换一个更简单、更直白的形状。
 - 颜色一律走 CSS 变量（`--gold` 等）或 `Wish.core.COLORS`，不在组件里写裸 hex。
 - 所有数字列用 `font-variant-numeric: tabular-nums`。
 - 参数写入 URL hash，可分享；hash 是唯一的路由状态来源。
