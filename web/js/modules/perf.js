@@ -106,7 +106,7 @@
     id: 'perf',
     title: '性能与验证',
     group: '关于',
-    intro: '五种精确算法与 CLT 近似的实测耗时、近似误差，以及两种独立算法互相印证的结果。',
+    intro: '五种精确算法与 CLT 近似的实测耗时与近似误差，以及两种独立算法的交叉验证结果。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },
@@ -124,20 +124,20 @@
             return;
           }
 
-          para(box, '<b>实验设置</b>：每一种方法在同一台机器上重复计时，去掉两端各 20% 后取平均，' +
-            '阴影是剩余样本的最小–最大范围。dp-pulls 只在 n ≤ 7 计时、dp-path 只在 n ≤ 20 计时' +
-            '（再大就不可行），其余方法覆盖 n = 1–500。虚线是按数据拟合的复杂度曲线：' +
-            'dp-path 用指数拟合，其余用幂律，标注的 k 就是拟合出的指数。' +
-            '数据由 Python 版本实测，生成于 ' + A.meta.generated + '。');
+          para(box, '<b>实验设置</b>：各方法在同一台机器上重复计时，去除两端各 20% 的样本后取均值，' +
+            '阴影为剩余样本的最小值与最大值区间。dp-pulls 仅计时至 n ≤ 7，dp-path 仅至 n ≤ 20，' +
+            '其余方法覆盖 n = 1–500。虚线为按数据拟合的复杂度曲线：dp-path 采用指数拟合，' +
+            '其余采用幂律拟合，标注的 k 为拟合指数。数据由 Python 实现实测，生成于 ' +
+            A.meta.generated + '。');
 
           var pending = [];
 
           /* --- 任务 1 速度 --- */
-          heading(box, '速度对比（任务 1：n 个 UP 需要多少抽）');
-          var full = chartBox(box, '以 500 UP 为例，dp-golds 约 ' +
-            pickTime(A, 'dp-golds') + '，dp-state 约 ' + pickTime(A, 'dp-state') +
-            '，CLT 几乎不耗时。dp-golds 的拟合指数接近 2，与 O(n²) 相符；' +
-            'dp-path 的指数底数约为 2，即 O(2ⁿ)。', 'chart--tall');
+          heading(box, '速度对比（任务 1：n 个 UP 所需抽数）');
+          var full = chartBox(box, '以 n = 500 为例，dp-golds 耗时 ' +
+            pickTime(A, 'dp-golds') + '，dp-state 耗时 ' + pickTime(A, 'dp-state') +
+            '，CLT 可忽略。dp-golds 的拟合指数接近 2，与 O(n²) 相符；' +
+            'dp-path 的指数底数接近 2，与 O(2ⁿ) 相符。', 'chart--tall');
           pending.push([full, {
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
@@ -147,8 +147,8 @@
 
           /* --- 小 n 细节 --- */
           heading(box, '小规模区间（n ≤ 20）');
-          var detail = chartBox(box, 'n ≤ 7 时最慢的 dp-pulls 也只要几毫秒，' +
-            '但它随 n 增长最快；n 再大就只剩 dp-state、dp-golds 与 CLT 可用。');
+          var detail = chartBox(box, 'n ≤ 7 时最慢的 dp-pulls 亦仅需数毫秒，但其增长率最高；' +
+            'n 超过 20 后仅 dp-state、dp-golds 与 CLT 可用。');
           pending.push([detail, {
             xType: 'value', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
@@ -159,16 +159,16 @@
 
           /* --- CLT 精度 --- */
           heading(box, 'CLT 近似的精度');
-          para(box, '以 dp-state 的精确解为基准，看 CLT 混合矩近似在每个分位点上的偏差。' +
-            'n 越大收敛越快，n = 500 时 50% 分位只剩 0.007% 量级。');
+          para(box, '以 dp-state 的精确解为基准，比较 CLT 混合矩近似在各分位点的偏差。' +
+            '误差随 n 增大迅速收敛，n = 500 时 50% 分位约为 0.007%。');
           pending.push([chartBox(box, null), cltOption(A, 'abs', '绝对误差（按分位点）', '误差（抽）', 1)]);
           pending.push([chartBox(box, null), cltOption(A, 'rel', '相对误差（按分位点）', '相对误差 (%)', 1)]);
           pending.push([chartBox(box, null), cltOption(A, 'perUp', '摊到每个 UP 的误差', '误差（抽/UP）', 1)]);
 
           /* --- 任务 2 / 3 --- */
           heading(box, '任务 2：条件抽数分布的计算耗时');
-          var t2 = chartBox(box, '任务是「给定常驻数量时的抽数分布」。dp-path 在小 n 最快（不用建表），' +
-            'n ≥ 6 之后 dp-golds 反超。');
+          var t2 = chartBox(box, '任务 2 输出「给定常驻数量时的抽数分布」。dp-path 在小 n 时最快' +
+            '（无需建表），n ≥ 6 后由 dp-golds 反超。');
           pending.push([t2, {
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
@@ -177,8 +177,8 @@
           }]);
 
           heading(box, '任务 3：常驻角色数分布的计算耗时');
-          var t3 = chartBox(box, '任务是「歪出多少个常驻」。它只做整数 DP、不需要抽数卷积，' +
-            '所以两种方法都很快，dp-golds 在 n ≥ 7 之后领先。');
+          var t3 = chartBox(box, '任务 3 输出「歪出多少个常驻」的分布，仅需整数 DP，' +
+            '不涉及抽数卷积，两种方法均较快；n ≥ 7 后 dp-golds 领先。');
           pending.push([t3, {
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
@@ -188,8 +188,8 @@
 
           /* --- n=20 分布（两种方法互相印证） --- */
           heading(box, '两种方法的互相印证');
-          var dist = chartBox(box, 'n = 20 时歪出常驻角色数量的分布。两条柱子完全重合：' +
-            'dp-path 枚举了全部 2²⁰ 条序列，dp-golds 只数金数，路径完全不同却给出同一个结果。');
+          var dist = chartBox(box, 'n = 20 时歪出常驻角色数量的分布。两种方法的柱高完全一致：' +
+            'dp-path 枚举全部 2²⁰ 条序列，dp-golds 仅统计金数，二者路径不同而结果相同。');
           var d = A.task3.nstd20;
           pending.push([dist, {
             bars: true,

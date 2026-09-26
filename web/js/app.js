@@ -133,7 +133,7 @@
         a.innerHTML = ICONS[item.icon] + '<span>' + item.label + '</span>';
         if (!item.ready) {
           a.setAttribute('aria-disabled', 'true');
-          a.onclick = function (e) { e.preventDefault(); showToast('这个页面还在开发中'); };
+          a.onclick = function (e) { e.preventDefault(); showToast('本页尚未实现'); };
         }
         if (item.id === activeId) a.setAttribute('aria-current', 'page');
         host.appendChild(a);
@@ -146,8 +146,8 @@
     var page = el('div', 'page');
     page.appendChild(el('header', 'page__head',
       '<h1>原神抽卡概率计算器</h1>' +
-      '<p class="page__intro">抽到想要的限定角色要多少抽？运气不好会拖到多少？' +
-      '这里给出角色池、武器池的抽数分布，含捕获明光与武器定轨机制。</p>'));
+      '<p class="page__intro">本工具给出角色池与武器池的抽数分布，' +
+      '用于估算抽到目标数量所需的抽数区间，含捕获明光与武器定轨机制。</p>'));
 
     var stats = el('div', 'cardgrid');
     var C = W.core;
@@ -192,22 +192,22 @@
     var e1 = el('a', 'entry');
     e1.href = '#/char/cdf?nUp=7&loss=0&pity=0&guaranteed=0';
     e1.innerHTML = '<h2>角色池计算器</h2>' +
-                   '<p>调节目标命座、已垫抽数、连歪次数，查看累积概率曲线与各分位点。</p>' +
+                   '<p>按目标命座、已垫抽数与连歪次数，查看累积概率曲线与各分位点。</p>' +
                    '<span class="entry__go">进入 →</span>';
     entries.appendChild(e1);
     var e2 = el('div', 'entry entry--muted');
     e2.innerHTML = '<h2>图表画廊</h2>' +
-                   '<p>角色池、武器池、联合等各类图表，按分组浏览。（整理中）</p>' +
-                   '<span class="entry__go">即将上线</span>';
+                   '<p>角色池、武器池、联合等图表，按分组浏览。（整理中）</p>' +
+                   '<span class="entry__go">尚未上线</span>';
     entries.appendChild(e2);
     page.appendChild(entries);
 
     var acc = el('section', 'card accuracy');
     acc.innerHTML =
       '<h2>数据准确度</h2>' +
-      '<p>官方只公布了角色池综合出金概率 1.600%、武器池 1.850%、角色池综合不歪率 55.000%，' +
-      '没有公布逐抽概率。本站的逐抽参数取自社区总结的模型，与官方实现存在少量出入' +
-      '（武器池比角色池更明显），结果仅供参考。' +
+      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
+      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
+      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
       '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
     page.appendChild(acc);
 
@@ -232,10 +232,10 @@
     var page = el('div', 'page');
     page.appendChild(el('header', 'page__head',
       '<h1>' + (meta ? meta.label : '页面') + '</h1>' +
-      '<p class="page__intro">这个页面还在开发中。</p>'));
+      '<p class="page__intro">本页尚未实现。</p>'));
     var card = el('div', 'card empty');
-    card.innerHTML = '<p>目前可以先使用角色池计算器。武器池、常驻池、联合计算、' +
-                     '统计类图表与画廊会陆续补上。</p>';
+    card.innerHTML = '<p>当前可用的是角色池计算器；武器池、常驻池、联合计算' +
+                     '与画廊将陆续提供。</p>';
     page.appendChild(card);
     stage.appendChild(page);
   }
@@ -283,7 +283,7 @@
     colMain.appendChild(viewHost);
     if (hasControls) colMain.appendChild(status);
     colMain.appendChild(el('p', 'disclaimer',
-      '机制参数来自玩家统计，结果仅供参考 · <a href="#/about">误差说明</a>'));
+      '机制参数取自社区总结的模型，结果仅供参考 · <a href="#/about">误差说明</a>'));
     grid.appendChild(colMain);
 
     if (!hasControls) {
