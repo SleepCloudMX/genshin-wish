@@ -21,20 +21,36 @@
       .filter(function (s) { return s.length > 0; }).length;
   }
 
-  /* 分布 → 柱状图数据 */
+  /* 分布 → 柱状图数据。
+   * 概率不足 0.01% 的尾部不单独画柱：横轴止于最后一个达标的分支，
+   * 其余合并成一根「> n」柱，高度为超出部分的总概率（分布本身照常返回全部概率）。 */
   function barData(dist) {
     var maxR = 0, expected = 0;
     Object.keys(dist).forEach(function (k) {
       if (Number(k) > maxR) maxR = Number(k);
       expected += Number(k) * dist[k];
     });
-    var labels = [], values = [];
-    for (var r = 0; r <= maxR; r++) {
-      labels.push(String(r));
-      /* 概率低于 0.01% 的分支不画柱，避免一串贴地的空柱 */
-      values.push((dist[r] || 0) >= 0.0001 ? dist[r] : null);
+
+    var last = -1, r;
+    for (r = 0; r <= maxR; r++) {
+      if ((dist[r] || 0) >= 0.0001) last = r;
     }
-    return { labels: labels, values: values, maxR: maxR, expected: expected };
+    if (last < 0) last = maxR;                 /* 全部低于阈值时不合并 */
+
+    var labels = [], values = [];
+    for (r = 0; r <= Math.min(last, maxR); r++) {
+      labels.push(String(r));
+      values.push(dist[r] || 0);
+    }
+    var merged = last < maxR;
+    if (merged) {
+      var tail = 0;
+      for (r = last + 1; r <= maxR; r++) tail += dist[r] || 0;
+      labels.push('>' + last);
+      values.push(tail);
+    }
+    return { labels: labels, values: values, maxR: maxR, merged: merged,
+             expected: expected };
   }
 
   function drawBars(chart, ctx, data) {
@@ -44,14 +60,19 @@
       yLabel: '概率',
       series: [{ name: '恰好触发 r 次', values: data.values, color: '#deebf7',
                  borderColor: '#4292c6', borderWidth: 0.5, maxWidth: 34 }],
-      valueLabels: { show: data.maxR <= 12,
-                     formatter: function (pr) { return (pr.value * 100).toFixed(1) + '%'; } },
+      valueLabels: { show: data.labels.length <= 12,
+                     formatter: function (pr) { return P.pctAdaptive(pr.value); } },
       yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
-      /* 未画柱的分支在浮层里是空值，不能按数字格式化（会印出 NaN%） */
-      tooltipFormatter: function (v) {
-        return typeof v === 'number' ? (v * 100).toFixed(2) + '%' : '不足 0.01%';
-      }
+      tooltipFormatter: function (v) { return P.pctAdaptive(v); }
     });
+  }
+
+  /* 尾部合并时的说明，未合并则为空 */
+  function tailNote(data) {
+    return data.merged
+      ? '最后一柱为「' + data.labels[data.labels.length - 1].replace('>', '超过 ') +
+        ' 次」的总概率，不足 0.01% 的分支不再单独画柱。'
+      : '';
   }
 
   M.radiance = {
@@ -108,7 +129,7 @@
           drawBars(P.chart(host), ctx, data);
           host.appendChild(P.note('明光只在 50/50 未中时补足概率，因此触发次数不超过歪的次数；' +
             '已连歪 ' + p.loss + ' 次起步时初始中奖率即为 ' +
-            (C.CAPTURE_RADIANCE_WIN_RATE[p.loss] * 100).toFixed(1) + '%。'));
+            (C.CAPTURE_RADIANCE_WIN_RATE[p.loss] * 100).toFixed(1) + '%。' + tailNote(data)));
           ctx.setStatus(p.nUp + ' 个 UP · 每次出金依次更新连歪状态');
         }
       },
@@ -144,7 +165,7 @@
           ]));
           drawBars(P.chart(host), ctx, data);
           host.appendChild(P.note('序列 ' + seq.join(',') + '：对每次「中」按当前连歪状态折算明光概率' +
-            '（50% 之外的部分），再按泊松二项分布累加。'));
+            '（50% 之外的部分），再按泊松二项分布累加。' + tailNote(data)));
           ctx.setStatus('按 ' + seq.length + ' 次出金记录计算');
         }
       },
