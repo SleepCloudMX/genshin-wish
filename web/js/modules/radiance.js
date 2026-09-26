@@ -40,7 +40,10 @@
       valueLabels: { show: data.maxR <= 12,
                      formatter: function (pr) { return (pr.value * 100).toFixed(1) + '%'; } },
       yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
-      tooltipFormatter: function (v) { return (v * 100).toFixed(2) + '%'; }
+      /* 未画柱的分支在浮层里是空值，不能按数字格式化（会印出 NaN%） */
+      tooltipFormatter: function (v) {
+        return typeof v === 'number' ? (v * 100).toFixed(2) + '%' : '不足 0.01%';
+      }
     });
   }
 
