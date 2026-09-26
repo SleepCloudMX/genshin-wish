@@ -149,8 +149,7 @@
             '网站上的各个图表都走精确路径，n 的上限由各模块自己限制。' +
             '以 dp-state 的精确解为基准，逐分位点比较 CLT 的偏差，' +
             '误差随 n 增大迅速收敛，n = 500 时 50% 分位的偏差约为 0.007%。');
-          pending.push([chartBox(box, null), cltOption(A, 'rel', '相对误差（按分位点）', '相对误差 (%)')]);
-          pending.push([chartBox(box, null), cltOption(A, 'perUp', '摊到每个 UP 的误差', '误差（抽/UP）')]);
+          pending.push([chartBox(box, null), cltOption(A, '相对误差（按分位点）', '相对误差 (%)')]);
 
           /* --- 任务 2 / 3 --- */
           heading(box, '任务 2：条件抽数分布的计算耗时');
@@ -196,13 +195,22 @@
     return v === null || v === undefined ? '—' : v.toFixed(0) + ' ms';
   }
 
-  function cltOption(A, field, title, yLabel) {
+  /* 相对误差跨好几个数量级：按量级取有效位数 */
+  function relFmt(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return '—';
+    var a = Math.abs(v);
+    if (a === 0) return '0';
+    if (a >= 0.01) return v.toFixed(4) + '%';
+    return v.toExponential(2) + '%';
+  }
+
+  function cltOption(A, title, yLabel) {
     var clt = A.task1.clt;
     var series = [];
     Object.keys(clt.rel).forEach(function (key, i) {
       var pts = [];
       for (var j = 0; j < clt.n.length; j++) {
-        var v = clt[field][key][j];
+        var v = clt.rel[key][j];
         if (v === null || v === undefined) continue;
         if (clt.n[j] < 10) continue;          /* 与实验图的 late 区间一致 */
         pts.push([clt.n[j], v]);
@@ -216,7 +224,10 @@
     return {
       title: title, xType: 'value', yType: 'value',
       xLabel: 'UP 数 n', yLabel: yLabel,
-      xMin: 10, xMax: 500, series: series
+      xMin: 10, xMax: 500, series: series,
+      tooltipFormatter: relFmt,
+      /* n 是整数，缺了表头重排会印出 60.00000000000001 */
+      tooltipHeader: function (v) { return 'n = ' + Math.round(v); }
     };
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this);
