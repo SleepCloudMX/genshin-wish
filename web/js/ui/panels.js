@@ -47,6 +47,16 @@
 
     pct: function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + '%'; },
 
+    /* 概率百分数：越靠近 0 或 100 越需要有效位数——
+     * 0.2% 与 99.8% 之外各加一位小数，0.02% / 99.98% 再加一位，最多 4 位 */
+    pctAdaptive: function (v, maxDigits) {
+      var p = v * 100;
+      var d = 1, lim = 0.2;
+      var max = maxDigits === undefined ? 4 : maxDigits;
+      while (d < max && (p < lim || p > 100 - lim)) { d++; lim /= 10; }
+      return p.toFixed(d) + '%';
+    },
+
     /* 数值 → 保留 d 位、带千分位 */
     num: function (v, d) {
       return Number(v).toFixed(d === undefined ? 1 : d).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
