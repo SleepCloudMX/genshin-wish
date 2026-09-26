@@ -149,12 +149,18 @@
 
     var stats = el('div', 'cardgrid');
     var C = W.core;
-    var one = C.upDistribution(C.makeCharacterState({}), 1);
-    var seven = C.upDistribution(C.makeCharacterState({}), 7);
+    /* 长期平均用稳态分布：连歪次数的稳态权重里 k_miss>0 占比更高，
+       捕获明光把每 UP 期望从 93.4 抽（初始连歪 0 次）压到 90.3 抽 */
+    var one = C.stableUpDistribution(1);
+    var seven = C.stableUpDistribution(7);
     [
-      ['抽到 1 个限定', one.expected.toFixed(1) + ' 抽', '期望值，含歪一次的情况'],
-      ['抽到 7 个限定（满命）', seven.expected.toFixed(1) + ' 抽', '中位数 ' + seven.quantile(0.5) + ' 抽'],
-      ['90% 玩家满命需要', seven.quantile(0.9) + ' 抽', '99% 分位 ' + seven.quantile(0.99) + ' 抽']
+      ['抽到 1 个限定', one.expected.toFixed(1) + ' 抽',
+       '长期平均（稳态，已计入捕获明光）；从零连歪起步的单次期望为 ' +
+       C.upDistribution(C.makeCharacterState({}), 1).expected.toFixed(1) + ' 抽'],
+      ['抽到 7 个限定（满命）', seven.expected.toFixed(1) + ' 抽',
+       '长期平均；中位数 ' + seven.quantile(0.5) + ' 抽'],
+      ['90% 玩家满命需要', seven.quantile(0.9) + ' 抽',
+       '99% 分位 ' + seven.quantile(0.99) + ' 抽']
     ].forEach(function (row) {
       var card = el('div', 'stat-card');
       card.innerHTML = '<p class="stat-card__k">' + row[0] + '</p>' +
