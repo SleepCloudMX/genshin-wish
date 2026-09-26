@@ -347,8 +347,14 @@ a.statcmp__tag { font-weight: 600; }
   text-decoration: none; border-color: var(--gold);
   background: var(--surface); transform: translateY(-1px);
 }
+.entry__head { display: flex; align-items: center; gap: var(--sp-3); }
+.entry__ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; width: 32px; height: 32px; border-radius: var(--r-sm);
+  background: var(--gold-soft); color: var(--gold-strong);
+}
 .entry h3 { font-size: var(--fs-lg); }
-.entry p { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--text-dim); }
+.entry p { margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--text-dim); }
 .entry__go {
   display: inline-block; margin-top: var(--sp-4);
   font-size: var(--fs-sm); font-weight: 600; color: var(--gold-strong);

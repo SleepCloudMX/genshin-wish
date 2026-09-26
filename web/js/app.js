@@ -5,35 +5,65 @@
   var doc = global.document;
 
   /* --- 内联 SVG 图标（不用 emoji 作图标） --- */
+  function icon(paths, size) {
+    return '<svg viewBox="0 0 24 24" width="' + (size || 18) + '" height="' + (size || 18) +
+           '" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+           'stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+  }
+
   var ICONS = {
-    menu: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
-    sun: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>',
-    moon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
-    link: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>',
-    chart: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-5 3 3 5-7"/></svg>',
-    info: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
-    home: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>'
+    menu: icon('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+    sun: icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>'),
+    moon: icon('<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>'),
+    link: icon('<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>', 16),
+
+    /* 导航图标：一页一个，取该页计算对象的形状——
+       人物／剑／人物+剑／∞（常驻）／两个人物（歪出几个）／闪电（触发）／
+       金币（出金）／趋势线（长期收敛）／时钟（历史记录）；
+       说明组：靶心（误差）／芯片（算法）／仪表（性能） */
+    user: icon('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    sword: icon('<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/>'),
+    pair: icon('<circle cx="9" cy="7.5" r="3.2"/><path d="M3.8 19.8a5.2 5.2 0 0 1 10.4 0"/><path d="M20.6 3.6 14.4 9.8"/><path d="m13.1 8.5 2.6 2.6"/>'),
+    infinity: icon('<path d="M12 12c-2-2.67-4-5-6.5-5a4.5 4.5 0 1 0 0 9c2.5 0 4.5-2.33 6.5-5s4-5 6.5-5a4.5 4.5 0 1 1 0 9c-2.5 0-4.5-2.33-6.5-5Z"/>'),
+    users: icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    bolt: icon('<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>'),
+    coins: icon('<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>'),
+    trend: icon('<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>'),
+    history: icon('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'),
+    target: icon('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'),
+    cpu: icon('<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>'),
+    gauge: icon('<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>'),
+    home: icon('<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>')
   };
 
   /* --- 导航结构：可视化 / 说明 --- */
   var NAV = [
     { group: '可视化', items: [
-      { id: 'char', icon: 'chart', label: '角色池', ready: true },
-      { id: 'weapon', icon: 'chart', label: '武器池', ready: true },
-      { id: 'joint', icon: 'chart', label: '角色+武器', ready: true },
-      { id: 'std', icon: 'chart', label: '常驻池', ready: true },
-      { id: 'nstd', icon: 'chart', label: '常驻角色数', ready: true },
-      { id: 'radiance', icon: 'chart', label: '捕获明光', ready: true },
-      { id: 'multi-gold', icon: 'chart', label: '十连多金', ready: true },
-      { id: 'longterm', icon: 'chart', label: '长期欧非', ready: true },
-      { id: 'player', icon: 'chart', label: '个人记录', ready: true }
+      { id: 'char', icon: 'user', label: '角色池', ready: true },
+      { id: 'weapon', icon: 'sword', label: '武器池', ready: true },
+      { id: 'joint', icon: 'pair', label: '角色+武器', ready: true },
+      { id: 'std', icon: 'infinity', label: '常驻池', ready: true },
+      { id: 'nstd', icon: 'users', label: '常驻角色数', ready: true },
+      { id: 'radiance', icon: 'bolt', label: '捕获明光', ready: true },
+      { id: 'multi-gold', icon: 'coins', label: '十连多金', ready: true },
+      { id: 'longterm', icon: 'trend', label: '长期欧非', ready: true },
+      { id: 'player', icon: 'history', label: '个人记录', ready: true }
     ] },
     { group: '说明', items: [
-      { id: 'about', icon: 'info', label: '模型与误差', ready: true },
-      { id: 'algo', icon: 'info', label: '算法', ready: true },
-      { id: 'perf', icon: 'info', label: '性能', ready: true }
+      { id: 'about', icon: 'target', label: '模型与误差', ready: true },
+      { id: 'algo', icon: 'cpu', label: '算法', ready: true },
+      { id: 'perf', icon: 'gauge', label: '性能', ready: true }
     ] }
   ];
+
+  /* 页面 id → 该页在导航里的图标（首页入口复用同一套） */
+  function navIcon(id) {
+    var hit = '';
+    NAV.forEach(function (g) {
+      g.items.forEach(function (it) { if (it.id === id) hit = it.icon; });
+    });
+    return ICONS[hit] || '';
+  }
 
   var store = {
     get: function (k) {
@@ -155,6 +185,15 @@
       '<p class="page__intro">本工具给出角色池与武器池的抽数分布，' +
       '用于估算抽到目标数量所需的抽数区间，含捕获明光与武器定轨机制。</p>'));
 
+    /* 说明紧接导语，与正文同为无框文字；读数与入口再各自成区 */
+    var acc = el('section', 'accuracy');
+    acc.innerHTML =
+      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
+      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
+      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
+      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
+    page.appendChild(homeSection('数据准确度', acc, true));
+
     var stats = el('div', 'cardgrid');
     var C = W.core;
 
@@ -194,14 +233,6 @@
     });
     page.appendChild(homeSection('期望抽数', stats));
 
-    var acc = el('section', 'accuracy');
-    acc.innerHTML =
-      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
-      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
-      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
-      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
-    page.appendChild(homeSection('数据准确度', acc, true));
-
     var entries = el('div', 'cardgrid');
     [
       ['角色池', 'char', '按目标命座、已垫抽数与连歪次数，查看累积概率、幸运扇形与分位点。'],
@@ -216,7 +247,9 @@
     ].forEach(function (it) {
       var entry = el('a', 'entry');
       entry.href = '#/' + it[1];
-      entry.innerHTML = '<h3>' + it[0] + '</h3><p>' + it[2] + '</p>' +
+      entry.innerHTML = '<span class="entry__head"><span class="entry__ico">' +
+                        navIcon(it[1]) + '</span><h3>' + it[0] + '</h3></span>' +
+                        '<p>' + it[2] + '</p>' +
                         '<span class="entry__go">进入 →</span>';
       entries.appendChild(entry);
     });
