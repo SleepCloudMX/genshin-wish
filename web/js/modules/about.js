@@ -74,6 +74,7 @@
     id: 'about',
     title: '模型与误差',
     group: '关于',
+    layout: 'doc',
     intro: '这些数字是怎么来的、可信到什么程度、什么时候不能当真。',
     defaultView: 'doc',
     defaults: {},

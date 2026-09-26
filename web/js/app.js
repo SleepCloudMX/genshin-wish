@@ -204,13 +204,21 @@
 
     var acc = el('section', 'card accuracy');
     acc.innerHTML =
+      '<div class="accuracy__text">' +
       '<h2>数据准确度</h2>' +
       '<p>官方只公布了综合出金概率 1.6% 与综合不歪率 55%，没有公布逐抽概率。' +
-      '本站使用的逐抽参数是玩家统计反推出来的，与官方实现可能有出入，结果仅供参考。</p>' +
-      '<p>按官方口径折算：平均 62.5 抽一金、' + OFFICIAL_PER_UP.toFixed(2) +
-      ' 抽一个限定；本站模型给出 ' + modelPerGold.toFixed(1) + ' 抽与 ' +
-      one.expected.toFixed(2) + ' 抽，相差约 0.3 抽。' +
-      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
+      '本站的逐抽参数取自社区总结的模型，与官方实现可能有出入，结果仅供参考。</p>' +
+      '<p><a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>' +
+      '</div>' +
+      '<div class="accuracy__cmp">' +
+      '<table class="dtable dtable--plain">' +
+      '<thead><tr><th>平均</th><th>官方口径</th><th>本站模型</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><th>出一金</th><td>62.5 抽</td><td>' + modelPerGold.toFixed(1) + ' 抽</td></tr>' +
+      '<tr><th>一个限定</th><td>' + OFFICIAL_PER_UP.toFixed(2) + ' 抽</td><td>' +
+      one.expected.toFixed(2) + ' 抽</td></tr>' +
+      '</tbody></table>' +
+      '</div>';
     page.appendChild(acc);
 
     stage.appendChild(page);
@@ -250,7 +258,8 @@
     var view = mod.views[viewId] || mod.views[mod.defaultView];
     app.viewId = view === mod.views[viewId] ? viewId : mod.defaultView;
 
-    var page = el('div', 'page');
+    /* layout: 'doc' 的模块（纯文档）收窄容器，避免全宽卡片里只有左侧半行文字 */
+    var page = el('div', 'page' + (mod.layout === 'doc' ? ' page--doc' : ''));
     page.appendChild(el('header', 'page__head',
       '<h1>' + mod.title + '</h1><p class="page__intro">' + mod.intro + '</p>'));
 
