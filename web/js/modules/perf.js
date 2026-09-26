@@ -1,4 +1,4 @@
-/* 性能与验证 —— 复刻 output/analysis 里的实验图（数据由 scripts/build_web_data.py 导出） */
+/* 算法性能 —— 复刻 output/analysis 里的实验图（数据由 scripts/build_web_data.py 导出） */
 (function (global) {
   'use strict';
   var W = global.Wish = global.Wish || {};
@@ -97,10 +97,10 @@
 
   M.perf = {
     id: 'perf',
-    title: '性能',
+    title: '算法性能',
     group: '关于',
     math: true,
-    intro: '五种精确算法的实测耗时，以及 CLT 近似在极端规模下的误差量级。',
+    intro: '四种精确算法与 CLT 近似的实测耗时，以及近似在极端规模下的误差量级。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },

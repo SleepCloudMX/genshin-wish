@@ -199,7 +199,7 @@ a:hover { text-decoration: underline; }
 
 .page { max-width: 1240px; }
 
-/* 纯文档页（模型与误差 / 算法）：容器收窄到正文行宽，卡片与文字同宽，右侧不留白 */
+/* 纯文档页（机制误差 / 算法介绍）：容器收窄到正文行宽，卡片与文字同宽，右侧不留白 */
 .page--doc { max-width: 780px; }
 .page--doc .prose { max-width: none; }
 
@@ -535,7 +535,7 @@ input[type="range"] {
   font-size: var(--fs-base); font-weight: 650;
 }
 
-/* 性能与验证页 */
+/* 算法性能页 */
 .perf__h {
   margin: var(--sp-6) 0 var(--sp-3);
   padding-bottom: var(--sp-2);

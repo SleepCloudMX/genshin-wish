@@ -55,9 +55,9 @@
       { id: 'player', icon: 'history', label: '个人记录', ready: true }
     ] },
     { group: '说明', items: [
-      { id: 'about', icon: 'target', label: '模型与误差', ready: true },
-      { id: 'algo', icon: 'cpu', label: '算法', ready: true },
-      { id: 'perf', icon: 'gauge', label: '性能', ready: true }
+      { id: 'about', icon: 'target', label: '机制误差', ready: true },
+      { id: 'algo', icon: 'cpu', label: '算法介绍', ready: true },
+      { id: 'perf', icon: 'gauge', label: '算法性能', ready: true }
     ] }
   ];
 
@@ -361,7 +361,7 @@
     colMain.appendChild(viewHost);
     if (hasControls) colMain.appendChild(status);
     colMain.appendChild(el('p', 'disclaimer',
-      '机制参数取自社区总结的模型，结果仅供参考 · <a href="#/about">误差说明</a>'));
+      '机制参数取自社区总结的模型，结果仅供参考 · <a href="#/about">机制误差</a>'));
     grid.appendChild(colMain);
 
     if (!hasControls) {

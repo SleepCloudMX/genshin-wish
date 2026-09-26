@@ -4,7 +4,7 @@
 
 纯静态站点：`genshin-wish` 的交互式前端（参数可调的概率图表）。**运行时不依赖 Python**——概率内核用 JS 重算，与 `src/genshin_wish/` 平行维护。
 
-导航分两组：**可视化**（角色池等九个图表页）与**说明**（模型与误差、算法、性能）。
+导航分两组：**可视化**（角色池等九个图表页）与**说明**（机制误差、算法介绍、算法性能）。
 
 首页按信息类型分三段：数据准确度（无框正文）、期望抽数（抬起的卡片）、可视化（平铺入口块）。
 
@@ -30,7 +30,7 @@ web/
 │                        char 角色池 / weapon 武器池 / joint 角色+武器 / std 常驻池 /
 │                        nstd 常驻角色数 / radiance 捕获明光 / multi-gold 十连多金 /
 │                        longterm 长期欧非 / player 个人记录 /
-│                        about 模型与误差 / algorithms 算法 / perf 性能
+│                        about 机制误差 / algorithms 算法介绍 / perf 算法性能
 ├── js/app.js            hash 路由、外壳渲染、主题、状态条
 ├── data/analysis.js     实验数据（由 scripts/build_web_data.py 生成，勿手改）
 └── dev/parity-node.js   JS↔Python 一致性校验的 Node 端（入口是 scripts/parity.py）
