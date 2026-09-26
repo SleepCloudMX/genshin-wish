@@ -198,6 +198,9 @@
   }
 
   function renderModule(stage, mod, viewId, params) {
+    /* 重置、切视图都会重新进这里，必须先清空，否则页面会一层层叠加 */
+    W.ui.charts.disposeAll();
+    stage.textContent = '';
     renderNav(mod.id);
     var view = mod.views[viewId] || mod.views[mod.defaultView];
     app.viewId = view === mod.views[viewId] ? viewId : mod.defaultView;
