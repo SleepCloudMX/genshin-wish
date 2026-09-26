@@ -248,6 +248,14 @@ a:hover { text-decoration: underline; }
   transition: background var(--dur), color var(--dur);
 }
 .viewtabs__item:hover { color: var(--text); }
+.viewtabs__more {
+  min-height: 34px; padding: 0 var(--sp-3);
+  border: 0; border-left: 1px solid var(--border); border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  background: transparent; color: var(--text-dim);
+  font: inherit; font-size: var(--fs-sm); font-weight: 550;
+  cursor: pointer;
+}
+.viewtabs__more:hover { color: var(--gold-strong); }
 .viewtabs__item.is-on {
   background: var(--surface); color: var(--text);
   box-shadow: 0 1px 2px rgba(0, 0, 0, .06);

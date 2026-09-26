@@ -263,6 +263,7 @@
       },
 
       column: {
+        advanced: true,
         label: '达成概率柱状',
         render: function (host, ctx) {
           var p = ctx.state;
@@ -325,6 +326,7 @@
       },
 
       stack: {
+        advanced: true,
         label: '堆叠面积',
         render: function (host, ctx) {
           var p = ctx.state;
@@ -373,6 +375,7 @@
       },
 
       staircase: {
+        advanced: true,
         label: '阶梯扇形',
         render: function (host, ctx) {
           var p = ctx.state;

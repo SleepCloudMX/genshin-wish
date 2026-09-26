@@ -48,7 +48,8 @@
     moduleId: null,
     viewId: null,
     params: {},
-    pending: null
+    pending: null,
+    showAdvanced: false
   };
   W.app = app;
 
@@ -269,7 +270,7 @@
 
     var tabs = el('div', 'viewtabs');
     tabs.setAttribute('role', 'tablist');
-    Object.keys(mod.views).forEach(function (vid) {
+    function addTab(vid) {
       var b = el('button', 'viewtabs__item' + (vid === app.viewId ? ' is-on' : ''),
                  mod.views[vid].label);
       b.type = 'button';
@@ -283,8 +284,28 @@
         doc.getElementById('stage').focus();
       };
       tabs.appendChild(b);
-    });
-    if (Object.keys(mod.views).length > 1) colMain.appendChild(tabs);
+    }
+
+    /* 低频视图收进「其他」：主标签保持一行，想深挖的再展开 */
+    var allViews = Object.keys(mod.views);
+    var advanced = allViews.filter(function (v) { return mod.views[v].advanced; });
+    var expanded = app.showAdvanced || advanced.indexOf(app.viewId) >= 0;
+    allViews.filter(function (v) { return !mod.views[v].advanced; }).forEach(addTab);
+    if (advanced.length) {
+      if (expanded) {
+        advanced.forEach(addTab);
+        var less = el('button', 'viewtabs__more', '收起');
+        less.type = 'button';
+        less.onclick = function () { app.showAdvanced = false; renderModule(stage, mod, app.viewId, app.params); };
+        tabs.appendChild(less);
+      } else {
+        var more = el('button', 'viewtabs__more', '其他 ▾');
+        more.type = 'button';
+        more.onclick = function () { app.showAdvanced = true; renderModule(stage, mod, app.viewId, app.params); };
+        tabs.appendChild(more);
+      }
+    }
+    if (allViews.length > 1) colMain.appendChild(tabs);
     colMain.appendChild(el('div', 'sr-only', mod.title + ' ' + view.label));
 
     var viewHost = el('section', 'card viewhost');
