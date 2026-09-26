@@ -33,7 +33,8 @@
       { id: 'gallery', icon: 'grid', label: '图表画廊', ready: false }
     ] },
     { group: '关于', items: [
-      { id: 'about', icon: 'info', label: '模型与说明', ready: true }
+      { id: 'about', icon: 'info', label: '模型与误差', ready: true },
+      { id: 'logic', icon: 'info', label: '计算逻辑', ready: true }
     ] }
   ];
 
@@ -149,14 +150,29 @@
 
     var stats = el('div', 'cardgrid');
     var C = W.core;
-    /* 长期平均用稳态分布：连歪 1/2/3 次时 UP 率更高，
-       捕获明光把每 UP 期望从 93.4 抽（初始连歪 0 次）压到 90.3 抽 */
+
+    /* 官方只公布两个数字：综合出金概率 1.6%、综合不歪率 55%（长期平均）。
+       1.6% → 62.5 抽/金；不歪率 55% → 每 UP 需要 1/(2-0.55) = 1.45 个金。
+       无捕获明光时不歪率为 50% → 每 UP 1.5 个金。 */
+    var OFFICIAL_PER_GOLD = 1 / 0.016;              /* 62.5 抽 */
+    var OFFICIAL_PER_UP = OFFICIAL_PER_GOLD * 1.45; /* 90.625 抽 */
+    var OFFICIAL_PER_UP_NO_RAD = OFFICIAL_PER_GOLD * 1.5; /* 93.75 抽 */
+
     var one = C.stableUpDistribution(1);
     var seven = C.stableUpDistribution(7);
+    var modelPerGold = C.stats.expected(C.gold.getGoldPdfs('character', 1)[1]);
+
+    var card1 = el('div', 'stat-card');
+    card1.innerHTML =
+      '<p class="stat-card__k">抽到 1 个限定</p>' +
+      cmpRow(OFFICIAL_PER_UP.toFixed(3), '按官方综合概率', null) +
+      cmpRow(one.expected.toFixed(2), '按玩家总结的概率机制', '#/about') +
+      '<p class="stat-card__h">不考虑捕获明光时：' +
+      OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公式）／ ' +
+      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）</p>';
+    stats.appendChild(card1);
+
     [
-      ['抽到 1 个限定', one.expected.toFixed(1) + ' 抽',
-       '长期平均，含捕获明光；从零连歪起步的单次期望为 ' +
-       C.upDistribution(C.makeCharacterState({}), 1).expected.toFixed(1) + ' 抽'],
       ['抽到 7 个限定（满命）', seven.expected.toFixed(1) + ' 抽',
        '长期平均；中位数 ' + seven.quantile(0.5) + ' 抽'],
       ['90% 的玩家满命需要', seven.quantile(0.9) + ' 抽',
@@ -169,16 +185,6 @@
       stats.appendChild(card);
     });
     page.appendChild(stats);
-
-    var acc = el('section', 'card accuracy');
-    acc.innerHTML =
-      '<h2>数据准确度</h2>' +
-      '<p>官方从未公布逐抽概率，本站的机制参数是玩家统计反推出来的，' +
-      '与官方实现可能有出入，结果仅供参考。</p>' +
-      '<p>按官方公布的综合概率 1.6% 折算，平均 62.5 抽一金、约 90.6 抽一个限定；' +
-      '本站模型给出 62.3 抽与 90.3 抽，相差约 0.3 抽。' +
-      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
-    page.appendChild(acc);
 
     var entries = el('div', 'cardgrid');
     var e1 = el('a', 'entry');
@@ -194,7 +200,27 @@
     entries.appendChild(e2);
     page.appendChild(entries);
 
+    var acc = el('section', 'card accuracy');
+    acc.innerHTML =
+      '<h2>数据准确度</h2>' +
+      '<p>官方只公布了综合出金概率 1.6% 与综合不歪率 55%，没有公布逐抽概率。' +
+      '本站使用的逐抽参数是玩家统计反推出来的，与官方实现可能有出入，结果仅供参考。</p>' +
+      '<p>按官方口径折算：平均 62.5 抽一金、' + OFFICIAL_PER_UP.toFixed(2) +
+      ' 抽一个限定；本站模型给出 ' + modelPerGold.toFixed(1) + ' 抽与 ' +
+      one.expected.toFixed(2) + ' 抽，相差约 0.3 抽。' +
+      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
+    page.appendChild(acc);
+
     stage.appendChild(page);
+  }
+
+  /* 首页对比行：数值在左，口径说明在右下角 */
+  function cmpRow(value, tag, href) {
+    var tagHtml = href
+      ? '<a class="statcmp__tag" href="' + href + '">' + tag + '</a>'
+      : '<span class="statcmp__tag">' + tag + '</span>';
+    return '<div class="statcmp"><span class="statcmp__v">' + value +
+           '<span class="statcmp__u">抽</span></span>' + tagHtml + '</div>';
   }
 
   function renderPlaceholder(stage, id) {

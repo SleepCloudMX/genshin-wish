@@ -294,14 +294,28 @@ a:hover { text-decoration: underline; }
 .stat-card__h { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-dim); }
 
 /* 首页「数据准确度」区块 */
-.accuracy { padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
-.accuracy h2 { font-size: var(--fs-sm); font-weight: 650; }
+.accuracy { padding: var(--sp-5); }
+.accuracy h2 { font-size: var(--fs-lg); }
 .accuracy p {
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-3) 0 0;
   max-width: 74ch;
   font-size: var(--fs-sm); color: var(--text-dim);
 }
 .accuracy__more { margin-left: var(--sp-1); font-weight: 600; white-space: nowrap; }
+
+/* 首页「抽到 1 个限定」的双口径对比行 */
+.statcmp {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.statcmp__v {
+  font-family: var(--mono); font-size: var(--fs-xl); font-weight: 650;
+  font-variant-numeric: tabular-nums; color: var(--gold-strong);
+}
+.statcmp__u { margin-left: 3px; font-size: var(--fs-sm); color: var(--text-dim); }
+.statcmp__tag { font-size: var(--fs-xs); color: var(--text-dim); text-align: right; }
+a.statcmp__tag { font-weight: 600; }
 
 .entry { display: block; color: var(--text); transition: transform var(--dur), border-color var(--dur); }
 .entry:hover { text-decoration: none; border-color: var(--gold); transform: translateY(-1px); }
