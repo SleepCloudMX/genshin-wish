@@ -79,4 +79,4 @@ UI 代码不修改 `src/genshin_wish/` 下任何文件。viz 函数的行为完�
 - Gradio 无真正的路由/导航，Tab 超过 10 个时体验下降
 - 移动端适配差
 - 无服务端状态，无法 URL 参数分享查询
-- 画廊不适合在 Gradio 做 — 留给阶段 2 web 前端（见 `docs/ai-output/3-ui/4-beyond-gradio.md`）
+- 画廊不适合在 Gradio 做 — 由仓库根的静态站点承接（`index.html` + `web/`，进行中，见 `web/CLAUDE.md`）。Gradio 部分维持现状，未被替代。

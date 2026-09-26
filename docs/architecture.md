@@ -172,10 +172,24 @@ dp-path 和 dp-state 保留为显式方法（`--method` 指定）。dp-golds 在
 | `test_gold.py` | PDF 构建正确性（关键位置数值校验）、归一化、多金 PDF 长度 |
 | `test_character.py` | guarantee_seq 概率和、边界情况（n_up=0、guaranteed+n_up=1）、CLT 一致性、monotonicity |
 | `test_weapon.py` | 权重计算与归一化、命定值重置逻辑、prev_standard 分支、count_b 拒绝 |
+| `test_standard.py` | 常驻池出金分布与 CLT 分支 |
+| `test_long_term.py` | `_solve_exact`（迭代卷积）与 `up_distribution`（序列枚举）的一致性 |
+| `test_player_pulls.py` | 抽卡序列解析与百分位计算 |
+| `test_cli.py` | CLI 子命令的参数解析、文本/JSON 输出 |
+| `test_compare_ref.py` | 与 `ref/` 旧实现的期望抽数、分位点对比 |
 
-测试框架：pytest。
+测试框架：pytest，当前 90 项。回归验证另有 `test_compare_ref.py` 对照 `ref/`，差异要求 < 0.01%。
 
-无集成测试。回归验证通过手工对比 `ref/` 关键数值（期望抽数、分位点），差异要求 < 0.01%。
+---
+
+## Web 站点（JS 实现）
+
+仓库根的 `index.html` + `web/` 是同一套模型的浏览器实现：概率内核用 JavaScript 重写（与 `src/genshin_wish/` 平行维护），在客户端实时计算并绘制图表，运行时不依赖 Python。
+
+- 目录结构与分层规则见 `web/CLAUDE.md`
+- 与 Python 的一致性靠数值比对保证：分位点与数组长度要求完全一致
+- 实验数据的导出脚本为 `scripts/build_web_data.py`（产出 `web/data/analysis.js`）
+- 该实现不影响 `src/`、`app/`（Gradio）与 CLI，三者各自独立
 
 ---
 

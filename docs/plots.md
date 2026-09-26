@@ -4,6 +4,8 @@
 
 genshin-wish 使用 matplotlib 生成全部统计图表。所有绘图函数定义在 `src/genshin_wish/viz/` 下，由 `scripts/plots/` 下各子模块驱动，`scripts/main_plot.py` 统一入口。
 
+> 浏览器端的图表是另一套实现（ECharts），见 `web/CLAUDE.md` 与 `web/js/ui/charts.js`；本文件只描述 matplotlib 侧。
+
 ## 一键生成
 
 ```bash

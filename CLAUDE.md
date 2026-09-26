@@ -35,6 +35,7 @@ web/                    # 站点资源：js/core 概率内核 + ui 封装 + modu
 scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3)
 scripts/main_plot.py    # 一键生成全部绘图
 scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
+scripts/build_web_data.py # 实验数据导出给站点 (output/analysis → web/data/analysis.js)
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
 temp/                   # 临时测试缓存，已 gitignore，仅在不宜污染 .cache/ 时使用
@@ -52,6 +53,10 @@ python -m pytest tests/ -v
 
 # 生成图表
 python scripts/main_plot.py
+
+# 站点：直接用浏览器打开仓库根的 index.html（纯静态，无需 Python）
+# 重新导出实验数据（重跑 analysis 之后）
+python scripts/build_web_data.py
 ```
 
 测试环境：`conda activate ai`（Python 3.12，numpy 2.x，scipy 1.16，matplotlib 3.10）
@@ -62,14 +67,14 @@ python scripts/main_plot.py
 - **`ref/` 只读**。新旧代码通过关键数值对比验证（期望抽数、分位点），差异 < 0.01%。
 - **`import genshin_wish` 不应触发 matplotlib 导入**（viz 模块按需导入）。
 - **概率计算不 import matplotlib**。`character.py`、`weapon.py`、`joint.py` 不依赖任何绘图库。
-- **解析解优先**。蒙特卡洛仅用于测试验证。CLT 在 `n_up > CLT_THRESHOLD (7)` 时使用，`method` 字段标注。
+- **解析解优先**。蒙特卡洛仅用于测试验证。CLT 在 `n_up > CLT_THRESHOLD (500)` 时使用，`method` 字段标注。
 - **PDF 使用 float64**。卷积精度敏感。
 - **程序输出放 `output/`**（已 gitignore）。图表、分析结果等程序生成的文件统一放到 `output/` 下按用途分子目录。不要放到 `docs/`。
 - **PoolConfig 参数含义**：`soft_pity_start` 是概率首次超过 `base_rate` 的 1-indexed 抽数。如角色池 pulls 1~73 恒定 0.6%，soft pity 从 pull 74 开始。
 - **`prev_standard` 不影响 `character.py`**，仅 `weapon.py` 使用。
 - **Capture Radiance**：`p_up[k] = 0.5 + 0.5 * capture_radiance[k]`。稳态概率 `STABLE_P` 由 `guarantee_seq` 转移矩阵解析导出。
 - **武器池仅支持「定轨不取消」**。同时要两把不同限定武器列入后续需求。
-- **提交前运行 `python -m pytest tests/ -v`** 确保 26 个测试全绿。
+- **提交前运行 `python -m pytest tests/ -v`** 确保 90 个测试全绿。
 - **CLI 入口**：`pyproject.toml` 的 `[project.scripts]` 注册，启动 `genshin_wish.cli.main:main`。
 - **`output/analysis/task*/` 数据不得被测试污染**。改完分析脚本后如需验证，用 `temp/` 目录输出，禁止覆盖正式 data.json 和图表。确认无误后再正式运行。
 - **耗时操作前先征求确认**。重跑基准测试（>1 分钟）、大批量文件操作、可能覆盖已有数据的操作，先说明原因和预估时间，等用户确认。
