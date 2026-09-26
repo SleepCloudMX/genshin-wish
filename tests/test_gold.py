@@ -33,10 +33,10 @@ def test_character_gold_expected():
 
 
 def test_weapon_gold_expected():
-    """Single gold expected ~54.1 (comprehensive rate ~1.85%)."""
+    """Single gold expected ~53.25 (comprehensive rate ~1.878%)."""
     pdfs = get_gold_pdfs(WEAPON_POOL)
     exp = sum(i * p for i, p in enumerate(pdfs[1]))
-    assert 50 < exp < 58, f"Expected ~54.1, got {exp:.2f}"
+    assert 52 < exp < 55, f"Expected ~53.25, got {exp:.2f}"
 
 
 def test_pdfs_sum_to_one():
