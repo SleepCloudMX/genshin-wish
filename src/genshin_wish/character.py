@@ -185,8 +185,10 @@ def _uncertain_pdf_path(
     for seq, (_final_miss, p) in seq2p.items():
         gold2p[sum(seq)] += p
 
+    # gold2p counts total golds; the first gold's pulls are added by the
+    # caller, so the array only spans the remaining golds (gold - 1).
     max_gold = max(gold2p.keys())
-    result = np.zeros(len(pdfs[max_gold]), dtype=np.float64)
+    result = np.zeros(len(pdfs[max_gold - 1]), dtype=np.float64)
     for gold, p in gold2p.items():
         result[: len(pdfs[gold - 1])] += pdfs[gold - 1] * p
     return result

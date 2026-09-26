@@ -174,7 +174,9 @@ def weapon_up_distribution(
             gold_weights=weights,
         )
 
-    result_pdf = np.zeros(len(first_gold_pdf) + len(pdfs[max_gold]) - 1,
+    # weights count total golds; the first gold's pulls come from
+    # first_gold_pdf, so only the remaining golds (gold - 1) are convolved in.
+    result_pdf = np.zeros(len(first_gold_pdf) + len(pdfs[max_gold - 1]) - 1,
                           dtype=np.float64)
     for gold, w in weights.items():
         if w > 0 and gold > 0:

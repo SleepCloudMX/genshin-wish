@@ -55,10 +55,13 @@ def plot_annotated_cdf(
                  bbox=dict(facecolor="white", alpha=0.8, edgecolor=color, boxstyle="round,pad=0.3"))
         plt.scatter(idx, 0, color=color, s=20, zorder=4)
 
+    # CDF arrays may be padded with trailing 1.0 entries; cap the axis at the
+    # first pull where the CDF reaches 1 so the plot stays tight.
+    x_max = int(np.searchsorted(cdf, 1.0 - 1e-12))
     plt.title(title, fontsize=14, pad=15)
     plt.xlabel("抽数", fontsize=12)
     plt.ylabel("概率", fontsize=12)
-    plt.xlim(0, len(cdf) * 1.05)
+    plt.xlim(0, max(x_max, 1) * 1.05)
     plt.ylim(0, 1.05)
     plt.grid(True, which="major", linestyle="-", alpha=0.2)
     plt.tight_layout()
