@@ -27,8 +27,10 @@
     id: 'char',
     title: '角色池',
     group: '计算器',
-    intro: '限定角色池的抽数分布。综合概率模型：前 73 抽 0.6%，之后每抽递增 6%，90 抽硬保底；' +
-           '连歪触发捕获明光（0/1/2/3 次连歪时 UP 率 50.0%/54.8%/59.2%/100%）。解析计算，非蒙特卡洛。',
+    intro: '抽到指定数量的限定角色，需要多少抽、各分位点落在哪里。' +
+           '计算依据：前 73 抽 0.6%，之后每抽递增 6%，90 抽必出金；出金有 50% 是限定，' +
+           '歪了下次必中，连续歪还会触发捕获明光（UP 率 50.0%/54.8%/59.2%/100%）。' +
+           '参数来自玩家统计，结果仅供参考。',
     defaults: { nUp: 7, loss: 0, pity: 0, guaranteed: false },
 
     controls: function () {
@@ -101,8 +103,8 @@
               return '≤ <b>' + pulls + '</b> 抽：<b>' + percent(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('精算 · dp-golds · 数组 ' + dist.cdf.length + ' · ' +
-                        (performance.now() - t0).toFixed(1) + 'ms');
+          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) +
+                        ' 抽（此后概率恒为 100%）');
         }
       },
 
@@ -132,8 +134,8 @@
             values: values,
             note: '单元格为达到该概率所需的抽数（期望列单位为抽）。稳态 = 连歪次数按稳态概率 55.0%/27.5%/12.4%/5.1% 加权。'
           });
-          ctx.setStatus('精算 · 5 个状态 × ' + ALPHAS.length + ' 个分位点 · ' +
-                        (performance.now() - t0).toFixed(1) + 'ms');
+          ctx.setStatus('含已连歪 0–3 次与长期稳态共 5 种状态；' +
+                        '表格中的抽数为达到该概率所需抽数');
         }
       }
     }

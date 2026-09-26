@@ -305,6 +305,22 @@ a:hover { text-decoration: underline; }
 }
 .stat-card__h { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-dim); }
 
+/* 首页「数据准确度」区块 */
+.accuracy {
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border-left: 2px solid var(--warn);
+}
+.accuracy h2 { font-size: var(--fs-lg); }
+.accuracy p {
+  margin: var(--sp-3) 0 0;
+  max-width: 74ch;
+  font-size: var(--fs-sm); color: var(--text-dim);
+}
+.accuracy p b { color: var(--text); }
+.accuracy .tablewrap { margin-top: var(--sp-4); }
+.accuracy p + .tablewrap { margin-top: var(--sp-4); }
+
 .entry { display: block; color: var(--text); transition: transform var(--dur), border-color var(--dur); }
 .entry:hover { text-decoration: none; border-color: var(--gold); transform: translateY(-1px); }
 .entry h2 { font-size: var(--fs-lg); }

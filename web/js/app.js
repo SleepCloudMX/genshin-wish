@@ -131,7 +131,7 @@
         a.innerHTML = ICONS[item.icon] + '<span>' + item.label + '</span>';
         if (!item.ready) {
           a.setAttribute('aria-disabled', 'true');
-          a.onclick = function (e) { e.preventDefault(); showToast('该模块在后续阶段接入'); };
+          a.onclick = function (e) { e.preventDefault(); showToast('这个页面还在开发中'); };
         }
         if (item.id === activeId) a.setAttribute('aria-current', 'page');
         host.appendChild(a);
@@ -144,22 +144,22 @@
     var page = el('div', 'page');
     page.appendChild(el('header', 'page__head',
       '<h1>原神抽卡概率计算器</h1>' +
-      '<p class="page__intro">基于玩家总结的概率机制做<b>解析计算</b>（非蒙特卡洛），' +
-      '给出角色池、武器池的抽数分布。本页面全部结果在浏览器内实时计算，不依赖服务器。</p>'));
+      '<p class="page__intro">抽到想要的限定角色要多少抽？运气不好会拖到多少？' +
+      '这里给出角色池、武器池的抽数分布，含捕获明光与武器定轨机制。</p>'));
 
     var stats = el('div', 'cardgrid');
     var C = W.core;
-    /* 长期平均用稳态分布：连歪次数的稳态权重里 k_miss>0 占比更高，
+    /* 长期平均用稳态分布：连歪 1/2/3 次时 UP 率更高，
        捕获明光把每 UP 期望从 93.4 抽（初始连歪 0 次）压到 90.3 抽 */
     var one = C.stableUpDistribution(1);
     var seven = C.stableUpDistribution(7);
     [
       ['抽到 1 个限定', one.expected.toFixed(1) + ' 抽',
-       '长期平均（稳态，已计入捕获明光）；从零连歪起步的单次期望为 ' +
+       '长期平均，含捕获明光；从零连歪起步的单次期望为 ' +
        C.upDistribution(C.makeCharacterState({}), 1).expected.toFixed(1) + ' 抽'],
       ['抽到 7 个限定（满命）', seven.expected.toFixed(1) + ' 抽',
        '长期平均；中位数 ' + seven.quantile(0.5) + ' 抽'],
-      ['90% 玩家满命需要', seven.quantile(0.9) + ' 抽',
+      ['90% 的玩家满命需要', seven.quantile(0.9) + ' 抽',
        '99% 分位 ' + seven.quantile(0.99) + ' 抽']
     ].forEach(function (row) {
       var card = el('div', 'stat-card');
@@ -170,15 +170,34 @@
     });
     page.appendChild(stats);
 
+    var acc = el('section', 'card accuracy');
+    acc.innerHTML =
+      '<h2>数据准确度</h2>' +
+      '<p>官方从未公布逐抽概率，本项目使用的机制参数是玩家群体统计反推出来的，' +
+      '与官方实现可能有出入，<b>结果仅供参考</b>。</p>' +
+      '<div class="tablewrap"><table class="dtable dtable--plain">' +
+      '<thead><tr><th>指标</th><th>按官方公布的综合概率 1.6% 折算</th><th>本项目模型</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><th>平均多少抽出金</th><td>62.5 抽</td><td>62.3 抽</td></tr>' +
+      '<tr><th>平均多少抽一个限定</th><td>约 90.6 抽</td><td>90.3 抽</td></tr>' +
+      '</tbody></table></div>' +
+      '<p>两者相差约 0.3 抽。官方给出的 1.6% 只精确到一位小数，' +
+      '因此这个差距既可能来自机制假设的偏差，也可能只是官方取整；' +
+      '真实误差有多大，仅凭公开信息无法确定。' +
+      '误差来源、适用范围与使用建议见 <a href="#/about">模型与误差说明</a>。</p>';
+    page.appendChild(acc);
+
     var entries = el('div', 'cardgrid');
     var e1 = el('a', 'entry');
     e1.href = '#/char/cdf?nUp=7&loss=0&pity=0&guaranteed=0';
-    e1.innerHTML = '<h2>角色池计算器</h2><p>调节目标命座、已垫抽数、连歪次数，实时查看累积概率曲线与分位点表。</p>' +
+    e1.innerHTML = '<h2>角色池计算器</h2>' +
+                   '<p>调节目标命座、已垫抽数、连歪次数，查看累积概率曲线与各分位点。</p>' +
                    '<span class="entry__go">进入 →</span>';
     entries.appendChild(e1);
     var e2 = el('div', 'entry entry--muted');
-    e2.innerHTML = '<h2>图表画廊</h2><p>character / weapon / joint 等 250 余张既有图表，按分组浏览。阶段 E 接入。</p>' +
-                   '<span class="entry__go">规划中</span>';
+    e2.innerHTML = '<h2>图表画廊</h2>' +
+                   '<p>角色池、武器池、联合等各类图表，按分组浏览。（整理中）</p>' +
+                   '<span class="entry__go">即将上线</span>';
     entries.appendChild(e2);
     page.appendChild(entries);
 
@@ -193,12 +212,11 @@
     });
     var page = el('div', 'page');
     page.appendChild(el('header', 'page__head',
-      '<h1>' + (meta ? meta.label : id) + '</h1>' +
-      '<p class="page__intro">该模块规划在后续阶段实现。当前已完成的是角色池计算器（阶段 A 风格探针）。</p>'));
+      '<h1>' + (meta ? meta.label : '页面') + '</h1>' +
+      '<p class="page__intro">这个页面还在开发中。</p>'));
     var card = el('div', 'card empty');
-    card.innerHTML = '<p>概率内核已就绪（金 PDF、dp-golds、捕获明光、pity 平移），' +
-                     '模块外壳与绘图封装也已成型，后续按阶段补齐武器池、常驻池、联合、' +
-                     '统计类与画廊。</p>';
+    card.innerHTML = '<p>目前可以先使用角色池计算器。武器池、常驻池、联合计算、' +
+                     '统计类图表与画廊会陆续补上。</p>';
     page.appendChild(card);
     stage.appendChild(page);
   }
@@ -245,7 +263,7 @@
     colMain.appendChild(viewHost);
     if (hasControls) colMain.appendChild(status);
     colMain.appendChild(el('p', 'disclaimer',
-      '解析计算，无抽样误差；机制参数来自玩家统计，结果仅供参考 · ' +
+      '机制参数来自玩家统计，官方未公布逐抽概率，结果仅供参考 · ' +
       '<a href="#/about">误差说明</a>'));
     grid.appendChild(colMain);
 
