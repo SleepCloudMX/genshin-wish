@@ -2,6 +2,9 @@
 
 原神抽卡概率计算器 — 基于玩家总结的概率机制，**解析计算**角色池、武器池、常驻池的抽数概率分布。
 
+**在线站点**：[sleepcloudmx.github.io/genshin-wish](https://sleepcloudmx.github.io/genshin-wish/)
+— 九个页面的交互式图表，参数写入链接、可分享；纯静态页面，运行时不依赖 Python。
+
 > 图表展示：[genshin-wish-images](https://github.com/SleepCloudMX/genshin-wish-images)
 
 ## 安装
