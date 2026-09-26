@@ -46,6 +46,15 @@
     return { fontFamily: FONT, color: t.text, fontSize: 13 };
   }
 
+  /* ECharts 的对数刻度从 0 起排（第一个刻度值为 0，落在轴外），
+     格式化后会变成「0e+0%」之类压在轴名上，直接丢掉 */
+  function logTick(fmt) {
+    return function (v) {
+      if (!(v > 0)) return '';
+      return fmt ? fmt(v) : String(v);
+    };
+  }
+
   function axisCommon(t, opt, which) {
     var isLog = (which === 'x' ? opt.xType : opt.yType) === 'log';
     return {
@@ -58,7 +67,8 @@
       axisTick: { show: false },
       axisLabel: {
         color: t.dim, fontSize: 11, fontFamily: MONO, hideOverlap: true,
-        formatter: which === 'x' ? opt.xTickFormatter : opt.yTickFormatter
+        formatter: isLog ? logTick(which === 'x' ? opt.xTickFormatter : opt.yTickFormatter)
+                         : (which === 'x' ? opt.xTickFormatter : opt.yTickFormatter)
       },
       splitLine: which === 'y'
         ? { lineStyle: { color: t.grid } }
