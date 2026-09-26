@@ -11,14 +11,13 @@
     moon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
     link: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>',
     chart: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-5 3 3 5-7"/></svg>',
-    grid: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
     info: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     home: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>'
   };
 
-  /* --- 导航结构：计算器 / 画廊 / 关于 --- */
+  /* --- 导航结构：可视化 / 说明 --- */
   var NAV = [
-    { group: '计算器', items: [
+    { group: '可视化', items: [
       { id: 'char', icon: 'chart', label: '角色池', ready: true },
       { id: 'weapon', icon: 'chart', label: '武器池', ready: true },
       { id: 'joint', icon: 'chart', label: '角色+武器', ready: true },
@@ -29,13 +28,10 @@
       { id: 'longterm', icon: 'chart', label: '长期欧非', ready: true },
       { id: 'player', icon: 'chart', label: '个人记录', ready: true }
     ] },
-    { group: '浏览', items: [
-      { id: 'gallery', icon: 'grid', label: '图表画廊', ready: false }
-    ] },
-    { group: '关于', items: [
+    { group: '说明', items: [
       { id: 'about', icon: 'info', label: '模型与误差', ready: true },
       { id: 'algo', icon: 'info', label: '算法', ready: true },
-      { id: 'perf', icon: 'info', label: '性能与验证', ready: true }
+      { id: 'perf', icon: 'info', label: '性能', ready: true }
     ] }
   ];
 
@@ -207,11 +203,6 @@
                         '<span class="entry__go">进入 →</span>';
       entries.appendChild(entry);
     });
-    var gallery = el('div', 'entry entry--muted');
-    gallery.innerHTML = '<h2>图表画廊</h2>' +
-                        '<p>项目此前生成的全部静态图表，按分组浏览。（整理中）</p>' +
-                        '<span class="entry__go">尚未上线</span>';
-    entries.appendChild(gallery);
     page.appendChild(entries);
 
     var acc = el('section', 'card accuracy');
@@ -246,8 +237,7 @@
       '<h1>' + (meta ? meta.label : '页面') + '</h1>' +
       '<p class="page__intro">本页尚未实现。</p>'));
     var card = el('div', 'card empty');
-    card.innerHTML = '<p>当前可用的是角色池计算器；武器池、常驻池、联合计算' +
-                     '与画廊将陆续提供。</p>';
+    card.innerHTML = '<p>没有这个页面。<a href="#/">回到首页</a></p>';
     page.appendChild(card);
     stage.appendChild(page);
   }

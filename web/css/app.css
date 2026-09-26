@@ -333,8 +333,6 @@ a.statcmp__tag { font-weight: 600; }
   display: inline-block; margin-top: var(--sp-4);
   font-size: var(--fs-sm); font-weight: 600; color: var(--gold-strong);
 }
-.entry--muted { opacity: .72; }
-.entry--muted:hover { transform: none; border-color: var(--border); }
 
 .empty { padding: var(--sp-6); color: var(--text-dim); font-size: var(--fs-sm); }
 

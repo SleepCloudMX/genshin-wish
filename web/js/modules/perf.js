@@ -104,7 +104,7 @@
 
   M.perf = {
     id: 'perf',
-    title: '性能与验证',
+    title: '性能',
     group: '关于',
     math: true,
     intro: '五种精确算法与 CLT 近似的实测耗时与近似误差，以及两种独立算法的交叉验证结果。',
