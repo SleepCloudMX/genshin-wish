@@ -30,6 +30,8 @@ src/genshin_wish/       # Python 包
 ref/                    # 旧参考代码，只读，禁止修改
 tests/                  # pytest
 app/                    # Gradio Web UI (见 app/CLAUDE.md)
+index.html              # Web 站点入口（纯静态，见 web/CLAUDE.md）
+web/                    # 站点资源：js/core 概率内核 + ui 封装 + modules 页面模块
 scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3)
 scripts/main_plot.py    # 一键生成全部绘图
 scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
@@ -73,3 +75,4 @@ python scripts/main_plot.py
 - **耗时操作前先征求确认**。重跑基准测试（>1 分钟）、大批量文件操作、可能覆盖已有数据的操作，先说明原因和预估时间，等用户确认。
 - **`scripts/` 约定**：见 `scripts/CLAUDE.md`。分析脚本只输出图表 + data.json，不嵌入分析文本。
 - **`docs/ai-output/` 是独立 git 仓库**。修改其中文件后必须 `cd docs/ai-output && git add ... && git commit`，与主项目提交分开。不得遗漏。
+- **`web/` 是纯静态站点**，运行时不依赖 Python：概率内核用 JS 重算（`web/js/core/`），与 `src/genshin_wish/` 平行维护。约定见 `web/CLAUDE.md`；改动内核后要用 Python 侧参考值校验。

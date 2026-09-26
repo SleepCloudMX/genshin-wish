@@ -6,6 +6,7 @@ ref/
 output/
 temp/
 .cache/
+web/dev/baselines.js
 
 .claude
 .vscode

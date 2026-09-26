@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="原神抽卡概率计算器：角色池、武器池抽数分布的解析计算与图表，浏览器内实时重算">
+<title>原神抽卡概率计算器</title>
+<link rel="stylesheet" href="web/css/app.css">
+</head>
+<body>
+<a class="skip" href="#stage">跳到主内容</a>
+
+<header class="topbar">
+  <button class="iconbtn topbar__menu" id="navToggle" aria-label="打开导航" aria-expanded="false" aria-controls="sidenav"></button>
+  <a class="brand" href="#/">
+    <svg class="brand__mark" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z" fill="currentColor" opacity=".9"/>
+      <path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" opacity=".55"/>
+    </svg>
+    <span class="brand__name">原神抽卡概率计算器</span>
+    <span class="brand__tag">解析计算 · 浏览器内实时</span>
+  </a>
+  <div class="topbar__actions">
+    <button class="iconbtn" id="themeToggle" aria-label="切换主题"></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidenav" id="sidenav">
+    <nav id="navList" aria-label="主导航"></nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <main class="stage" id="stage" tabindex="-1"></main>
+</div>
+
+<footer class="footer">
+  <p>概率模型：角色池前 73 抽 0.6%、之后每抽 +6%、90 抽硬保底，连歪触发捕获明光；
+     武器池前 62 抽 0.7%、之后每抽 +7%、80 抽硬保底，定轨不取消。</p>
+  <p>结果为解析计算，无蒙特卡洛误差。<a href="#/about">模型与误差说明</a></p>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="web/vendor/echarts.min.js"></script>
+<script src="web/js/core/constants.js"></script>
+<script src="web/js/core/stats.js"></script>
+<script src="web/js/core/gold.js"></script>
+<script src="web/js/core/character.js"></script>
+<script src="web/js/ui/charts.js"></script>
+<script src="web/js/ui/controls.js"></script>
+<script src="web/js/modules/character.js"></script>
+<script src="web/js/app.js"></script>
+</body>
+</html>
