@@ -75,6 +75,8 @@
     group: '关于',
     layout: 'doc',
     math: true,
+    /* 全页就是这条免责声明本身，不再在页脚重复一次 */
+    noDisclaimer: true,
     intro: '机制参数的来源、可信程度与适用范围。',
     defaultView: 'doc',
     defaults: {},

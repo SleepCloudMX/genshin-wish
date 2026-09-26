@@ -360,8 +360,10 @@
     var status = el('div', 'statusbar');
     colMain.appendChild(viewHost);
     if (hasControls) colMain.appendChild(status);
-    colMain.appendChild(el('p', 'disclaimer',
-      '机制参数取自社区总结的模型，结果仅供参考 · <a href="#/about">机制误差</a>'));
+    if (!mod.noDisclaimer) {
+      colMain.appendChild(el('p', 'disclaimer',
+        '机制参数取自社区总结的模型，结果仅供参考 · <a href="#/about">机制误差</a>'));
+    }
     grid.appendChild(colMain);
 
     if (!hasControls) {
