@@ -173,15 +173,16 @@
     stats.appendChild(card1);
 
     [
-      ['抽到 7 个限定（满命）', seven.expected.toFixed(1) + ' 抽',
-       '长期平均；中位数 ' + seven.quantile(0.5) + ' 抽'],
-      ['90% 的玩家满命需要', seven.quantile(0.9) + ' 抽',
+      ['抽到 7 个限定（满命）', seven.expected.toFixed(1),
+       '中位数 ' + seven.quantile(0.5) + ' 抽'],
+      ['90% 的玩家满命需要', String(seven.quantile(0.9)),
        '99% 分位 ' + seven.quantile(0.99) + ' 抽']
     ].forEach(function (row) {
       var card = el('div', 'stat-card');
       card.innerHTML = '<p class="stat-card__k">' + row[0] + '</p>' +
-                       '<p class="stat-card__v">' + row[1] + '</p>' +
-                       '<p class="stat-card__h">' + row[2] + '</p>';
+        cmpRow(row[1], '按玩家总结的概率机制', '#/about') +
+        '<p class="stat-card__h">' + row[2] + '</p>' +
+        '<p class="stat-card__note">官方未公示具体概率，无法计算</p>';
       stats.appendChild(card);
     });
     page.appendChild(stats);
