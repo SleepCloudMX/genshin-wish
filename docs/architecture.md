@@ -189,7 +189,8 @@ dp-path 和 dp-state 保留为显式方法（`--method` 指定）。dp-golds 在
 - 内核分层与 Python 一一对应：`core/constants` ← `_constants.py`、`core/gold` ← `_gold.py`、
   `core/character` ← `character.py` + `_capture_radiance.py` + `_dp_golds.py`、
   `core/banners` ← `weapon.py` + `standard.py` + `joint.py`、`core/longterm` ← `long_term.py` + `_player_pulls.py`
-- 界面模块：角色池、武器池、角色+武器、常驻池、常驻角色数、捕获明光、十连多金、长期欧非、个人记录
+- 界面模块：角色池、武器池、角色+武器、常驻池、常驻角色数、捕获明光、十连多金、长期欧非、个人记录；
+  另有说明三页（机制误差、算法介绍、算法性能）
 - 目录结构与分层规则见 `web/CLAUDE.md`
 - 与 Python 的一致性由 `scripts/parity.py` 保证：分位点与数组长度要求完全一致，概率容差 5e-13
 - 实验数据的导出脚本为 `scripts/build_web_data.py`（产出 `web/data/analysis.js`）
