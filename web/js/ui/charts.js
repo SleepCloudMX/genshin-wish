@@ -525,10 +525,12 @@
 
   /* --- 柱状 --- */
   function barOption(opt, t) {
+    var hasLegend = !(opt.legend === false ||
+                      (opt.series.length + (opt.overlays || []).length) < 2);
     return {
       animationDuration: 260,
       textStyle: baseText(t),
-      grid: { left: 60, right: 28, top: opt.title ? 54 : 28, bottom: 46 },
+      grid: { left: 60, right: 28, top: opt.title ? 54 : (hasLegend ? 42 : 28), bottom: 46 },
       title: opt.title ? {
         text: opt.title, left: 0,
         textStyle: { fontSize: 15, fontWeight: 600, color: t.text }

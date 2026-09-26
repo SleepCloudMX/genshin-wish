@@ -17,10 +17,9 @@
   }
 
   /* 概率跨数量级：大值用百分比，小值转指数记法 */
-  function fmtPct(v) {
+  function fmtPctLog(v) {
     var p = v * 100;
-    if (p >= 1) return p.toFixed(0) + '%';
-    if (p >= 0.01) return p.toFixed(2) + '%';
+    if (p >= 0.1) return (p >= 1 ? p.toFixed(0) : p.toFixed(1)) + '%';
     return p.toExponential(0) + '%';
   }
 
@@ -72,20 +71,29 @@
             ['十连上限', '10 抽窗口']
           ]));
 
-          ctx.charts.bars(chart, {
-            categories: golds.map(function (g) { return g + ' 金'; }),
+          /* 概率跨数个数量级：取对数纵轴的点线，柱状在对数轴上没有零点可依 */
+          ctx.charts.curve(chart, {
+            xType: 'value',
+            yType: 'log',
             xLabel: '一次十连的金数',
             yLabel: '概率',
-            /* 概率跨数个数量级，纵轴取对数才能同时看清 3 金以上 */
-            yType: 'log',
+            xMin: 1.5,
+            xMax: 6.5,
             yMin: Math.min.apply(null, all) * 0.4,
             yMax: Math.max.apply(null, all) * 3,
-            series: series,
-            valueLabels: { show: true, formatter: function (pr) { return fmtPct(pr.value); } },
-            yTickFormatter: fmtPct,
-            tooltipFormatter: function (v) { return (v * 100).toPrecision(3) + '%'; }
+            xTickFormatter: function (v) { return Number.isInteger(v) ? String(v) : ''; },
+            yTickFormatter: fmtPctLog,
+            series: series.map(function (s) {
+              return {
+                name: s.name,
+                color: s.color,
+                points: golds.map(function (g, k) { return [g, s.values[k]]; }),
+                symbolSize: 8
+              };
+            }),
+            legend: true
           });
-          host.appendChild(P.note('数值为「一次十连中出现至少 k 个五星」的概率。' +
+          host.appendChild(P.note('数值为「一次十连中出现至少 k 个五星」的概率，纵轴取对数。' +
             '每多一个金，概率约下降两个数量级，因此 4 金以上极为罕见。'));
           ctx.setStatus('角色池 2 金 ' + P.pct(C.tenPullMultiGold('character', 2), 3) +
                         ' · 武器池 2 金 ' + P.pct(C.tenPullMultiGold('weapon', 2), 3));
@@ -128,7 +136,7 @@
             if (t > nMax) return;
             vLines.push({
               i: indexOf(t), y1: it[0], color: it[1],
-              text: Math.round(it[0] * 100) + '% ' + Math.ceil(t)
+              text: Math.round(it[0] * 100) + '% ' + P.num(Math.ceil(t), 0)
             });
           });
 
@@ -136,8 +144,8 @@
           host.appendChild(P.statRow([
             ['单次概率', P.pct(prob, 4)],
             ['期望十连', P.num(avg, 1) + ' 次'],
-            ['50% 把握', Math.ceil(times(0.5)) + ' 次'],
-            ['99% 把握', Math.ceil(times(0.99)) + ' 次']
+            ['50% 把握', P.num(Math.ceil(times(0.5)), 0) + ' 次'],
+            ['99% 把握', P.num(Math.ceil(times(0.99)), 0) + ' 次']
           ]));
 
           ctx.charts.regions(chart, {

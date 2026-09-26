@@ -24,7 +24,8 @@
     var labels = [], values = [];
     for (var r = 0; r <= maxR; r++) {
       labels.push(String(r));
-      values.push(dist[r] || 0);
+      /* 概率低于 0.01% 的分支不画柱，避免一串贴地的空柱 */
+      values.push((dist[r] || 0) >= 0.0001 ? dist[r] : null);
     }
     return { labels: labels, values: values, maxR: maxR, expected: expected };
   }
