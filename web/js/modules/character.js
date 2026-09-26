@@ -38,7 +38,7 @@
         {
           type: 'range', key: 'nUp', label: '目标 UP 数', min: 1,
           max: C.LIMITS.charExactNUp, step: 1, unit: ' 个',
-          help: '含本体；7 = 满命'
+          help: '含角色本体；7 对应满命'
         },
         {
           type: 'segmented', key: 'loss', label: '已连歪次数',
@@ -52,7 +52,7 @@
         },
         {
           type: 'switch', key: 'guaranteed', label: '大保底',
-          help: '下一个金必定是 UP'
+          help: '下一个金必定为限定角色'
         }
       ];
     },
@@ -132,10 +132,9 @@
             rowLabels: labels,
             colLabels: ALPHAS.map(function (a) { return (a * 100) + '%'; }).concat(['期望']),
             values: values,
-            note: '单元格为达到该概率所需的抽数（期望列单位为抽）。稳态 = 连歪次数按稳态概率 55.0%/27.5%/12.4%/5.1% 加权。'
+            note: '单元格为达到该概率所需的抽数（期望列单位为抽）。稳态行按连歪次数的稳态概率 55.0%/27.5%/12.4%/5.1% 加权。'
           });
-          ctx.setStatus('含已连歪 0–3 次与长期稳态共 5 种状态；' +
-                        '表格中的抽数为达到该概率所需抽数');
+          ctx.setStatus('含已连歪 0–3 次与长期稳态共 5 种状态');
         }
       }
     }
