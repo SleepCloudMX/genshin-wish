@@ -112,16 +112,18 @@
               var n = xs[i];
               var bb = solver.bounds(n, 0.5);
               var median = (bb[0] + bb[1]) / 2 / n;
-              var rows = [
-                ['理论均值', solver.muSingle.toFixed(2)],
-                ['中位数', median.toFixed(1)],
-                ['合计（中位）', Math.round(median * n) + '抽']
-              ];
-              BANDS.forEach(function (a) {
-                rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
-                           perUp[a][i].toFixed(1) + ' – ' + perUp[1 - a][i].toFixed(1)]);
+              var bands = BANDS.map(function (a, k) {
+                return {
+                  label: Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
+                  color: C.COLORS.interval5[k],
+                  lo: perUp[a][i].toFixed(1),
+                  hi: perUp[1 - a][i].toFixed(1)
+                };
               });
-              return P.tip('前 ' + n + ' 个 UP · 抽/UP', rows);
+              return P.tipBands('前 ' + n + ' 个 UP · 抽/UP',
+                [['理论均值', solver.muSingle.toFixed(2)],
+                 ['中位数', median.toFixed(1)],
+                 ['合计（中位）', Math.round(median * n) + '抽']], bands);
             }
           });
           host.appendChild(P.note('纵轴为前 n 个 UP 的总抽数除以 n。区间自内向外为 ' +

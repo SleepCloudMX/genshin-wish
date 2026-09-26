@@ -54,6 +54,29 @@
       return html + '</table>';
     },
 
+    /* 悬浮框：读数行 + 分位区间行。
+     * 上下界各占一列（右对齐、等宽数字），比「85.3 – 93.3」整串文本对得齐；
+     * 色块取自图中对应的区间颜色。bands: [{label, color, lo, hi}] */
+    tipBands: function (title, rows, bands) {
+      var html = '<p class="tip__t">' + title + '</p>';
+      if (rows.length) {
+        html += '<table class="tip__table">';
+        rows.forEach(function (r) {
+          html += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>';
+        });
+        html += '</table>';
+      }
+      html += '<div class="tip__bands">';
+      bands.forEach(function (b) {
+        html += '<span class="tip__sw" style="background:' + b.color + '"></span>' +
+                '<span class="tip__band-k">' + b.label + '</span>' +
+                '<span class="tip__num">' + b.lo + '</span>' +
+                '<span class="tip__dash">–</span>' +
+                '<span class="tip__num">' + b.hi + '</span>';
+      });
+      return html + '</div>';
+    },
+
     pct: function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + '%'; },
 
     /* 概率百分数：越靠近 0 或 100 越需要有效位数——

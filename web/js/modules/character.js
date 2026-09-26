@@ -246,13 +246,17 @@
             tooltipFormatter: function (v) { return v.toFixed(1); },
             tooltipHtml: function (i) {
               var n = xs[i];
-              var rows = [['期望', exps[i].toFixed(1)],
-                          ['合计抽数', Math.round(exps[i] * n) + '抽']];
-              FAN_ALPHAS.forEach(function (a) {
-                rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
-                           bounds[a][i].toFixed(1) + ' – ' + bounds[1 - a][i].toFixed(1)]);
+              var bands = FAN_ALPHAS.map(function (a, k) {
+                return {
+                  label: Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
+                  color: FAN_COLORS[k],
+                  lo: bounds[a][i].toFixed(1),
+                  hi: bounds[1 - a][i].toFixed(1)
+                };
               });
-              return P.tip('第 ' + n + ' 个 UP · 抽/UP', rows);
+              return P.tipBands('第 ' + n + ' 个 UP · 抽/UP',
+                [['期望', exps[i].toFixed(1)],
+                 ['合计抽数', Math.round(exps[i] * n) + '抽']], bands);
             }
           });
           host.appendChild(P.note('纵轴为抽到第 n 个 UP 的总抽数除以 n。' +
