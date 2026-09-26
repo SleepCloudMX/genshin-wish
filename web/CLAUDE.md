@@ -2,7 +2,9 @@
 
 ## 定位
 
-纯静态站点：`genshin-wish` 的交互式前端（计算器 + 画廊）。**运行时不依赖 Python**——概率内核用 JS 重算，与 `src/genshin_wish/` 平行维护。
+纯静态站点：`genshin-wish` 的交互式前端（参数可调的概率图表）。**运行时不依赖 Python**——概率内核用 JS 重算，与 `src/genshin_wish/` 平行维护。
+
+导航分两组：**可视化**（九个计算页）与**说明**（模型与误差、算法、性能）。
 
 入口是仓库根的 `index.html`，本目录只放站点资源。
 
@@ -26,7 +28,7 @@ web/
 │                        char 角色池 / weapon 武器池 / joint 角色+武器 / std 常驻池 /
 │                        nstd 常驻角色数 / radiance 捕获明光 / multi-gold 十连多金 /
 │                        longterm 长期欧非 / player 个人记录 /
-│                        about 模型与误差 / algorithms 算法 / perf 性能与验证
+│                        about 模型与误差 / algorithms 算法 / perf 性能
 ├── js/app.js            hash 路由、外壳渲染、主题、状态条
 ├── data/analysis.js     实验数据（由 scripts/build_web_data.py 生成，勿手改）
 └── dev/parity-node.js   JS↔Python 一致性校验的 Node 端（入口是 scripts/parity.py）
@@ -98,3 +100,8 @@ JS 相对 Python 的已知差异（有意为之，写在代码注释里）：
 - 颜色一律走 CSS 变量（`--gold` 等）或 `Wish.core.COLORS`，不在组件里写裸 hex。
 - 所有数字列用 `font-variant-numeric: tabular-nums`。
 - 参数写入 URL hash，可分享；hash 是唯一的路由状态来源。
+- **图内数值与单位之间不夹空格**（`637抽`、`79抽`），正文照常留空格。中文与数字之间的排版空隙在窄标注里太占位。
+- **概率读数用 `P.pctAdaptive`**：越靠近 0 或 100 有效位数越多（0.2%/99.8% 之外各加一位，最多 4 位）。
+- **低频视图标记 `advanced: true`**，默认收进「其他」；URL 直接指向时仍会展开并选中。
+- 悬浮框按图表类型分三种写法：单条系列用 `tooltipFormatter`；区间带等需要整段自定义内容用
+  `tooltipHtml(dataIndex)`（`regions`）；需要改表头（对数轴刻度是浮点）用 `tooltipHeader(axisValue)`（`curve`）。
