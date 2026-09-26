@@ -13,7 +13,7 @@
   /* n = 500 的实测数字取自实验数据，避免正文与图表脱节 */
   function benchLine() {
     var A = global.__WISH_ANALYSIS__;
-    var fallback = '实测耗时见 <a href="#/perf">性能与验证</a>。';
+    var fallback = '实测耗时见 <a href="#/perf">算法性能</a>。';
     if (!A) return fallback;
     var i = A.task1.n.indexOf(500);
     if (i < 0) return fallback;
@@ -25,9 +25,9 @@
   }
 
   var DOC_HEAD = '' +
-    '<p>精确求解 n 个 UP 的抽数分布，朴素的逐抽算法在 n 稍大时即不可行。' +
-    '以下记录复杂度的逐步降低过程：每一步消除哪个维度、代价如何转移。' +
-    '各步的实测耗时见 <a href="#/perf">性能与验证</a>。</p>' +
+    '<p>精确求解 n 个 UP 的抽数分布，朴素的逐抽递推在 n 稍大时即不可行。' +
+    '以下按复杂度从高到低逐个说明各精确方案：每一种消除哪个维度、代价又转移到哪里；' +
+    'n &gt; 500 时另有 CLT 近似。实测耗时见 <a href="#/perf">算法性能</a>。</p>' +
 
     '<h2>问题定义</h2>' +
     '<p>同一模型需要回答三类问题：</p>' +
@@ -46,27 +46,27 @@
     '每一抽转移到下一抽，出金时按 \\(p_{\\text{up}}[s]\\) 分裂为「中」与「歪」两条支路。</p>' +
     '<p>该实现的代价不可接受。抽数轴长度为 \\(180n\\)（每个 UP 至多消耗 2 个金，每金至多 90 抽），' +
     'n = 500 时达 9 万；状态数为 \\(4n \\times 180n\\) 量级；且每一状态均需与长度为 91 的' +
-    '金分布做卷积，总复杂度 \\(O(n^2 m^2)\\)。实测 n = 7 耗时 24.8 ms、n = 10 耗时 56.7 ms，' +
-    '之后迅速失去可用性。' +
+    '金分布做卷积，总复杂度 \\(O(n^2 m^2)\\)。实测 n = 7 已需 3.2 秒，故计时止于 n ≤ 7，' +
+    '再大即失去可用性。' +
     '该实现对第二目标的扩展性同样不足：若同时统计歪出的常驻数量，状态空间须再增加一维，' +
     '代价乘以 n。</p>' +
     '<p>根本原因在于抽数维度被过早引入。抽数仅在最终结果中需要，' +
     '中间过程所需计算的是「需要多少个金」以及「这些金对应多少抽」。</p>' +
 
-    '<h2>第一步：枚举中／歪序列，抽数后置（dp-path）</h2>' +
+    '<h2>枚举中／歪序列，抽数后置（dp-path）</h2>' +
     '<p>n 次 UP 的中／歪组合共 \\(2^n\\) 条序列。每条序列只记录两个量：消耗的金数（中记 1、歪记 2）' +
     '与歪的次数（即歪出的常驻数量）。将金数相同的序列概率求和，得到「需要 g 个金」的分布；' +
     '再与预先计算的「g 个金所需抽数」加权合成抽数分布。</p>' +
-    '<p>该实现每步均为标量运算，n ≤ 10 时耗时约 0.5 ms，较逐抽递推快两个数量级。' +
+    '<p>该实现每步均为标量运算，n = 7 时耗时约 0.15 ms，比同一 n 下的逐抽递推快四个数量级。' +
     '其代价随序列数指数增长：n = 20 为一百万条（约 0.6 s），n = 30 达十亿条，不再可行。</p>' +
 
-    '<h2>第二步：按状态聚合，取消序列枚举（dp-state）</h2>' +
+    '<h2>按状态聚合，取消序列枚举（dp-state）</h2>' +
     '<p>状态转移只依赖当前的连歪次数，与到达该状态的路径无关。因此到达同一状态的序列可以合并：' +
     '只需保留「到达状态 s 的抽数分布」，每步对四个状态各做一次卷积，将概率质量推进一轮。</p>' +
     '<p>序列维度由此消除，代价是抽数维度重新出现：每步需卷积长度为 \\(O(km)\\) 的数组，' +
     '复杂度 \\(O(n^2 m \\log(nm))\\)。n = 500 由不可行变为数秒量级。</p>' +
 
-    '<h2>第三步：DP 只统计金数，抽数一次性卷积（dp-golds，当前默认）</h2>' +
+    '<h2>DP 只统计金数，抽数一次性卷积（dp-golds，当前默认）</h2>' +
     '<p>进一步观察：代价只取决于共获得多少个金。因此 DP 无需携带抽数，' +
     '状态缩减为（连歪次数，金数）两维，全部为整数运算，复杂度 \\(O(n^2)\\)，' +
     '与单金抽数上限 \\(m\\) 无关。</p>' +
@@ -84,8 +84,9 @@
     '其余 \\(n-1\\) 个使用稳态矩：</p>' +
     '<p>\\[\\mu_n = \\mu_{\\text{first}} + (n-1)\\,\\mu_{\\text{steady}}, \\qquad' +
     '\\sigma_n^2 = \\sigma^2_{\\text{first}} + (n-1)\\,\\sigma^2_{\\text{steady}}\\]</p>' +
-    '<p>二者相加后取正态，再以 \\(\\pm 0.5\\) 的连续性修正映射到整数抽数。复杂度 \\(O(1)\\)；' +
-    'n = 500 时相对误差已降至 0.001% 量级，收敛曲线见 <a href="#/perf">性能与验证</a>。' +
+    '<p>二者相加后取正态，再以 \\(\\pm 0.5\\) 的连续性修正映射到整数抽数。复杂度 \\(O(1)\\)。' +
+    'n = 500 时与精确解相比，中位数的相对误差约 0.007%，尾部（1% 与 99% 分位）约 0.5%，' +
+    '收敛曲线见 <a href="#/perf">算法性能</a>。' +
     '网页界面当前将目标 UP 数限制在 30 以内，均属精确解范围。</p>' +
 
     '<h2>方案对照</h2>' +
@@ -97,6 +98,22 @@
     row(['dp-golds', '\\(O(n^2)\\) + 一次加权卷积', '当前默认，三类任务通用']) +
     row(['dp-state-golds', '\\(O(n^3 m \\log(nm))\\)', '理论可行，常数远大于 dp-golds，未实现']) +
     row(['CLT', '\\(O(1)\\)', 'n &gt; 500 的近似方案']) +
+    '</tbody></table></div>' +
+
+    '<h2>相关代码</h2>' +
+    '<p>本文只列结论与取舍，完整推导与实验脚本见仓库：</p>' +
+    '<div class="tablewrap"><table class="dtable dtable--plain">' +
+    '<thead><tr><th>内容</th><th>位置</th></tr></thead><tbody>' +
+    row(['方案调度与 dp-path / dp-state',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/character.py" rel="noopener">src/genshin_wish/character.py</a>']) +
+    row(['dp-golds',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/_dp_golds.py" rel="noopener">src/genshin_wish/_dp_golds.py</a>']) +
+    row(['逐抽递推与迭代卷积（长期规模）',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/long_term.py" rel="noopener">src/genshin_wish/long_term.py</a>']) +
+    row(['耗时与 CLT 误差实验',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/tree/main/scripts/analysis" rel="noopener">scripts/analysis/</a>']) +
+    row(['网页侧内核（JavaScript 移植）',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/tree/main/web/js/core" rel="noopener">web/js/core/</a>']) +
     '</tbody></table></div>' +
 
     '<h2>未采用 FFT 的原因</h2>' +
@@ -115,16 +132,16 @@
     row(['稳态权重的归一化偏差', '\\(\\sim 4 \\times 10^{-7}\\)（系统性，已计入模型）']) +
     '</tbody></table></div>' +
     '<p>卷积的相对误差与数值大小成正比：尾部 \\(10^{-50}\\) 量级的概率与主体 0.1 量级的概率' +
-    '具有相同的相对精度，不会因极端幸运的尾部而失真。上述量级均远小于模型本身的偏差，' +
-    '详见 <a href="#/about">模型与误差</a>。</p>';
+    '具有相同的相对精度，不会因极端幸运的尾部而失真。上述量级均远小于机制参数本身的偏差，' +
+    '详见 <a href="#/about">机制误差</a>。</p>';
 
   M.algo = {
     id: 'algo',
-    title: '算法',
+    title: '算法介绍',
     group: '关于',
     layout: 'doc',
     math: true,
-    intro: '朴素解在 n 增大后不可行。本文记录每一步优化消除的维度，以及代价的转移。',
+    intro: '朴素解在 n 增大后不可行。本文比较五种精确方案与 CLT 近似的复杂度、代价与适用范围。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },
