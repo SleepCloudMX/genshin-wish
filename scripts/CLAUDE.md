@@ -14,6 +14,7 @@
 | `plots/radiance.py` | 捕获明光次数分布 | `output/character/radiance/` | 用户工具 |
 | `plots/joint.py` | 角色+武器联合 CDF | `output/joint/` | 用户工具 |
 | `build_web_data.py` | 把 `output/analysis/*/data.json` 导出为站点数据 `web/data/analysis.js` | `web/data/` | 用户工具 |
+| `parity.py` | JS↔Python 一致性校验：生成基准 → Node 重算 → 比对 → 退出码 | `temp/parity-ref.json` | 开发校验 |
 | `analysis/task1_n_up_to_pulls.py` | A组：五种方法速度对比 + CLT 精度验证，支持 `--fit` 斜率拟合 | `output/analysis/task1-n_up-to-pulls/` | 开发分析 |
 | `analysis/task2_n_up_n_std_to_pulls.py` | B组：dp-path vs dp-golds 条件分布 | `output/analysis/task2-n_up-n_std-to-pulls/` | 开发分析 |
 | `analysis/task3_n_up_to_n_std.py` | C组：dp-path vs dp-golds n_std 分布 | `output/analysis/task3-n_up-to-n_std/` | 开发分析 |

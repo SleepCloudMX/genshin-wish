@@ -60,6 +60,10 @@
     cdfLine: '#333333',
     blues: ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6',
             '#4292c6', '#2171b5', '#08519c', '#08306b'],
+    spectral: ['#5e4fa2', '#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf',
+               '#fee08b', '#fdae61', '#f46d43', '#d53e4f', '#9e0142'],
+    coolwarm: ['#3b4cc0', '#6788ee', '#9abbff', '#c9d7f0', '#edd1c2', '#f7a889',
+               '#e26952', '#b40426'],
     primary: '#2171b5'
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

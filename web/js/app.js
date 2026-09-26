@@ -20,14 +20,14 @@
   var NAV = [
     { group: '计算器', items: [
       { id: 'char', icon: 'chart', label: '角色池', ready: true },
-      { id: 'weapon', icon: 'chart', label: '武器池', ready: false },
-      { id: 'joint', icon: 'chart', label: '角色+武器', ready: false },
-      { id: 'std', icon: 'chart', label: '常驻池', ready: false },
-      { id: 'nstd', icon: 'chart', label: '常驻角色数', ready: false },
-      { id: 'radiance', icon: 'chart', label: '捕获明光', ready: false },
-      { id: 'multi-gold', icon: 'chart', label: '十连多金', ready: false },
-      { id: 'longterm', icon: 'chart', label: '长期欧非', ready: false },
-      { id: 'player', icon: 'chart', label: '个人记录', ready: false }
+      { id: 'weapon', icon: 'chart', label: '武器池', ready: true },
+      { id: 'joint', icon: 'chart', label: '角色+武器', ready: true },
+      { id: 'std', icon: 'chart', label: '常驻池', ready: true },
+      { id: 'nstd', icon: 'chart', label: '常驻角色数', ready: true },
+      { id: 'radiance', icon: 'chart', label: '捕获明光', ready: true },
+      { id: 'multi-gold', icon: 'chart', label: '十连多金', ready: true },
+      { id: 'longterm', icon: 'chart', label: '长期欧非', ready: true },
+      { id: 'player', icon: 'chart', label: '个人记录', ready: true }
     ] },
     { group: '浏览', items: [
       { id: 'gallery', icon: 'grid', label: '图表画廊', ready: false }
@@ -189,17 +189,28 @@
     page.appendChild(stats);
 
     var entries = el('div', 'cardgrid');
-    var e1 = el('a', 'entry');
-    e1.href = '#/char/cdf?nUp=7&loss=0&pity=0&guaranteed=0';
-    e1.innerHTML = '<h2>角色池计算器</h2>' +
-                   '<p>按目标命座、已垫抽数与连歪次数，查看累积概率曲线与各分位点。</p>' +
-                   '<span class="entry__go">进入 →</span>';
-    entries.appendChild(e1);
-    var e2 = el('div', 'entry entry--muted');
-    e2.innerHTML = '<h2>图表画廊</h2>' +
-                   '<p>角色池、武器池、联合等图表，按分组浏览。（整理中）</p>' +
-                   '<span class="entry__go">尚未上线</span>';
-    entries.appendChild(e2);
+    [
+      ['角色池', 'char', '按目标命座、已垫抽数与连歪次数，查看累积概率、幸运扇形与分位点。'],
+      ['武器池', 'weapon', '定轨机制下的抽数分布：命定值、大保底与金数分布。'],
+      ['角色 + 武器', 'joint', '角色与武器同时规划，给出总抽数的分布与两边的期望占比。'],
+      ['常驻池', 'std', '没有 UP 机制，纯出金的抽数分布。'],
+      ['常驻角色数', 'nstd', '抽 UP 的过程中会歪出多少常驻五星及其条件抽数分布。'],
+      ['捕获明光', 'radiance', '明光触发次数的分布，也可按自己的中／歪序列计算。'],
+      ['十连多金', 'multi-gold', '一次十连出现 2–6 个五星的概率与所需十连次数。'],
+      ['长期欧非', 'longterm', 'UP 数量增加时平均成本的收敛，含 5.0 前后的机制差异。'],
+      ['个人记录', 'player', '把抽卡记录换算成百分位，逐次对照理论分布。']
+    ].forEach(function (it) {
+      var entry = el('a', 'entry');
+      entry.href = '#/' + it[1];
+      entry.innerHTML = '<h2>' + it[0] + '</h2><p>' + it[2] + '</p>' +
+                        '<span class="entry__go">进入 →</span>';
+      entries.appendChild(entry);
+    });
+    var gallery = el('div', 'entry entry--muted');
+    gallery.innerHTML = '<h2>图表画廊</h2>' +
+                        '<p>项目此前生成的全部静态图表，按分组浏览。（整理中）</p>' +
+                        '<span class="entry__go">尚未上线</span>';
+    entries.appendChild(gallery);
     page.appendChild(entries);
 
     var acc = el('section', 'card accuracy');
@@ -344,16 +355,23 @@
     viewHost.textContent = '';
     var view = mod.views[app.viewId] || mod.views[mod.defaultView];
     var t0 = performance.now();
-    view.render(viewHost, {
-      state: app.params,
-      charts: W.ui.charts,
-      setStatus: function (text, kind) {
-        status.textContent = text;
-        status.className = 'statusbar' + (kind ? ' statusbar--' + kind : '');
-      }
-    });
+    var ms = function () { return (performance.now() - t0).toFixed(1); };
+    try {
+      view.render(viewHost, {
+        state: app.params,
+        charts: W.ui.charts,
+        setStatus: function (text, kind) {
+          status.textContent = text;
+          status.className = 'statusbar' + (kind ? ' statusbar--' + kind : '');
+        }
+      });
+    } catch (e) {
+      W.ui.panels.error(viewHost, '本视图无法渲染：' + (e.message || e));
+      status.textContent = '参数超出该视图的处理范围';
+      status.className = 'statusbar statusbar--warn';
+    }
     if (mod.math) W.ui.math.typeset(viewHost);
-    status.setAttribute('data-ms', (performance.now() - t0).toFixed(1));
+    status.setAttribute('data-ms', ms());
   }
 
   function copyLink(btn) {

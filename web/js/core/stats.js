@@ -102,4 +102,78 @@
     var bl = Math.round((a & 255) * (1 - f) + (b & 255) * f);
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
   };
+
+  /* --- 分布对象：与 Python 的 UpDistribution 同接口 --- */
+  S.makeDistribution = function (pdf, method) {
+    var cdf = S.cumsum(pdf);
+    return {
+      pdf: pdf,
+      cdf: cdf,
+      method: method || 'exact',
+      expected: S.expected(pdf),
+      /* 与 np.searchsorted(cdf, q) 同义：首个 cdf[i] >= q 的抽数 */
+      quantile: function (q) { return S.searchsortedLeft(cdf, q); },
+      probability: function (pulls) {
+        if (pulls < 0) return 0;
+        return pulls >= cdf.length ? 1 : cdf[pulls];
+      }
+    };
+  };
+
+  S.moments = function (pdf) {
+    var m1 = 0, m2 = 0;
+    for (var i = 0; i < pdf.length; i++) { m1 += i * pdf[i]; m2 += i * i * pdf[i]; }
+    return { mean: m1, variance: m2 - m1 * m1 };
+  };
+
+  /* --- 标准正态：erfc 用级数（|x|<1）+ 连分式（|x|≥1），双精度 --- */
+  function erfSeries(x) {
+    var x2 = x * x, term = x, sum = x;
+    for (var n = 1; n < 200; n++) {
+      term *= -x2 / n;
+      var add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-18 * Math.abs(sum)) break;
+    }
+    return 2 / Math.sqrt(Math.PI) * sum;
+  }
+
+  function erfcCF(x) {
+    /* erfc(x) = e^{-x²}/√π · 1/(x + 1/2/(x + 1/(x + 3/2/(x + ...))))
+     * 连分式本身是分母，Lentz 法求出后再取倒数 */
+    var tiny = 1e-300;
+    var f = x, C = x, D = 0;
+    for (var i = 1; i < 500; i++) {
+      var a = i / 2, b = x;
+      D = b + a * D; if (Math.abs(D) < tiny) D = tiny; D = 1 / D;
+      C = b + a / C; if (Math.abs(C) < tiny) C = tiny;
+      var delta = C * D;
+      f *= delta;
+      if (Math.abs(delta - 1) < 1e-17) break;
+    }
+    return Math.exp(-x * x) / Math.sqrt(Math.PI) / f;
+  }
+
+  function erfc(x) {
+    if (x < 0) return 2 - erfc(-x);
+    if (x < 1) return 1 - erfSeries(x);
+    if (x > 30) return 0;
+    return erfcCF(x);
+  }
+
+  /* 标准正态 CDF */
+  S.normCdf = function (z) { return 0.5 * erfc(-z / Math.SQRT2); };
+
+  /* 标准正态分位数：二分求解，机器精度（用于 CLT 通道的上下界） */
+  S.normPpf = function (p) {
+    if (p <= 0) return -Infinity;
+    if (p >= 1) return Infinity;
+    var lo = -40, hi = 40;
+    for (var i = 0; i < 200; i++) {
+      var mid = (lo + hi) / 2;
+      if (S.normCdf(mid) < p) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  };
+
 })(typeof globalThis !== 'undefined' ? globalThis : this);

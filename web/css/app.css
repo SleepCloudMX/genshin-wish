@@ -400,6 +400,18 @@ input[type="range"] {
 .switch input:focus-visible + .switch__track { outline: 2px solid var(--gold); outline-offset: 2px; }
 .switch__text { font-size: var(--fs-sm); font-weight: 550; }
 
+.field__input {
+  width: 100%; min-height: 36px; padding: 0 var(--sp-3);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: var(--fs-sm);
+}
+.field__input::placeholder { color: var(--text-dim); opacity: .7; }
+.field__input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+.field__input--mono { font-family: var(--mono); letter-spacing: .02em; }
+
+.viewerror { padding: var(--sp-5); color: var(--warn); font-size: var(--fs-sm); }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
   min-height: 38px; padding: 0 var(--sp-4);

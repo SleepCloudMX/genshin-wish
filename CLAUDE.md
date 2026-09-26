@@ -36,6 +36,7 @@ scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3)
 scripts/main_plot.py    # 一键生成全部绘图
 scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
 scripts/build_web_data.py # 实验数据导出给站点 (output/analysis → web/data/analysis.js)
+scripts/parity.py       # 站点概率内核 vs Python 的一致性校验
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
 temp/                   # 临时测试缓存，已 gitignore，仅在不宜污染 .cache/ 时使用
@@ -57,6 +58,9 @@ python scripts/main_plot.py
 # 站点：直接用浏览器打开仓库根的 index.html（纯静态，无需 Python）
 # 重新导出实验数据（重跑 analysis 之后）
 python scripts/build_web_data.py
+
+# 站点概率内核与 Python 的一致性校验（需要 Node）
+python scripts/parity.py
 ```
 
 测试环境：`conda activate ai`（Python 3.12，numpy 2.x，scipy 1.16，matplotlib 3.10）

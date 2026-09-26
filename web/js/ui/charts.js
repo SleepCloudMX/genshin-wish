@@ -105,6 +105,8 @@
       yAxis: axisCommon(t, opt, 'y')
     };
     base.yAxis.max = opt.yMax === undefined ? 1.05 : opt.yMax;
+    /* line 一律用类目横轴：抽数是可数的整数，类目轴能保证等距并且标注可落在任意抽数上 */
+    base.xAxis.type = 'category';
     base.xAxis.data = opt.x;
     var n = (opt.x || []).length;
     base.xAxis.axisLabel.interval = n > 12 ? Math.ceil(n / 12) - 1 : 0;
@@ -161,12 +163,63 @@
     return { silent: true, symbol: 'none', data: data, animation: false };
   }
 
-  /* --- 数值/对数横轴折线（性能实验图） --- */
+  /* --- 数值/对数横轴折线（性能实验图、扇形、堆叠面积、阶梯） --- */
   function curveOption(opt, t) {
     var series = [];
+    var legendNames = [];
+    var logY = opt.yType === 'log';
+
+    function pushBand(name, data, color, opacity, z, step, lines, inLegend) {
+      var key = 'band_' + name;
+      var base = data.map(function (d) { return [d[0], Math.max(d[1], 0)]; });
+      var height = data.map(function (d) { return [d[0], Math.max(d[2] - d[1], 0)]; });
+      series.push({
+        name: key + '_lo', type: 'line', stack: key, silent: true, symbol: 'none',
+        step: step || false, z: z === undefined ? 1 : z, tooltip: { show: false },
+        lineStyle: { opacity: 0 }, data: base
+      });
+      series.push({
+        name: name, type: 'line', stack: key, silent: true, symbol: 'none',
+        step: step || false, z: z === undefined ? 1 : z,
+        tooltip: { show: false }, showInLegend: false,
+        lineStyle: { opacity: 0 },
+        areaStyle: { color: color, opacity: opacity === undefined ? 0.2 : opacity },
+        data: height
+      });
+      if (lines) {
+        series.push({
+          name: key + '_hi', type: 'line', silent: true, symbol: 'none',
+          step: step || false, z: (z === undefined ? 1 : z) + 0.1,
+          tooltip: { show: false },
+          data: data.map(function (d) { return [d[0], d[2]]; }),
+          lineStyle: { color: color, width: 1, opacity: 0.55, type: 'dashed' }
+        });
+      }
+      if (inLegend !== false) legendNames.push(name);
+    }
+
+    /* 1. 显式区间带：opt.bands（由外到内依次压栈，内层后画） */
+    (opt.bands || []).forEach(function (b, i) {
+      pushBand(b.name || ('band' + i), b.data, resolveColor(b.color, t, 0.2),
+               b.opacity, b.z, b.step, b.lines, b.legend);
+    });
+
+    /* 2. 堆叠面积：opt.stack（自下而上） */
+    (opt.stack || []).forEach(function (s) {
+      var color = resolveColor(s.color, t, 0.2);
+      series.push({
+        name: s.name, type: 'line', stack: opt.stackKey || 'total',
+        symbol: 'none', z: 1, tooltip: { show: false },
+        data: s.points,
+        lineStyle: { opacity: 0 },
+        areaStyle: { color: color, opacity: s.opacity === undefined ? 0.75 : s.opacity }
+      });
+      legendNames.push(s.name);
+    });
+
+    /* 3. 常规折线 */
     (opt.series || []).forEach(function (s) {
       var color = resolveColor(s.color, t, 0.25);
-      var logY = opt.yType === 'log';
       if (s.band) {
         if (logY) {
           /* 对数轴上堆叠面积不可靠，改用上下两条细虚线表示波动范围 */
@@ -181,18 +234,8 @@
             lineStyle: { color: color, width: 1, opacity: 0.3, type: 'dotted' }
           });
         } else {
-          var key = 'band_' + s.name;
-          series.push({
-            name: key + '_lo', type: 'line', stack: key, silent: true, z: 1,
-            symbol: 'none', lineStyle: { opacity: 0 },
-            data: s.band.map(function (d) { return [d[0], Math.max(d[1], 0)]; })
-          });
-          series.push({
-            name: key, type: 'line', stack: key, silent: true, z: 1,
-            symbol: 'none', lineStyle: { opacity: 0 },
-            areaStyle: { color: color, opacity: 0.15 },
-            data: s.band.map(function (d) { return [d[0], Math.max(d[2] - d[1], 0)]; })
-          });
+          pushBand(s.name + '_band', s.band.map(function (d) { return d; }),
+                   color, 0.15, 1, false, false, false);
         }
       }
       if (s.fit && s.fit.length) {
@@ -203,26 +246,33 @@
         });
       }
       series.push({
-        name: s.name, type: 'line', z: 3,
+        name: s.name, type: 'line',
+        z: s.z === undefined ? 3 : s.z,
+        step: s.step || false,
         symbol: s.symbol === false ? 'none' : 'circle',
-        symbolSize: 5,
+        symbolSize: s.symbolSize || 5,
         data: s.points,
-        lineStyle: { color: color, width: s.width || 2 },
+        lineStyle: { color: color, width: s.width === undefined ? 2 : s.width, type: s.dash ? 'dashed' : 'solid' },
         itemStyle: { color: color }
       });
+      legendNames.push(s.name);
     });
+
+    /* 4. 标注与参考线 */
     var labels = (opt.labels || []).concat(
       (opt.series || []).map(function (s) { return s.label; }).filter(Boolean));
     if (labels.length) {
       series.push({
         type: 'scatter', silent: true, z: 5, symbolSize: 1,
         itemStyle: { opacity: 0 },
+        tooltip: { show: false },
         data: labels.map(function (l) {
           return {
             value: [l.x, l.y],
             label: {
               show: true, formatter: l.text, position: l.pos || 'top',
-              color: resolveColor(l.color, t, 0.25), fontSize: 11, fontFamily: MONO,
+              color: resolveColor(l.color, t, 0.25), fontSize: l.size || 11,
+              fontFamily: MONO, fontWeight: l.weight || 'normal',
               backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
             }
           };
@@ -230,11 +280,47 @@
       });
     }
 
-    var hasLegend = !(opt.legend === false || !opt.series || opt.series.length < 2);
+    var markData = [];
+    (opt.vLines || []).forEach(function (v) {
+      var color = resolveColor(v.color, t, 0.2);
+      markData.push([
+        { coord: [v.x, v.y0 === undefined ? 0 : v.y0] },
+        { coord: [v.x, v.y1], lineStyle: { color: color, type: 'dotted', width: 1, opacity: 0.55 },
+          label: v.text ? {
+            show: true, formatter: v.text, position: 'insideEndTop',
+            color: color, fontSize: 10, fontFamily: MONO,
+            backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+          } : { show: false } }
+      ]);
+    });
+    (opt.hLines || []).forEach(function (h) {
+      markData.push({
+        yAxis: h.y,
+        lineStyle: {
+          color: resolveColor(h.color, t, 0.2),
+          type: h.dash === false ? 'solid' : 'dashed', width: h.width || 1.2, opacity: 0.7
+        },
+        label: {
+          show: !!h.text, formatter: h.text || '', position: h.pos || 'insideEndTop',
+          color: resolveColor(h.color, t, 0.2), fontSize: 11, fontFamily: MONO,
+          backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+        }
+      });
+    });
+    if (markData.length) {
+      series.push({
+        name: '__marks', type: 'line', silent: true, symbol: 'none', data: [],
+        tooltip: { show: false }, showInLegend: false,
+        markLine: { silent: true, symbol: 'none', animation: false, data: markData }
+      });
+    }
+
+    var names = legendNames.filter(function (n, i) { return legendNames.indexOf(n) === i; });
+    var showLegend = opt.legend !== false && names.length > 1;
     return {
       animationDuration: 260,
       textStyle: baseText(t),
-      grid: { left: 64, right: 28, top: opt.title ? 54 : (hasLegend ? 42 : 28), bottom: 46 },
+      grid: { left: 64, right: 28, top: opt.title ? 54 : (showLegend ? 42 : 28), bottom: 46 },
       title: opt.title ? {
         text: opt.title, left: 0,
         textStyle: { fontSize: 15, fontWeight: 600, color: t.text }
@@ -244,13 +330,195 @@
         borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
         valueFormatter: opt.tooltipFormatter
       },
-      legend: (opt.legend === false || !opt.series || opt.series.length < 2) ? undefined : {
+      legend: showLegend ? {
         top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10,
-        textStyle: { color: t.dim, fontSize: 12 },
-        data: (opt.series || []).map(function (s) { return s.name; })
-      },
+        textStyle: { color: t.dim, fontSize: 12 }, data: names
+      } : undefined,
       xAxis: axisCommon(t, opt, 'x'),
       yAxis: axisCommon(t, opt, 'y'),
+      series: series
+    };
+  }
+
+  /* --- 类目横轴的区间图：扇形带、堆叠面积、阶梯
+   * ECharts 的面积堆叠只在类目轴上生效，因此横轴统一转成类目（标签仍显示原始抽数）。
+   * opt = { x, regions:[{name,lo,hi,color,opacity,step}], stack:[{name,y,color,opacity}],
+   *         lines:[{name,y,color,width,dash,step,symbol,labels:{...}}], labels, vLines, hLines }
+   */
+  function regionsOption(opt, t) {
+    var x = opt.x || [];
+    var cats = x.map(function (v) { return String(v); });
+    var series = [], legendNames = [];
+
+    (opt.regions || []).forEach(function (rg) {
+      var key = 'rg' + series.length;
+      var color = resolveColor(rg.color, t, 0.2);
+      series.push({
+        name: key + '_lo', type: 'line', stack: key, silent: true, symbol: 'none',
+        step: rg.step || false, tooltip: { show: false },
+        lineStyle: { opacity: 0 }, data: rg.lo
+      });
+      series.push({
+        name: rg.name || key, type: 'line', stack: key, silent: true,
+        symbol: 'none', step: rg.step || false, tooltip: { show: false },
+        showInLegend: false,
+        lineStyle: { opacity: 0, color: color },
+        itemStyle: { color: color },
+        areaStyle: { color: color, opacity: rg.opacity === undefined ? 0.25 : rg.opacity },
+        data: rg.hi.map(function (v, i) { return Math.max(v - rg.lo[i], 0); })
+      });
+      if (rg.name) legendNames.push(rg.name);
+    });
+
+    (opt.stack || []).forEach(function (st) {
+      var color = resolveColor(st.color, t, 0.2);
+      series.push({
+        name: st.name, type: 'line', stack: 'stackTotal', symbol: 'none',
+        tooltip: { show: false },
+        lineStyle: { opacity: 0, color: color },
+        itemStyle: { color: color },
+        areaStyle: { color: color, opacity: st.opacity === undefined ? 0.85 : st.opacity },
+        data: st.y
+      });
+      legendNames.push(st.name);
+    });
+
+    (opt.lines || []).forEach(function (ln) {
+      var color = resolveColor(ln.color, t, 0.25);
+      series.push({
+        name: ln.name, type: 'line',
+        symbol: ln.symbol === false ? 'none' : 'circle',
+        symbolSize: ln.symbolSize || 5,
+        step: ln.step || false,
+        data: ln.y,
+        lineStyle: {
+          color: color, width: ln.width === undefined ? 2 : ln.width,
+          type: ln.dash ? 'dashed' : 'solid'
+        },
+        itemStyle: { color: color },
+        label: ln.labels ? {
+          show: true, position: ln.labels.pos || 'top', fontSize: 10,
+          fontFamily: MONO, fontWeight: ln.labels.weight || 'normal',
+          color: color, formatter: ln.labels.formatter
+        } : undefined
+      });
+      if (ln.name) legendNames.push(ln.name);
+    });
+
+    (opt.points || []).forEach(function (pt) {
+      var color = resolveColor(pt.color, t, 0.25);
+      series.push({
+        name: pt.name, type: 'scatter', z: 6, silent: true,
+        symbol: pt.symbol || 'rect', symbolSize: pt.symbolSize || [24, 2],
+        data: pt.data,
+        itemStyle: { color: color },
+        label: pt.labels ? {
+          show: true, position: pt.labels.pos || 'top', fontSize: 9,
+          fontFamily: MONO, color: color, formatter: pt.labels.formatter,
+          backgroundColor: t.surface, padding: [1, 3], borderRadius: 3
+        } : undefined
+      });
+      if (pt.name) legendNames.push(pt.name);
+    });
+
+    if (opt.labels && opt.labels.length) {
+      series.push({
+        type: 'scatter', silent: true, z: 7, symbolSize: 1, itemStyle: { opacity: 0 },
+        tooltip: { show: false },
+        data: opt.labels.map(function (l) {
+          return {
+            value: [l.i, l.y],
+            label: {
+              show: true, formatter: l.text, position: l.pos || 'top',
+              color: resolveColor(l.color, t, 0.25), fontSize: l.size || 11,
+              fontFamily: MONO, fontWeight: l.weight || 'normal',
+              backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+            }
+          };
+        })
+      });
+    }
+
+    var markData = [];
+    (opt.vLines || []).forEach(function (v) {
+      var color = resolveColor(v.color, t, 0.2);
+      markData.push([
+        { coord: [v.i, v.y0 === undefined ? 0 : v.y0] },
+        {
+          coord: [v.i, v.y1],
+          lineStyle: { color: color, type: 'dotted', width: 1, opacity: 0.6 },
+          label: v.text ? {
+            show: true, formatter: v.text, position: 'insideEndTop', rotate: 0,
+            color: color, fontSize: 10, fontFamily: MONO,
+            backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+          } : { show: false }
+        }
+      ]);
+    });
+    (opt.hLines || []).forEach(function (h) {
+      markData.push({
+        yAxis: h.y,
+        lineStyle: {
+          color: resolveColor(h.color, t, 0.2),
+          type: h.dash === false ? 'solid' : 'dashed', width: h.width || 1.2, opacity: 0.7
+        },
+        label: {
+          show: !!h.text, formatter: h.text || '', position: h.pos || 'insideEndTop',
+          color: resolveColor(h.color, t, 0.2), fontSize: 11, fontFamily: MONO,
+          backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+        }
+      });
+    });
+    if (markData.length) {
+      series.push({
+        name: '__marks', type: 'line', silent: true, symbol: 'none', data: [],
+        tooltip: { show: false }, showInLegend: false,
+        markLine: { silent: true, symbol: 'none', animation: false, data: markData }
+      });
+    }
+
+    var names = legendNames.filter(function (n, i) { return legendNames.indexOf(n) === i; });
+    var showLegend = opt.legend !== false && names.length > 1;
+    var n = cats.length;
+    return {
+      animationDuration: 260,
+      textStyle: baseText(t),
+      grid: { left: 64, right: 28, top: opt.title ? 54 : (showLegend ? 42 : 24), bottom: 46 },
+      title: opt.title ? {
+        text: opt.title, left: 0,
+        textStyle: { fontSize: 15, fontWeight: 600, color: t.text }
+      } : undefined,
+      tooltip: {
+        trigger: 'axis', confine: true, backgroundColor: t.surface,
+        borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
+        valueFormatter: opt.tooltipFormatter
+      },
+      legend: showLegend ? {
+        top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10,
+        textStyle: { color: t.dim, fontSize: 12 }, data: names
+      } : undefined,
+      xAxis: {
+        type: 'category', data: cats, boundaryGap: false,
+        name: opt.xLabel, nameLocation: 'middle', nameGap: 30,
+        nameTextStyle: { color: t.dim, fontSize: 12 },
+        axisLine: { lineStyle: { color: t.axis } },
+        axisTick: { show: false },
+        axisLabel: {
+          color: t.dim, fontSize: 11, fontFamily: MONO, hideOverlap: true,
+          interval: n > 14 ? Math.ceil(n / 12) - 1 : 0
+        }
+      },
+      yAxis: {
+        type: 'value', name: opt.yLabel,
+        nameLocation: 'middle', nameGap: 44,
+        nameTextStyle: { color: t.dim, fontSize: 12 },
+        min: opt.yMin, max: opt.yMax,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: {
+          color: t.dim, fontSize: 11, fontFamily: MONO, formatter: opt.yTickFormatter
+        },
+        splitLine: { lineStyle: { color: t.grid } }
+      },
       series: series
     };
   }
@@ -270,9 +538,12 @@
         borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
         valueFormatter: opt.tooltipFormatter
       },
-      legend: opt.series.length > 1 ? {
+      legend: (opt.series.length + (opt.overlays || []).length) > 1 ? {
         top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10,
-        textStyle: { color: t.dim, fontSize: 12 }
+        textStyle: { color: t.dim, fontSize: 12 },
+        data: opt.series.map(function (s) { return s.name; })
+          .concat((opt.overlays || []).filter(function (o) { return o.name; })
+            .map(function (o) { return o.name; }))
       } : undefined,
       xAxis: {
         type: 'category', data: opt.categories,
@@ -280,28 +551,72 @@
         nameTextStyle: { color: t.dim, fontSize: 12 },
         axisLine: { lineStyle: { color: t.axis } },
         axisTick: { show: false },
-        axisLabel: { color: t.dim, fontSize: 11, fontFamily: MONO }
+        axisLabel: {
+          color: t.dim, fontSize: 11, fontFamily: MONO, hideOverlap: true,
+          interval: opt.categoryInterval === undefined ? 'auto' : opt.categoryInterval,
+          formatter: opt.xTickFormatter
+        }
       },
       yAxis: {
-        type: 'value', name: opt.yLabel,
+        type: opt.yType === 'log' ? 'log' : 'value', logBase: 10,
+        name: opt.yLabel,
         nameTextStyle: { color: t.dim, fontSize: 12, align: 'right' },
-        min: 0, max: opt.yMax,
+        min: opt.yType === 'log' ? opt.yMin : 0, max: opt.yMax,
         axisLine: { show: false }, axisTick: { show: false },
         axisLabel: { color: t.dim, fontSize: 11, fontFamily: MONO, formatter: opt.yTickFormatter },
         splitLine: { lineStyle: { color: t.grid } }
       },
       series: opt.series.map(function (s) {
         var color = resolveColor(s.color, t);
+        var fill = s.gradient
+          ? new global.echarts.graphic.LinearGradient(0, 1, 0, 0, [
+              { offset: 0, color: s.gradient[0] }, { offset: 1, color: s.gradient[1] }])
+          : color;
         return {
-          name: s.name, type: 'bar', barMaxWidth: 20,
-          data: s.values,
-          itemStyle: { color: color, borderRadius: [3, 3, 0, 0] },
+          name: s.name, type: 'bar',
+          barMaxWidth: s.maxWidth || 20,
+          barGap: s.gap,
+          z: 2,
+          data: (s.colors || s.values),
+          itemStyle: {
+            color: s.colors
+              ? function (p) { return s.colors[p.dataIndex]; }
+              : fill,
+            borderRadius: s.gradient ? 0 : [3, 3, 0, 0],
+            borderColor: s.borderColor, borderWidth: s.borderWidth
+          },
           label: (opt.valueLabels && opt.valueLabels.show) ? {
-            show: true, position: 'top', fontSize: 10, color: t.dim, fontFamily: MONO,
-            formatter: opt.valueLabels.formatter
+            show: true, position: s.labelPos || 'top', fontSize: 10,
+            color: t.dim, fontFamily: MONO, formatter: opt.valueLabels.formatter
           } : undefined
         };
-      })
+      }).concat((opt.overlays || []).map(function (o) {
+        var color = resolveColor(o.color, t);
+        if (o.type === 'scatter') {
+          return {
+            name: o.name, type: 'scatter', z: 5, symbol: o.symbol || 'rect',
+            symbolSize: o.symbolSize || [26, 2],
+            data: o.data,
+            itemStyle: { color: color, opacity: o.opacity === undefined ? 1 : o.opacity },
+            label: o.label ? {
+              show: true, position: o.label.pos || 'top', formatter: o.label.formatter,
+              fontSize: 9, fontFamily: MONO, color: color,
+              backgroundColor: t.surface, padding: [1, 3], borderRadius: 3
+            } : undefined
+          };
+        }
+        return {
+          name: o.name, type: 'line', z: 4, symbol: o.symbol === false ? 'none' : 'circle',
+          symbolSize: o.symbolSize || 5, smooth: false,
+          data: o.data,
+          lineStyle: { color: color, width: o.width || 1.6, type: o.dash ? 'dashed' : 'solid' },
+          itemStyle: { color: color },
+          label: o.label ? {
+            show: true, position: o.label.pos || 'top', formatter: o.label.formatter,
+            fontSize: 10, fontFamily: MONO, color: color
+          } : undefined
+        };
+      }))
     };
   }
 
@@ -327,14 +642,23 @@
       return it.inst;
     },
 
+    regions: function (host, opt) {
+      var it = acquire(host, 'regions');
+      it.opt = opt;
+      it.inst.setOption(regionsOption(opt, themeTokens()), true);
+      return it.inst;
+    },
+
     table: function (host, opt) {
       var rows = opt.rowLabels, cols = opt.colLabels, values = opt.values;
       var flat = [];
       values.forEach(function (r) { r.forEach(function (v) { flat.push(v); }); });
       var lo = Math.min.apply(null, flat), hi = Math.max.apply(null, flat);
       var blues = C.COLORS.blues;
+      var shade = opt.shade !== false;
 
-      var html = '<div class="tablewrap"><table class="dtable">';
+      var html = '<div class="tablewrap"><table class="dtable' +
+                 (shade ? '' : ' dtable--plain') + '">';
       html += '<thead><tr><th class="dtable__corner">' + (opt.rowHeader || '') + '</th>';
       cols.forEach(function (c) { html += '<th>' + c + '</th>'; });
       html += '</tr></thead><tbody>';
@@ -342,11 +666,16 @@
         html += '<tr><th class="dtable__row">' + r + '</th>';
         values[i].forEach(function (v, j) {
           var norm = hi > lo ? (v - lo) / (hi - lo) : 0;
-          var bg = C.stats.ramp(blues, norm);
-          var fg = norm > 0.6 ? '#ffffff' : '#2b2b2b';
-          var isMean = j === cols.length - 1 && opt.meanColumn !== false;
-          html += '<td style="background:' + bg + ';color:' + fg + '">' +
-                  (isMean ? v.toFixed(1) : String(v)) + '</td>';
+          var style = '';
+          var fg = '';
+          if (shade) {
+            style = 'background:' + C.stats.ramp(blues, norm) + ';';
+            fg = 'color:' + (norm > 0.6 ? '#ffffff' : '#2b2b2b') + ';';
+          }
+          var isMean = j === cols.length - 1 && opt.meanColumn === true;
+          var text = opt.format ? opt.format(v, j, i)
+                                : (isMean ? v.toFixed(1) : String(v));
+          html += '<td style="' + style + fg + '">' + text + '</td>';
         });
         html += '</tr>';
       });
@@ -377,6 +706,7 @@
         if (it.inst.isDisposed() || !it.opt) return;
         if (it.kind === 'line') it.inst.setOption(lineOption(it.opt, t), true);
         else if (it.kind === 'curve') it.inst.setOption(curveOption(it.opt, t), true);
+        else if (it.kind === 'regions') it.inst.setOption(regionsOption(it.opt, t), true);
         else if (it.kind === 'bars') it.inst.setOption(barOption(it.opt, t), true);
       });
     },

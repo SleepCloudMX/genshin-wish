@@ -75,6 +75,27 @@
       return wrap;
     }
 
+    if (spec.type === 'text') {
+      wrap.appendChild(labelFor({ label: spec.label }, null));
+      var text = doc.createElement('input');
+      text.type = 'text';
+      text.className = 'field__input';
+      text.value = value === undefined || value === null ? '' : value;
+      if (spec.placeholder) text.placeholder = spec.placeholder;
+      if (spec.mono) text.classList.add('field__input--mono');
+      text.setAttribute('aria-label', spec.label);
+      /* 只认 change（回车/失焦）：序列输入在中途往往是残缺的 */
+      text.addEventListener('change', function () { onChange(spec.key, text.value, false); });
+      wrap.appendChild(text);
+      if (spec.help) {
+        var th = doc.createElement('span');
+        th.className = 'field__help field__help--block';
+        th.textContent = spec.help;
+        wrap.appendChild(th);
+      }
+      return wrap;
+    }
+
     if (spec.type === 'switch') {
       var row = doc.createElement('label');
       row.className = 'switch';
