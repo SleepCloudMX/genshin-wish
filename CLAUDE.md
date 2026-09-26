@@ -84,4 +84,4 @@ python scripts/parity.py
 - **耗时操作前先征求确认**。重跑基准测试（>1 分钟）、大批量文件操作、可能覆盖已有数据的操作，先说明原因和预估时间，等用户确认。
 - **`scripts/` 约定**：见 `scripts/CLAUDE.md`。分析脚本只输出图表 + data.json，不嵌入分析文本。
 - **`docs/ai-output/` 是独立 git 仓库**。修改其中文件后必须 `cd docs/ai-output && git add ... && git commit`，与主项目提交分开。不得遗漏。
-- **`web/` 是纯静态站点**，运行时不依赖 Python：概率内核用 JS 重算（`web/js/core/`），与 `src/genshin_wish/` 平行维护。约定见 `web/CLAUDE.md`；改动内核后要用 Python 侧参考值校验。
+- **`web/` 是纯静态站点**，运行时不依赖 Python：概率内核用 JS 重算（`web/js/core/`），与 `src/genshin_wish/` 平行维护。约定见 `web/CLAUDE.md`；**改动内核后必须跑 `python scripts/parity.py`**（需要 Node）确认与 Python 逐项一致。
