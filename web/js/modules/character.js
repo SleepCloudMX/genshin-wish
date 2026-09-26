@@ -129,8 +129,7 @@
               return '≤ <b>' + pulls + '</b> 抽：<b>' + P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) +
-                        ' 抽（此后概率恒为 100%）');
+          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + ' 抽');
         }
       },
 
