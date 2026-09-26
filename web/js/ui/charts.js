@@ -225,11 +225,13 @@
           /* 对数轴上堆叠面积不可靠，改用上下两条细虚线表示波动范围 */
           series.push({
             name: s.name + '_hi', type: 'line', silent: true, z: 1, symbol: 'none',
+            tooltip: { show: false },
             data: s.band.map(function (d) { return [d[0], d[2]]; }),
             lineStyle: { color: color, width: 1, opacity: 0.3, type: 'dotted' }
           });
           series.push({
             name: s.name + '_lo', type: 'line', silent: true, z: 1, symbol: 'none',
+            tooltip: { show: false },
             data: s.band.map(function (d) { return [d[0], Math.max(d[1], 1e-4)]; }),
             lineStyle: { color: color, width: 1, opacity: 0.3, type: 'dotted' }
           });
@@ -241,6 +243,7 @@
       if (s.fit && s.fit.length) {
         series.push({
           name: s.name + '_fit', type: 'line', symbol: 'none', silent: true, z: 2,
+          tooltip: { show: false },
           data: s.fit,
           lineStyle: { color: color, width: 1, type: 'dashed', opacity: 0.5 }
         });
@@ -328,6 +331,19 @@
       tooltip: {
         trigger: 'axis', confine: true, backgroundColor: t.surface,
         borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
+        /* 对数轴的刻度值是浮点，默认表头会印出 13.0000000000；交给模块自己排版 */
+        formatter: opt.tooltipHeader ? function (params) {
+          var list = params instanceof Array ? params : [params];
+          var rows = list.map(function (p) {
+            /* 折线数据的 value 是 [x, y]，取末位还原成读数 */
+            var raw = p.value instanceof Array ? p.value[p.value.length - 1] : p.value;
+            var v = opt.tooltipFormatter ? opt.tooltipFormatter(raw) : raw;
+            return '<div style="display:flex;justify-content:space-between;gap:16px">' +
+                   '<span>' + p.marker + ' ' + p.seriesName + '</span><b>' + v + '</b></div>';
+          }).join('');
+          return '<div style="margin-bottom:4px">' +
+                 opt.tooltipHeader(list[0].axisValue) + '</div>' + rows;
+        } : undefined,
         valueFormatter: opt.tooltipFormatter
       },
       legend: showLegend ? {
@@ -631,34 +647,26 @@
     };
   }
 
+  function optionFor(kind, opt, t) {
+    if (kind === 'curve') return curveOption(opt, t);
+    if (kind === 'regions') return regionsOption(opt, t);
+    if (kind === 'bars') return barOption(opt, t);
+    return lineOption(opt, t);
+  }
+
+  function draw(host, kind, opt) {
+    var it = acquire(host, kind);
+    it.opt = opt;
+    it.inst.setOption(optionFor(kind, opt, themeTokens()), true);
+    return it.inst;
+  }
+
   UI.charts = {
-    line: function (host, opt) {
-      var it = acquire(host, 'line');
-      it.opt = opt;
-      it.inst.setOption(lineOption(opt, themeTokens()), true);
-      return it.inst;
-    },
+    line: function (host, opt) { return draw(host, 'line', opt); },
+    curve: function (host, opt) { return draw(host, 'curve', opt); },
+    bars: function (host, opt) { return draw(host, 'bars', opt); },
 
-    curve: function (host, opt) {
-      var it = acquire(host, 'curve');
-      it.opt = opt;
-      it.inst.setOption(curveOption(opt, themeTokens()), true);
-      return it.inst;
-    },
-
-    bars: function (host, opt) {
-      var it = acquire(host, 'bars');
-      it.opt = opt;
-      it.inst.setOption(barOption(opt, themeTokens()), true);
-      return it.inst;
-    },
-
-    regions: function (host, opt) {
-      var it = acquire(host, 'regions');
-      it.opt = opt;
-      it.inst.setOption(regionsOption(opt, themeTokens()), true);
-      return it.inst;
-    },
+    regions: function (host, opt) { return draw(host, 'regions', opt); },
 
     table: function (host, opt) {
       var rows = opt.rowLabels, cols = opt.colLabels, values = opt.values;

@@ -12,6 +12,15 @@
 
   function pct(q) { return Math.round(q * 100) + '%'; }
 
+  /* 耗时读数的位数随量级变化：从 0.05 ms 到 3000 ms 都在同一张图上 */
+  function msFmt(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return '—';
+    if (v >= 100) return v.toFixed(0);
+    if (v >= 10) return v.toFixed(1);
+    if (v >= 1) return v.toFixed(2);
+    return v.toFixed(3);
+  }
+
   function para(host, html, cls) {
     var p = doc.createElement('p');
     p.className = cls || 'chartnote';
@@ -86,28 +95,12 @@
     };
   }
 
-  function slice(bundle, keepIndex) {
-    var idx = [];
-    bundle.n.forEach(function (n, i) { if (keepIndex(n)) idx.push(i); });
-    var out = { n: idx.map(function (i) { return bundle.n[i]; }), series: {} };
-    Object.keys(bundle.series).forEach(function (m) {
-      var s = bundle.series[m];
-      out.series[m] = {
-        time: idx.map(function (i) { return s.time[i]; }),
-        lo: idx.map(function (i) { return s.lo[i]; }),
-        hi: idx.map(function (i) { return s.hi[i]; }),
-        fit: null
-      };
-    });
-    return out;
-  }
-
   M.perf = {
     id: 'perf',
     title: '性能',
     group: '关于',
     math: true,
-    intro: '五种精确算法与 CLT 近似的实测耗时与近似误差，以及两种独立算法的交叉验证结果。',
+    intro: '五种精确算法的实测耗时，以及 CLT 近似在极端规模下的误差量级。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },
@@ -142,29 +135,22 @@
           pending.push([full, {
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
-            xMin: 1, xMax: Math.max.apply(null, A.n),
-            series: toSeries(A.task1, METHOD_ORDER, { fit: true, band: true }, A.colors)
-          }]);
-
-          /* --- 小 n 细节 --- */
-          heading(box, '小规模区间（n ≤ 20）');
-          var detail = chartBox(box, 'n ≤ 7 时最慢的 dp-pulls 亦仅需数毫秒，但其增长率最高；' +
-            'n 超过 20 后仅 dp-state、dp-golds 与 CLT 可用。');
-          pending.push([detail, {
-            xType: 'value', yType: 'log',
-            xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
-            xMin: 1, xMax: 20,
-            series: toSeries(slice(A.task1, function (n) { return n <= 20; }), METHOD_ORDER,
-                             { fit: false, band: true }, A.colors)
+            xMin: 1, xMax: Math.max.apply(null, A.task1.n),
+            series: toSeries(A.task1, METHOD_ORDER, { fit: true, band: true }, A.colors),
+            tooltipFormatter: msFmt,
+            xTickFormatter: function (v) { return String(Math.round(v)); },
+            tooltipHeader: function (v) { return 'n = ' + Math.round(v); }
           }]);
 
           /* --- CLT 精度 --- */
           heading(box, 'CLT 近似的精度');
-          para(box, '以 dp-state 的精确解为基准，比较 CLT 混合矩近似在各分位点的偏差。' +
-            '误差随 n 增大迅速收敛，n = 500 时 50% 分位约为 0.007%。');
-          pending.push([chartBox(box, null), cltOption(A, 'abs', '绝对误差（按分位点）', '误差（抽）', 1)]);
-          pending.push([chartBox(box, null), cltOption(A, 'rel', '相对误差（按分位点）', '相对误差 (%)', 1)]);
-          pending.push([chartBox(box, null), cltOption(A, 'perUp', '摊到每个 UP 的误差', '误差（抽/UP）', 1)]);
+          para(box, 'CLT 是唯一的近似通道，<b>仅在 n > 500 时启用</b>（Python 侧阈值 ' +
+            '<code>CLT_THRESHOLD = 500</code>，超出即换成混合矩正态近似并给出警告）；' +
+            '网站上的各个图表都走精确路径，n 的上限由各模块自己限制。' +
+            '以 dp-state 的精确解为基准，逐分位点比较 CLT 的偏差，' +
+            '误差随 n 增大迅速收敛，n = 500 时 50% 分位的偏差约为 0.007%。');
+          pending.push([chartBox(box, null), cltOption(A, 'rel', '相对误差（按分位点）', '相对误差 (%)')]);
+          pending.push([chartBox(box, null), cltOption(A, 'perUp', '摊到每个 UP 的误差', '误差（抽/UP）')]);
 
           /* --- 任务 2 / 3 --- */
           heading(box, '任务 2：条件抽数分布的计算耗时');
@@ -174,7 +160,10 @@
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
             xMin: 1, xMax: Math.max.apply(null, A.task2.n),
-            series: toSeries(A.task2, ['dp-path', 'dp-golds'], { fit: false, band: true }, A.colors)
+            series: toSeries(A.task2, ['dp-path', 'dp-golds'], { fit: false, band: true }, A.colors),
+            tooltipFormatter: msFmt,
+            xTickFormatter: function (v) { return String(Math.round(v)); },
+            tooltipHeader: function (v) { return 'n = ' + Math.round(v); }
           }]);
 
           heading(box, '任务 3：常驻角色数分布的计算耗时');
@@ -184,32 +173,16 @@
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
             xMin: 1, xMax: Math.max.apply(null, A.task3.n),
-            series: toSeries(A.task3, ['dp-path', 'dp-golds'], { fit: false, band: true }, A.colors)
-          }]);
-
-          /* --- n=20 分布（两种方法互相印证） --- */
-          heading(box, '两种方法的互相印证');
-          var dist = chartBox(box, 'n = 20 时歪出常驻角色数量的分布。两种方法的柱高完全一致：' +
-            'dp-path 枚举全部 \\(2^{20}\\) 条序列，dp-golds 仅统计金数，二者路径不同而结果相同。');
-          var d = A.task3.nstd20;
-          pending.push([dist, {
-            bars: true,
-            title: '任务 3：n = 20 时的常驻角色数分布',
-            categories: d.nstd.map(String),
-            xLabel: '常驻角色数 n_std', yLabel: '概率',
-            yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
-            tooltipFormatter: function (v) { return (v * 100).toFixed(2) + '%'; },
-            series: [
-              { name: 'dp-path', values: d['dp-path'], color: '#1f77b4' },
-              { name: 'dp-golds', values: d['dp-golds'], color: '#ff7f0e' }
-            ]
+            series: toSeries(A.task3, ['dp-path', 'dp-golds'], { fit: false, band: true }, A.colors),
+            tooltipFormatter: msFmt,
+            xTickFormatter: function (v) { return String(Math.round(v)); },
+            tooltipHeader: function (v) { return 'n = ' + Math.round(v); }
           }]);
 
           /* 容器已在文档中，可以初始化 */
           pending.forEach(function (item) {
             var el = item[0], opt = item[1];
-            if (opt.bars) ctx.charts.bars(el, opt);
-            else ctx.charts.curve(el, opt);
+            ctx.charts.curve(el, opt);
           });
         }
       }
@@ -225,9 +198,8 @@
 
   function cltOption(A, field, title, yLabel) {
     var clt = A.task1.clt;
-    var keys = Object.keys(clt.abs);
     var series = [];
-    keys.forEach(function (key, i) {
+    Object.keys(clt.rel).forEach(function (key, i) {
       var pts = [];
       for (var j = 0; j < clt.n.length; j++) {
         var v = clt[field][key][j];
