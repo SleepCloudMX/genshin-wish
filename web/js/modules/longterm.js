@@ -16,8 +16,7 @@
       N: N,
       nPre: nPre,
       nPost: N - nPre,
-      solver: C.makeLongSolver(
-        { nPre50: nPre, nPost50: N - nPre }, p.fast ? 'clt' : 'exact')
+      solver: C.makeLongSolver({ nPre50: nPre, nPost50: N - nPre }, 'exact')
     };
   }
 
@@ -29,7 +28,7 @@
            '最终贴近每 UP 的理论期望。5.0 版本前后机制不同——5.0 前是纯 50/50 加大保底，' +
            '5.0 后加入捕获明光，因此本页可分别指定两段的 UP 数量。' +
            '参数取自社区总结的模型，结果仅供参考。',
-    defaults: { N: 20, nPre: 0, fast: false },
+    defaults: { N: 20, nPre: 0 },
 
     controls: function () {
       return [
@@ -40,10 +39,6 @@
         {
           type: 'range', key: 'nPre', label: '5.0 前的 UP 数', min: 0, max: 100,
           step: 5, unit: ' 个', help: '按纯 50/50 加大保底计算'
-        },
-        {
-          type: 'switch', key: 'fast', label: '快速近似',
-          help: '用正态近似代替精确卷积，UP 数很大时可秒出结果'
         }
       ];
     },
@@ -112,14 +107,28 @@
             }],
             vLines: vLines,
             yTickFormatter: function (v) { return v.toFixed(0); },
-            tooltipFormatter: function (v) { return v.toFixed(1); }
+            tooltipFormatter: function (v) { return v.toFixed(1); },
+            tooltipHtml: function (i) {
+              var n = xs[i];
+              var bb = solver.bounds(n, 0.5);
+              var median = (bb[0] + bb[1]) / 2 / n;
+              var rows = [
+                ['理论均值', solver.muSingle.toFixed(2)],
+                ['中位数', median.toFixed(1)],
+                ['合计（中位）', Math.round(median * n) + ' 抽']
+              ];
+              BANDS.forEach(function (a) {
+                rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
+                           perUp[a][i].toFixed(1) + ' – ' + perUp[1 - a][i].toFixed(1)]);
+              });
+              return P.tip('前 ' + n + ' 个 UP · 抽/UP', rows);
+            }
           });
           host.appendChild(P.note('纵轴为前 n 个 UP 的总抽数除以 n。区间自内向外为 ' +
             '40%–60%、30%–70%、20%–80%、10%–90%、1%–99%；标注为 90% 分位。' +
             'UP 数越大，个体差异被平均得越彻底，区间收窄至理论均值附近。'));
-          ctx.setStatus((b.solver.method === 'clt' ? '正态近似' : '精确卷积') +
-            ' · ' + N + ' 个 UP（其中 5.0 前 ' + nPre + ' 个）· 理论均值 ' +
-            solver.muSingle.toFixed(2) + ' 抽/UP');
+          ctx.setStatus('精确卷积 · ' + N + ' 个 UP（其中 5.0 前 ' + nPre +
+            ' 个）· 理论均值 ' + solver.muSingle.toFixed(2) + ' 抽/UP');
         }
       },
 
@@ -160,8 +169,8 @@
                                  ' 抽（5.0 前为 93.75 抽）。' : '')
           });
           UI.math.typeset(host);
-          ctx.setStatus((solver.method === 'clt' ? '正态近似' : '精确卷积') +
-            ' · 共 ' + labels.length + ' 行 · 理论均值 ' + solver.muSingle.toFixed(2) + ' 抽/UP');
+          ctx.setStatus('精确卷积 · 共 ' + labels.length + ' 行 · 理论均值 ' +
+            solver.muSingle.toFixed(2) + ' 抽/UP');
         }
       }
     }

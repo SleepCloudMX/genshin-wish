@@ -243,7 +243,17 @@
               y: 160, color: '#d62728', text: '极限大保底 160 抽/UP', pos: 'insideStartTop'
             }],
             yTickFormatter: function (v) { return v.toFixed(0); },
-            tooltipFormatter: function (v) { return v.toFixed(1); }
+            tooltipFormatter: function (v) { return v.toFixed(1); },
+            tooltipHtml: function (i) {
+              var n = xs[i];
+              var rows = [['期望', exps[i].toFixed(1)],
+                          ['合计抽数', Math.round(exps[i] * n) + ' 抽']];
+              FAN_ALPHAS.forEach(function (a) {
+                rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
+                           bounds[a][i].toFixed(1) + ' – ' + bounds[1 - a][i].toFixed(1)]);
+              });
+              return P.tip('第 ' + n + ' 个 UP · 抽/UP', rows);
+            }
           });
           host.appendChild(P.note('纵轴为抽到第 n 个 UP 的总抽数除以 n。' +
             '区间自内向外依次为 40%–60%、30%–70%、20%–80%、10%–90%、1%–99%。'));

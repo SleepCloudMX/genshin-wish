@@ -45,6 +45,15 @@
       host.innerHTML = '<p class="viewerror">' + msg + '</p>';
     },
 
+    /* 悬浮框内容：标题 + 两列读数 */
+    tip: function (title, rows) {
+      var html = '<p class="tip__t">' + title + '</p><table class="tip__table">';
+      rows.forEach(function (r) {
+        html += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>';
+      });
+      return html + '</table>';
+    },
+
     pct: function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + '%'; },
 
     /* 概率百分数：越靠近 0 或 100 越需要有效位数——

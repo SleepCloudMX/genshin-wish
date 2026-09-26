@@ -410,6 +410,15 @@ input[type="range"] {
 
 .viewerror { padding: var(--sp-5); color: var(--warn); font-size: var(--fs-sm); }
 
+/* 图表悬浮框里的读数表（由 ui/panels.js 的 P.tip 生成，渲染在 ECharts 的浮层内） */
+.tip__t { margin-bottom: var(--sp-1); font-weight: 600; }
+.tip__table { border-collapse: collapse; font-family: var(--mono); font-size: var(--fs-xs); }
+.tip__table th {
+  padding: 1px 8px 1px 0; font-weight: 500;
+  color: var(--text-dim); text-align: left; white-space: nowrap;
+}
+.tip__table td { padding: 1px 0; text-align: right; font-variant-numeric: tabular-nums; }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
   min-height: 38px; padding: 0 var(--sp-4);

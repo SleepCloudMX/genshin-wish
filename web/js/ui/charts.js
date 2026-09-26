@@ -349,18 +349,20 @@
     var x = opt.x || [];
     var cats = x.map(function (v) { return String(v); });
     var series = [], legendNames = [];
+    /* 自定义 tooltip 时不给系列屏蔽：轴触发的浮层需要至少一条系列参与，否则整块不显示 */
+    function mute() { return opt.tooltipHtml ? {} : { show: false }; }
 
     (opt.regions || []).forEach(function (rg) {
       var key = 'rg' + series.length;
       var color = resolveColor(rg.color, t, 0.2);
       series.push({
         name: key + '_lo', type: 'line', stack: key, silent: true, symbol: 'none',
-        step: rg.step || false, tooltip: { show: false },
+        step: rg.step || false, tooltip: mute(),
         lineStyle: { opacity: 0 }, data: rg.lo
       });
       series.push({
         name: rg.name || key, type: 'line', stack: key, silent: true,
-        symbol: 'none', step: rg.step || false, tooltip: { show: false },
+        symbol: 'none', step: rg.step || false, tooltip: mute(),
         showInLegend: false,
         lineStyle: { opacity: 0, color: color },
         itemStyle: { color: color },
@@ -374,7 +376,7 @@
       var color = resolveColor(st.color, t, 0.2);
       series.push({
         name: st.name, type: 'line', stack: 'stackTotal', symbol: 'none',
-        tooltip: { show: false },
+        tooltip: mute(),
         lineStyle: { opacity: 0, color: color },
         itemStyle: { color: color },
         areaStyle: { color: color, opacity: st.opacity === undefined ? 0.85 : st.opacity },
@@ -491,6 +493,13 @@
       tooltip: {
         trigger: 'axis', confine: true, backgroundColor: t.surface,
         borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
+        /* tooltipHtml(dataIndex)：区间图的读数无法由单条系列表达，交给模块拼装 */
+        formatter: opt.tooltipHtml
+          ? function (params) {
+              var list = params instanceof Array ? params : [params];
+              return opt.tooltipHtml(list[0].dataIndex);
+            }
+          : undefined,
         valueFormatter: opt.tooltipFormatter
       },
       legend: showLegend ? {
