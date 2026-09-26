@@ -78,7 +78,8 @@
     var qs = Object.keys(params).filter(function (k) {
       return params[k] !== undefined && params[k] !== null && params[k] !== '';
     }).map(function (k) {
-      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      var v = typeof params[k] === 'boolean' ? (params[k] ? '1' : '0') : params[k];
+      return encodeURIComponent(k) + '=' + encodeURIComponent(v);
     }).join('&');
     var path = moduleId ? moduleId + (viewId ? '/' + viewId : '') : '';
     return '#/' + path + (qs ? '?' + qs : '');
@@ -251,13 +252,20 @@
     stage.appendChild(page);
   }
 
+  /* 默认视图：模块可显式声明 defaultView，未声明时取 views 的第一项
+     （导航链接指向 #/<模块>，没有视图段，必须能落回一个确定的视图） */
+  function defaultViewOf(mod) {
+    return mod.defaultView || Object.keys(mod.views)[0];
+  }
+
   function renderModule(stage, mod, viewId, params) {
     /* 重置、切视图都会重新进这里，必须先清空，否则页面会一层层叠加 */
     W.ui.charts.disposeAll();
     stage.textContent = '';
     renderNav(mod.id);
-    var view = mod.views[viewId] || mod.views[mod.defaultView];
-    app.viewId = view === mod.views[viewId] ? viewId : mod.defaultView;
+    var fallback = defaultViewOf(mod);
+    var view = mod.views[viewId] || mod.views[fallback];
+    app.viewId = view === mod.views[viewId] ? viewId : fallback;
 
     /* layout: 'doc' 的模块（纯文档）收窄容器，避免全宽卡片里只有左侧半行文字 */
     var page = el('div', 'page' + (mod.layout === 'doc' ? ' page--doc' : ''));
@@ -353,7 +361,7 @@
   function redraw(mod, viewHost, status) {
     W.ui.charts.disposeDetached();
     viewHost.textContent = '';
-    var view = mod.views[app.viewId] || mod.views[mod.defaultView];
+    var view = mod.views[app.viewId] || mod.views[defaultViewOf(mod)];
     var t0 = performance.now();
     var ms = function () { return (performance.now() - t0).toFixed(1); };
     try {
@@ -429,7 +437,7 @@
 
     app.moduleId = id;
     app.params = coerce(mod.defaults, r.query);
-    var viewId = r.segs[1] && mod.views[r.segs[1]] ? r.segs[1] : mod.defaultView;
+    var viewId = r.segs[1] && mod.views[r.segs[1]] ? r.segs[1] : defaultViewOf(mod);
     app.viewId = viewId;
     renderModule(stage, mod, viewId, app.params);
   }
