@@ -143,7 +143,7 @@
     renderNav('');
     var page = el('div', 'page');
     page.appendChild(el('header', 'page__head',
-      '<h1>原神抽卡概率计算器</h1>' +
+      '<h1>原神抽卡概率</h1>' +
       '<p class="page__intro">本工具给出角色池与武器池的抽数分布，' +
       '用于估算抽到目标数量所需的抽数区间，含捕获明光与武器定轨机制。</p>'));
 

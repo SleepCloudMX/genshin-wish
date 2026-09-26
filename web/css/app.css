@@ -118,7 +118,8 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
 }
 
-.topbar__menu { display: none; }
+/* 侧栏常驻时这个按钮无处可去；只在窄屏（.iconbtn 的 display 之后声明）出现 */
+.iconbtn.topbar__menu { display: none; }
 
 .brand {
   display: flex; align-items: baseline; gap: var(--sp-2);
@@ -542,7 +543,7 @@ input[type="range"] {
 @media (max-width: 1024px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
   .topbar { padding: 0 var(--sp-4); }
-  .topbar__menu { display: inline-flex; }
+  .iconbtn.topbar__menu { display: inline-flex; }
   .sidenav {
     position: fixed; top: var(--topbar-h); left: 0; z-index: 45;
     width: 260px; background: var(--surface);
