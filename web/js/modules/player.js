@@ -14,6 +14,15 @@
     { a: 0.2, color: '#4292c6' }, { a: 0.3, color: '#2171b5' },
     { a: 0.4, color: '#084594' }
   ];
+  /* 参考分位线：上下对称，配色与图中的虚线一致 */
+  var REF_ALPHAS = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99];
+
+  function refColor(a) {
+    var lo = a > 0.5 ? 1 - a : a;
+    var hit = '#555555';
+    REF_LINES.forEach(function (r) { if (Math.abs(r.a - lo) < 1e-9) hit = r.color; });
+    return hit;
+  }
 
   function stateOf(p) {
     return C.makeCharacterState({
@@ -38,11 +47,12 @@
       return C.makeDistribution(S.convolve(pre.pdf, post.pdf));
     }
 
-    var cumulativePct = [], refMedians = [];
+    var cumulativePct = [], refPulls = {};
+    REF_ALPHAS.forEach(function (al) { refPulls[al] = []; });
     for (var i = 0; i < n; i++) {
       var d = distFor(i + 1);
       cumulativePct.push(d.probability(parsed.cumulative[i]) * 100);
-      refMedians.push(d.quantile(0.5));
+      REF_ALPHAS.forEach(function (al) { refPulls[al].push(d.quantile(al)); });
     }
 
     /* 逐次分位：按记录倒推每抽之前的状态 */
@@ -69,7 +79,7 @@
     return {
       parsed: parsed, n: n, nPre: nPre, nPost: n - nPre,
       cumulativePct: cumulativePct, marginalPct: marginalPct,
-      refMedians: refMedians, distFor: distFor
+      refPulls: refPulls, distFor: distFor
     };
   }
 
@@ -128,23 +138,44 @@
           if (!a) return;
           var parsed = a.parsed;
 
-          var xs = [], labels = [];
-          for (var i = 0; i < a.n; i++) {
-            xs.push(i + 1);
-            if (a.n <= 20 || i === 0 || i === a.n - 1) {
-              labels.push({ i: i, y: a.cumulativePct[i],
-                            text: a.cumulativePct[i].toFixed(1) + '%',
-                            color: '#27ae60', pos: 'bottom' });
+          var xs = [], labels = [], nodeLabels = [];
+          for (var i = 0; i < a.n; i++) xs.push(i + 1);
+
+          /* 参考线上的抽数读数：n 大时抽稀，避免压字 */
+          var step = a.n <= 20 ? 1 : Math.ceil(a.n / 12);
+          REF_ALPHAS.forEach(function (al) {
+            for (var j = 0; j < a.n; j += step) {
+              labels.push({
+                i: j, y: al * 100, text: String(a.refPulls[al][j]),
+                color: refColor(al), size: 9, bg: false,
+                pos: al > 0.9 ? 'bottom' : 'top'
+              });
+            }
+            if ((a.n - 1) % step !== 0) {
+              labels.push({
+                i: a.n - 1, y: al * 100, text: String(a.refPulls[al][a.n - 1]),
+                color: refColor(al), size: 9, bg: false,
+                pos: al > 0.9 ? 'bottom' : 'top'
+              });
+            }
+          });
+
+          for (var k = 0; k < a.n; k++) {
+            if (a.n <= 20 || k === 0 || k === a.n - 1) {
+              nodeLabels.push({ i: k, y: a.cumulativePct[k],
+                                text: a.cumulativePct[k].toFixed(1) + '%',
+                                color: '#27ae60', pos: 'bottom' });
             }
           }
 
+          /* 参考线落在纵轴刻度上（10% 的整数倍），不再另标文字，免得压住线上的读数 */
           var hLines = REF_LINES.map(function (r) {
-            return { y: r.a * 100, color: r.color, text: Math.round(r.a * 100) + '%' };
+            return { y: r.a * 100, color: r.color };
           }).concat(REF_LINES.map(function (r) {
             return { y: 100 - r.a * 100, color: r.color };
-          })).concat([{ y: 50, color: '#555555', text: '50%', pos: 'insideStartTop' }]);
+          })).concat([{ y: 50, color: '#555555' }]);
 
-          var chart = P.chart(host);
+          var chart = P.chart(host, 'player');
           var total = parsed.cumulative[parsed.cumulative.length - 1];
           var wins = parsed.isDirectWin.filter(Boolean).length;
           host.appendChild(P.statRow([
@@ -154,25 +185,50 @@
             ['当前百分位', P.pct(a.cumulativePct[a.n - 1] / 100)]
           ]));
 
+          var vLines = [];
+          if (a.nPre > 0 && a.nPre < a.n) {
+            vLines.push({ i: a.nPre, y0: 0, y1: 102, color: '#e74c3c', text: '5.0 分界' });
+          }
+
           ctx.charts.regions(chart, {
             x: xs,
             xLabel: '第几个 UP',
             yLabel: '比多少玩家非',
             yMin: 0,
             yMax: 102,
-            legend: false,
-            lines: [{
-              name: '玩家记录', y: a.cumulativePct, color: '#27ae60', width: 2.4,
-              symbolSize: 7
-            }],
-            labels: labels,
+            yInterval: 10,
+            lines: [
+              { name: '累计百分位', y: a.cumulativePct, color: '#27ae60', width: 2.4,
+                symbolSize: 7 },
+              { name: '本次分位', y: a.marginalPct, color: '#1e8449', width: 1.4,
+                dash: true, symbolSize: 4, opacity: 0.75 }
+            ],
+            labels: labels.concat(nodeLabels),
+            vLines: vLines,
             hLines: hLines,
             yTickFormatter: function (v) { return v.toFixed(0) + '%'; },
-            tooltipFormatter: function (v) { return v.toFixed(1) + '%'; }
+            tooltipFormatter: function (v) { return v.toFixed(1) + '%'; },
+            tooltipHtml: function (i) {
+              var rows = [
+                ['累计抽数', parsed.cumulative[i] + '抽'],
+                ['累计分位', a.cumulativePct[i].toFixed(1) + '%'],
+                ['本次抽数', parsed.perUp[i] + '抽'],
+                ['本次分位', '非于 ' + a.marginalPct[i].toFixed(0) + '%']
+              ];
+              var bands = REF_LINES.map(function (r) {
+                return {
+                  label: Math.round(r.a * 100) + '%–' + Math.round((1 - r.a) * 100) + '%',
+                  color: r.color,
+                  lo: a.refPulls[r.a][i],
+                  hi: a.refPulls[1 - r.a][i]
+                };
+              });
+              return P.tipBands('第 ' + xs[i] + ' 个 UP · 同期所需抽数', rows, bands);
+            }
           });
           host.appendChild(P.note('曲线为该 UP 数量下的累计百分位：纵值 70% 表示同期有 70% 的玩家' +
-            '所需抽数比你少。横线为对称分位参考（1/99、10/90、20/80、30/70、40/60）与中位数。' +
-            '悬停可查看同期中位数所需抽数。'));
+            '所需抽数比你少；虚线为本次单独一次出金的分位。横线与线上的数字为同期各分位' +
+            '所需的抽数（对称参考 1/99、10/90、20/80、30/70、40/60 与中位数）。悬停可查看逐次对照。'));
           ctx.setStatus('合计 ' + total + ' 抽 · 未歪 ' + wins + ' 次 / 共 ' + a.n + ' 个 UP' +
                         (a.nPre > 0 ? ' · 前 ' + a.nPre + ' 个按 5.0 前机制' : ''));
         }

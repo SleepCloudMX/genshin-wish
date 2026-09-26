@@ -413,6 +413,7 @@
 
     (opt.lines || []).forEach(function (ln) {
       var color = resolveColor(ln.color, t, 0.25);
+      var alpha = ln.opacity === undefined ? 1 : ln.opacity;
       series.push({
         name: ln.name, type: 'line',
         symbol: ln.symbol === false ? 'none' : 'circle',
@@ -421,9 +422,9 @@
         data: ln.y,
         lineStyle: {
           color: color, width: ln.width === undefined ? 2 : ln.width,
-          type: ln.dash ? 'dashed' : 'solid'
+          type: ln.dash ? 'dashed' : 'solid', opacity: alpha
         },
-        itemStyle: { color: color },
+        itemStyle: { color: color, opacity: alpha },
         label: ln.labels ? {
           show: true, position: ln.labels.pos || 'top', fontSize: 10,
           fontFamily: MONO, fontWeight: ln.labels.weight || 'normal',
@@ -450,17 +451,21 @@
     });
 
     if (opt.labels && opt.labels.length) {
+      /* 符号本身用透明色隐藏：itemStyle.opacity 会被标注文字继承，把字也一起抹掉 */
       series.push({
-        type: 'scatter', silent: true, z: 7, symbolSize: 1, itemStyle: { opacity: 0 },
+        type: 'scatter', silent: true, z: 7, symbolSize: 1,
+        itemStyle: { color: 'transparent', borderWidth: 0 },
         tooltip: { show: false },
         data: opt.labels.map(function (l) {
+          /* bg:false 的标注不铺底色（密集的参考读数铺底色会互相盖住） */
           return {
             value: [l.i, l.y],
             label: {
               show: true, formatter: l.text, position: l.pos || 'top',
               color: resolveColor(l.color, t, 0.25), fontSize: l.size || 11,
               fontFamily: MONO, fontWeight: l.weight || 'normal',
-              backgroundColor: t.surface, padding: [2, 4], borderRadius: 3
+              backgroundColor: l.bg === false ? 'transparent' : t.surface,
+              padding: l.bg === false ? 0 : [2, 4], borderRadius: 3
             }
           };
         })
@@ -547,7 +552,7 @@
         type: 'value', name: opt.yLabel,
         nameLocation: 'middle', nameGap: 44,
         nameTextStyle: { color: t.dim, fontSize: 12 },
-        min: opt.yMin, max: opt.yMax,
+        min: opt.yMin, max: opt.yMax, interval: opt.yInterval,
         axisLine: { show: false }, axisTick: { show: false },
         axisLabel: {
           color: t.dim, fontSize: 11, fontFamily: MONO, formatter: opt.yTickFormatter
