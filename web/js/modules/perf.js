@@ -106,6 +106,7 @@
     id: 'perf',
     title: '性能与验证',
     group: '关于',
+    math: true,
     intro: '五种精确算法与 CLT 近似的实测耗时与近似误差，以及两种独立算法的交叉验证结果。',
     defaultView: 'doc',
     defaults: {},
@@ -136,8 +137,8 @@
           heading(box, '速度对比（任务 1：n 个 UP 所需抽数）');
           var full = chartBox(box, '以 n = 500 为例，dp-golds 耗时 ' +
             pickTime(A, 'dp-golds') + '，dp-state 耗时 ' + pickTime(A, 'dp-state') +
-            '，CLT 可忽略。dp-golds 的拟合指数接近 2，与 O(n²) 相符；' +
-            'dp-path 的指数底数接近 2，与 O(2ⁿ) 相符。', 'chart--tall');
+            '，CLT 可忽略。dp-golds 的拟合指数接近 2，与 \\(O(n^2)\\) 相符；' +
+            'dp-path 的指数底数接近 2，与 \\(O(2^n)\\) 相符。', 'chart--tall');
           pending.push([full, {
             xType: 'log', yType: 'log',
             xLabel: 'UP 数 n', yLabel: '耗时 (ms)',
@@ -189,7 +190,7 @@
           /* --- n=20 分布（两种方法互相印证） --- */
           heading(box, '两种方法的互相印证');
           var dist = chartBox(box, 'n = 20 时歪出常驻角色数量的分布。两种方法的柱高完全一致：' +
-            'dp-path 枚举全部 2²⁰ 条序列，dp-golds 仅统计金数，二者路径不同而结果相同。');
+            'dp-path 枚举全部 \\(2^{20}\\) 条序列，dp-golds 仅统计金数，二者路径不同而结果相同。');
           var d = A.task3.nstd20;
           pending.push([dist, {
             bars: true,

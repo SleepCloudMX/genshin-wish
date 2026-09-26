@@ -352,6 +352,7 @@
         status.className = 'statusbar' + (kind ? ' statusbar--' + kind : '');
       }
     });
+    if (mod.math) W.ui.math.typeset(viewHost);
     status.setAttribute('data-ms', (performance.now() - t0).toFixed(1));
   }
 
