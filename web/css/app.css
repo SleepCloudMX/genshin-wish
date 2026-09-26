@@ -302,30 +302,14 @@ a:hover { text-decoration: underline; }
   font-size: var(--fs-xs); color: var(--text-dim);
 }
 
-/* 首页「数据准确度」区块：左说明、右对照表，整行都利用起来 */
-.accuracy {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--sp-5);
-  align-items: start;
-  padding: var(--sp-5);
-}
+/* 首页「数据准确度」区块：一段说明，占满整行 */
+.accuracy { padding: var(--sp-5); }
 .accuracy h2 { font-size: var(--fs-lg); }
 .accuracy p {
   margin: var(--sp-3) 0 0;
-  max-width: 60ch;
   font-size: var(--fs-sm); color: var(--text-dim);
 }
-.accuracy__more { font-weight: 600; white-space: nowrap; }
-.accuracy__cmp { min-width: 300px; }
-.accuracy__cmp .dtable { font-size: var(--fs-sm); }
-.accuracy__cmp .dtable th, .accuracy__cmp .dtable td { padding: 6px var(--sp-3); }
-.accuracy__cmp .dtable thead th:first-child { visibility: hidden; }
-
-@media (max-width: 900px) {
-  .accuracy { grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
-  .accuracy__cmp { min-width: 0; }
-}
+.accuracy__more { margin-left: var(--sp-1); font-weight: 600; white-space: nowrap; }
 
 /* 首页「抽到 1 个限定」的双口径对比行 */
 .statcmp {

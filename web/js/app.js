@@ -152,8 +152,8 @@
     var stats = el('div', 'cardgrid');
     var C = W.core;
 
-    /* 官方只公布两个数字：综合出金概率 1.6%、综合不歪率 55%（长期平均）。
-       1.6% → 62.5 抽/金；不歪率 55% → 每 UP 需要 1/(2-0.55) = 1.45 个金。
+    /* 官方公布的综合概率：角色池出金 1.600%、综合不歪率 55.000%、武器池出金 1.850%。
+       1.600% → 62.5 抽/金；不歪率 55.000% → 每 UP 需要 1/(2-0.55) = 1.45 个金。
        无捕获明光时不歪率为 50% → 每 UP 1.5 个金。 */
     var OFFICIAL_PER_GOLD = 1 / 0.016;              /* 62.5 抽 */
     var OFFICIAL_PER_UP = OFFICIAL_PER_GOLD * 1.45; /* 90.625 抽 */
@@ -204,21 +204,11 @@
 
     var acc = el('section', 'card accuracy');
     acc.innerHTML =
-      '<div class="accuracy__text">' +
       '<h2>数据准确度</h2>' +
-      '<p>官方只公布了综合出金概率 1.6% 与综合不歪率 55%，没有公布逐抽概率。' +
-      '本站的逐抽参数取自社区总结的模型，与官方实现可能有出入，结果仅供参考。</p>' +
-      '<p><a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>' +
-      '</div>' +
-      '<div class="accuracy__cmp">' +
-      '<table class="dtable dtable--plain">' +
-      '<thead><tr><th>平均</th><th>官方口径</th><th>本站模型</th></tr></thead>' +
-      '<tbody>' +
-      '<tr><th>出一金</th><td>62.5 抽</td><td>' + modelPerGold.toFixed(1) + ' 抽</td></tr>' +
-      '<tr><th>一个限定</th><td>' + OFFICIAL_PER_UP.toFixed(2) + ' 抽</td><td>' +
-      one.expected.toFixed(2) + ' 抽</td></tr>' +
-      '</tbody></table>' +
-      '</div>';
+      '<p>官方只公布了角色池综合出金概率 1.600%、武器池 1.850%、角色池综合不歪率 55.000%，' +
+      '没有公布逐抽概率。本站的逐抽参数取自社区总结的模型，与官方实现存在少量出入' +
+      '（武器池比角色池更明显），结果仅供参考。' +
+      '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
     page.appendChild(acc);
 
     stage.appendChild(page);
