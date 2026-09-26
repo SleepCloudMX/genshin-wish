@@ -14,6 +14,13 @@
     return C.makeCharacterState({ pity: 0, consecutiveLoss: p.loss, guaranteed: false });
   }
 
+  /* 序列里的项数即要抽的 UP 数（空项不算） */
+  function seqCount(raw) {
+    return String(raw === undefined || raw === null ? '' : raw).split(',')
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 0; }).length;
+  }
+
   /* 分布 → 柱状图数据 */
   function barData(dist) {
     var maxR = 0, expected = 0;
@@ -61,17 +68,25 @@
       return [
         {
           type: 'range', key: 'nUp', label: '目标 UP 数', min: 1, max: 100, step: 1,
-          unit: ' 个', help: '含角色本体'
+          unit: ' 个', help: '含角色本体', views: ['bar', 'table']
         },
         {
           type: 'segmented', key: 'loss', label: '已连歪次数',
           options: [{ value: 0, label: '0' }, { value: 1, label: '1' },
-                    { value: 2, label: '2' }, { value: 3, label: '3' }]
+                    { value: 2, label: '2' }, { value: 3, label: '3' }],
+          views: ['bar', 'table']
         },
         {
-          type: 'text', key: 'seq', label: '中／歪序列',
-          help: '1 表示中、2 表示歪，逗号分隔；供「按序列」视图使用',
-          placeholder: SAMPLE
+          type: 'static', key: 'nUp', label: '目标 UP 数', views: ['seq'],
+          value: function (state) {
+            var n = seqCount(state.seq);
+            return n ? n + ' 个' : '—';
+          },
+          help: '由序列长度决定，不可修改'
+        },
+        {
+          type: 'text', key: 'seq', label: '中／歪序列', views: ['seq'],
+          help: '1 表示中、2 表示歪，逗号分隔', placeholder: SAMPLE
         }
       ];
     },
@@ -122,10 +137,10 @@
           var wins = seq.filter(function (v) { return v === 1; }).length;
           var data = barData(dist);
           host.appendChild(P.statRow([
-            ['序列长度', seq.length + ' 次'],
             ['中／歪', wins + ' / ' + (seq.length - wins)],
             ['不歪率', P.pct(wins / seq.length)],
-            ['期望触发次数', P.num(data.expected, 3)]
+            ['期望触发次数', P.num(data.expected, 3)],
+            ['最多触发', data.maxR + ' 次']
           ]));
           drawBars(P.chart(host), ctx, data);
           host.appendChild(P.note('序列 ' + seq.join(',') + '：对每次「中」按当前连歪状态折算明光概率' +

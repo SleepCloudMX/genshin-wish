@@ -263,7 +263,10 @@
     page.appendChild(el('header', 'page__head',
       '<h1>' + mod.title + '</h1><p class="page__intro">' + mod.intro + '</p>'));
 
-    var controls = mod.controls ? mod.controls(params) : [];
+    /* 控件可声明 views：只对列出的视图有意义（如明光的序列输入对次数分布无用） */
+    var controls = (mod.controls ? mod.controls(params) : []).filter(function (c) {
+      return !c.views || c.views.indexOf(app.viewId) >= 0;
+    });
     var hasControls = controls.length > 0;
     var grid = el('div', 'stage-grid' + (hasControls ? '' : ' stage-grid--wide'));
     var colMain = el('div', 'col-main');
@@ -338,6 +341,7 @@
     inspector.appendChild(head);
 
     var controlHost = el('div', 'inspector__body');
+    app.controlHost = controlHost;
     inspector.appendChild(controlHost);
     var copy = el('button', 'btn btn--block', ICONS.link + '<span>复制当前链接</span>');
     copy.type = 'button';
@@ -390,6 +394,7 @@
       status.className = 'statusbar statusbar--warn';
     }
     if (mod.math) W.ui.math.typeset(viewHost);
+    W.ui.controls.refresh(app.controlHost, app.params);
     status.setAttribute('data-ms', ms());
   }
 

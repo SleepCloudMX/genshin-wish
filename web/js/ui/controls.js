@@ -96,6 +96,17 @@
       return wrap;
     }
 
+    /* 只读值：由其他参数推导，供用户核对，不接受输入 */
+    if (spec.type === 'static') {
+      wrap.appendChild(labelFor(spec, null));
+      var ro = doc.createElement('p');
+      ro.className = 'field__readonly';
+      ro.textContent = spec.value(state);
+      wrap.appendChild(ro);
+      wrap.__static = { spec: spec, el: ro };
+      return wrap;
+    }
+
     if (spec.type === 'switch') {
       var row = doc.createElement('label');
       row.className = 'switch';
@@ -129,7 +140,19 @@
   UI.controls = {
     build: function (host, specs, state, onChange) {
       host.textContent = '';
-      specs.forEach(function (spec) { host.appendChild(field(spec, state, onChange)); });
+      host.__statics = [];
+      specs.forEach(function (spec) {
+        var f = field(spec, state, onChange);
+        if (f.__static) host.__statics.push(f.__static);
+        host.appendChild(f);
+      });
+    },
+
+    /* 重画时刷新只读值（参数面板不重建） */
+    refresh: function (host, state) {
+      ((host && host.__statics) || []).forEach(function (s) {
+        s.el.textContent = s.spec.value(state);
+      });
     }
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
