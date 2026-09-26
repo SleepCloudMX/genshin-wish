@@ -107,6 +107,18 @@ a:hover { text-decoration: underline; }
 }
 .skip:focus { top: var(--sp-2); }
 
+/* --- 误差提示条 ----------------------------------------------------------- */
+.notice {
+  display: flex; align-items: flex-start; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-6);
+  background: color-mix(in srgb, var(--warn) 9%, var(--bg));
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs); color: var(--text-dim);
+}
+.notice__icon { flex: none; margin-top: 3px; color: var(--warn); }
+.notice b { color: var(--text); font-weight: 600; }
+.notice a { font-weight: 600; }
+
 /* --- 顶栏 ---------------------------------------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 40;
@@ -404,6 +416,40 @@ input[type="range"] {
 }
 .dtable__corner { background: var(--surface); }
 .dtable tbody tr:hover td { filter: brightness(.97); }
+
+/* --- 说明页排版 ----------------------------------------------------------- */
+.stage-grid--wide { grid-template-columns: minmax(0, 1fr); }
+
+.disclaimer {
+  padding-left: var(--sp-1);
+  font-size: var(--fs-xs); color: var(--text-dim);
+}
+
+.prose { max-width: 78ch; }
+.prose h2 {
+  margin: var(--sp-6) 0 var(--sp-3);
+  padding-bottom: var(--sp-2);
+  font-size: var(--fs-lg);
+  border-bottom: 1px solid var(--border);
+}
+.prose h2:first-child { margin-top: var(--sp-1); }
+.prose p { margin: var(--sp-3) 0; font-size: var(--fs-sm); }
+.prose ul, .prose ol { margin: var(--sp-3) 0; padding-left: 1.4em; font-size: var(--fs-sm); }
+.prose li { margin: var(--sp-2) 0; }
+.prose li::marker { color: var(--gold); font-weight: 600; }
+.prose b { font-weight: 650; }
+.prose code {
+  padding: 1px 5px;
+  font-family: var(--mono); font-size: .92em;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px;
+}
+.prose .tablewrap { margin: var(--sp-4) 0; }
+
+.dtable--plain { font-family: var(--font); font-variant-numeric: normal; }
+.dtable--plain th, .dtable--plain td { text-align: left; white-space: normal; line-height: 1.55; }
+.dtable--plain tbody th { width: 11em; font-weight: 600; color: var(--text); }
+.dtable--plain td { color: var(--text); }
+.dtable--plain .is-note { color: var(--text-dim); font-size: var(--fs-xs); }
 
 /* --- 反馈与页脚 ----------------------------------------------------------- */
 .toast {

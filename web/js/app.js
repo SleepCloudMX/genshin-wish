@@ -215,7 +215,9 @@
     page.appendChild(el('header', 'page__head',
       '<h1>' + mod.title + '</h1><p class="page__intro">' + mod.intro + '</p>'));
 
-    var grid = el('div', 'stage-grid');
+    var controls = mod.controls ? mod.controls(params) : [];
+    var hasControls = controls.length > 0;
+    var grid = el('div', 'stage-grid' + (hasControls ? '' : ' stage-grid--wide'));
     var colMain = el('div', 'col-main');
 
     var tabs = el('div', 'viewtabs');
@@ -235,14 +237,24 @@
       };
       tabs.appendChild(b);
     });
-    colMain.appendChild(tabs);
+    if (Object.keys(mod.views).length > 1) colMain.appendChild(tabs);
     colMain.appendChild(el('div', 'sr-only', mod.title + ' ' + view.label));
 
     var viewHost = el('section', 'card viewhost');
     var status = el('div', 'statusbar');
     colMain.appendChild(viewHost);
-    colMain.appendChild(status);
+    if (hasControls) colMain.appendChild(status);
+    colMain.appendChild(el('p', 'disclaimer',
+      '解析计算，无抽样误差；机制参数来自玩家统计，结果仅供参考 · ' +
+      '<a href="#/about">误差说明</a>'));
     grid.appendChild(colMain);
+
+    if (!hasControls) {
+      page.appendChild(grid);
+      stage.appendChild(page);
+      redraw(mod, viewHost, status);
+      return;
+    }
 
     var colParams = el('aside', 'col-params');
     var inspector = el('div', 'card inspector');
@@ -269,7 +281,7 @@
     page.appendChild(grid);
     stage.appendChild(page);
 
-    W.ui.controls.build(controlHost, mod.controls(app.params), app.params,
+    W.ui.controls.build(controlHost, controls, app.params,
       function (key, value, live) {
         app.params[key] = value;
         writeHash(mod.id, app.viewId, app.params, true);
