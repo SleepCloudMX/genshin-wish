@@ -18,16 +18,21 @@
     link: icon('<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>', 16),
 
     /* 导航图标：一页一个，取该页计算对象的形状——
-       人物／剑／人物+剑／∞（常驻）／两个人物（歪出几个）／闪电（触发）／
-       金币（出金）／趋势线（长期收敛）／时钟（历史记录）；
-       说明组：靶心（误差）／芯片（算法）／仪表（性能） */
+       人物（角色）／剑（武器）／人物+剑（两者合并）／一颗星（常驻池的"金"）／
+       人物+星（常驻五星角色）／闪电（明光触发）／三颗星（一次十连里的多金）／
+       趋势线（长期收敛）／时钟（历史记录）；
+       说明组：靶心（误差）／芯片（算法）／仪表（性能）
+       星用五角轮廓，细碎图案（点阵、圆内星）在 18px 下会糊成一团 */
     user: icon('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
     sword: icon('<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/>'),
     pair: icon('<circle cx="9" cy="7.5" r="3.2"/><path d="M3.8 19.8a5.2 5.2 0 0 1 10.4 0"/><path d="M20.6 3.6 14.4 9.8"/><path d="m13.1 8.5 2.6 2.6"/>'),
-    infinity: icon('<path d="M12 12c-2-2.67-4-5-6.5-5a4.5 4.5 0 1 0 0 9c2.5 0 4.5-2.33 6.5-5s4-5 6.5-5a4.5 4.5 0 1 1 0 9c-2.5 0-4.5-2.33-6.5-5Z"/>'),
-    users: icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    star: icon('<path d="M12 2.8 14.29 8.84 20.75 9.16 15.71 13.21 17.41 19.44 12 15.9 6.59 19.44 8.29 13.21 3.25 9.16 9.71 8.84Z"/>'),
+    userStar: icon('<circle cx="9.4" cy="8.6" r="3.4"/><path d="M3.5 20.4a5.9 5.9 0 0 1 11.8 0"/><path d="M18.4 3.6 19.4 6.22 22.2 6.36 20.02 8.13 20.75 10.84 18.4 9.3 16.05 10.84 16.78 8.13 14.6 6.36 17.4 6.22Z"/>'),
     bolt: icon('<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>'),
-    coins: icon('<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>'),
+    /* 三个金（一次十连里的多金） */
+    trio: icon('<path d="M4.2 7.8 5.24 10.57 8.19 10.7 5.88 12.55 6.67 15.4 4.2 13.76 1.73 15.4 2.52 12.55 0.21 10.7 3.16 10.57Z"/>' +
+               '<path d="M12 7.8 13.04 10.57 15.99 10.7 13.68 12.55 14.47 15.4 12 13.76 9.53 15.4 10.32 12.55 8.01 10.7 10.96 10.57Z"/>' +
+               '<path d="M19.8 7.8 20.84 10.57 23.79 10.7 21.48 12.55 22.27 15.4 19.8 13.76 17.33 15.4 18.12 12.55 15.81 10.7 18.76 10.57Z"/>'),
     trend: icon('<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>'),
     history: icon('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'),
     target: icon('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'),
@@ -42,10 +47,10 @@
       { id: 'char', icon: 'user', label: '角色池', ready: true },
       { id: 'weapon', icon: 'sword', label: '武器池', ready: true },
       { id: 'joint', icon: 'pair', label: '角色+武器', ready: true },
-      { id: 'std', icon: 'infinity', label: '常驻池', ready: true },
-      { id: 'nstd', icon: 'users', label: '常驻角色数', ready: true },
+      { id: 'std', icon: 'star', label: '常驻池', ready: true },
+      { id: 'nstd', icon: 'userStar', label: '常驻角色数', ready: true },
       { id: 'radiance', icon: 'bolt', label: '捕获明光', ready: true },
-      { id: 'multi-gold', icon: 'coins', label: '十连多金', ready: true },
+      { id: 'multi-gold', icon: 'trio', label: '十连多金', ready: true },
       { id: 'longterm', icon: 'trend', label: '长期欧非', ready: true },
       { id: 'player', icon: 'history', label: '个人记录', ready: true }
     ] },
