@@ -365,7 +365,17 @@
             stack: stack,
             legend: layers > 1,
             yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
-            tooltipFormatter: function (v) { return (v * 100).toFixed(1) + '%'; }
+            tooltipFormatter: function (v) { return (v * 100).toFixed(1) + '%'; },
+            tooltipHtml: function (i) {
+              var t = idx[i];
+              var rows = [];
+              for (var k = 0; k < layers; k++) {
+                rows.push([k === 0 ? '未获得 UP' : (k === 1 ? '1 个' : k + ' 个'),
+                           P.pct(Math.max(grid[k][t] - grid[k + 1][t], 0))]);
+              }
+              rows.push(['≥ ' + layers + ' 个', P.pct(grid[layers][t])]);
+              return P.tip('第 ' + t + ' 抽', rows);
+            }
           });
           host.appendChild(P.note('各层为「恰好持有 n 个限定角色」的玩家占比，随抽数累积此消彼长；' +
             (N > layers ? '超过 ' + layers + ' 个的部分合并计入最上层。'
@@ -448,7 +458,16 @@
             ],
             vLines: vLines,
             yTickFormatter: function (v) { return Number.isInteger(v) ? String(v) : ''; },
-            tooltipFormatter: function (v) { return typeof v === 'number' ? v.toFixed(1) : v; }
+            tooltipFormatter: function (v) { return typeof v === 'number' ? v.toFixed(1) : v; },
+            tooltipHtml: function (i) {
+              var rows = [['期望', expectation[i].toFixed(2) + ' 个'],
+                          ['中位数', bounds[0.5][i] + ' 个']];
+              [0.3, 0.1, 0.01].forEach(function (a) {
+                rows.push([Math.round(a * 100) + '%–' + Math.round((1 - a) * 100) + '%',
+                           bounds[a][i] + ' – ' + bounds[1 - a][i] + ' 个']);
+              });
+              return P.tip('第 ' + index[i] + ' 抽', rows);
+            }
           });
           host.appendChild(P.note('期望线为前 ' + calcLimit + ' 个 UP 的达成概率累加：' +
             '\\(E[n]=\\sum_{k=1}^{' + calcLimit + '} P(\\geq k\\ \\text{个 UP})\\)。' +
