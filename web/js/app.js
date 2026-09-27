@@ -299,6 +299,9 @@
     W.ui.charts.disposeAll();
     stage.textContent = '';
     renderNav(mod.id);
+    /* 页脚的「机制误差」链接在机制误差页自身是自指，隐去 */
+    var flink = doc.getElementById('footer-about');
+    if (flink) flink.hidden = mod.id === 'about';
     var fallback = defaultViewOf(mod);
     var view = mod.views[viewId] || mod.views[fallback];
     app.viewId = view === mod.views[viewId] ? viewId : fallback;
