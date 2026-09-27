@@ -212,7 +212,9 @@ def weapon_up_distribution(
         epitomized_points=state.epitomized_points,
         prev_standard=state.prev_standard,
     )
-    pdfs = get_gold_pdfs(WEAPON_POOL)
+    # count_a 较大时需要的金数超过缓存表长，按需扩表（JS 侧同样传了 min_gold）
+    max_gold = max(weights.keys())
+    pdfs = get_gold_pdfs(WEAPON_POOL, min_gold=max(max_gold - 1, 1))
 
     # Weighted sum of multi-gold PDFs.
     # The first gold gets pity-shifted; remaining golds use full pdfs.
@@ -224,7 +226,6 @@ def weapon_up_distribution(
             0, 0,
         )
 
-    max_gold = max(weights.keys())
     if max_gold == 0:
         return WeaponUpDistribution(
             pdf=np.array([1.0], dtype=np.float64),
