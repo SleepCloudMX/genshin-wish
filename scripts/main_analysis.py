@@ -19,14 +19,15 @@ TASKS = {
     "1": ANALYSIS_DIR / "task1_n_up_to_pulls.py",
     "2": ANALYSIS_DIR / "task2_n_up_n_std_to_pulls.py",
     "3": ANALYSIS_DIR / "task3_n_up_to_n_std.py",
+    "4": ANALYSIS_DIR / "task4_pulls_to_joint.py",
 }
 
 
 def main() -> None:
     import argparse
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--tasks", default="1,2,3",
-                   help="Comma-separated task ids (default: 1,2,3)")
+    p.add_argument("--tasks", default="1,2,3,4",
+                   help="Comma-separated task ids (default: 1,2,3,4)")
     p.add_argument("--plot-only", action="store_true",
                    help="Skip computation, regenerate plots from data.json")
     p.add_argument("--error-bar", choices=["minmax", "std3", "none"],

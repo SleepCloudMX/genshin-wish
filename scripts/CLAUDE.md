@@ -18,6 +18,7 @@
 | `analysis/task1_n_up_to_pulls.py` | A组：五种方法速度对比 + CLT 精度验证，支持 `--fit` 斜率拟合 | `output/analysis/task1-n_up-to-pulls/` | 开发分析 |
 | `analysis/task2_n_up_n_std_to_pulls.py` | B组：dp-path vs dp-golds 条件分布 | `output/analysis/task2-n_up-n_std-to-pulls/` | 开发分析 |
 | `analysis/task3_n_up_to_n_std.py` | C组：dp-path vs dp-golds n_std 分布 | `output/analysis/task3-n_up-to-n_std/` | 开发分析 |
+| `analysis/task4_pulls_to_joint.py` | D组：金数分解（给定抽数 → 联合分布）耗时，对照逐抽递推；JS 侧由 `web/dev/bench-pulls-joint.js` 实测 | `output/analysis/task4-pulls-to-joint/` | 开发分析 |
 | `analysis/clt_error.py` | CLT 近似误差分析 (N=1..100) | `output/analysis/clt-error/` | ~~DEPRECATED~~ |
 | `analysis/solver_compare.py` | 多 solver 精度/速度/收敛对比 (N=1..100) | `output/analysis/solver-compare/` | ~~DEPRECATED~~ |
 | `analysis/up_dist_methods.py` | 方案一/二/三性能对比与精度验证 | `output/analysis/up_dist_methods/` | ~~DEPRECATED~~ |
