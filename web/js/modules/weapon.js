@@ -35,13 +35,18 @@
            '第 63–73 抽每抽递增 7 个百分点，第 74–79 抽每抽递增 3.5 个百分点，第 80 抽必出金；' +
            '出金时 37.5% 为定轨目标、37.5% 为另一把限定、25% 为常驻，未中目标时命定值 +1，' +
            '命定值满则下一金必为目标。参数取自社区总结的模型，结果仅供参考。',
-    defaults: { countA: 1, ep: 0, pity: 0, prevStd: false },
+    defaults: { countA: 1, ep: 0, pity: 0, prevStd: false, pulls: 1000 },
 
     controls: function () {
       return [
         {
           type: 'range', key: 'countA', label: '目标武器数量', min: 1, max: 5, step: 1,
-          unit: ' 把', help: '定轨不取消，抽到为止'
+          unit: ' 把', views: ['cdf', 'pdf', 'table'], help: '定轨不取消，抽到为止'
+        },
+        {
+          type: 'number', key: 'pulls', label: '抽数', min: 1,
+          max: C.LIMITS.pullsMax, step: 1, views: ['gold'],
+          help: '给定抽数下能抽到几把定轨目标'
         },
         {
           type: 'segmented', key: 'ep', label: '命定值',
@@ -152,34 +157,43 @@
         }
       },
 
-      weights: {
+      gold: {
         label: '金数分布',
         render: function (host, ctx) {
           var p = ctx.state;
-          var weights = C.weaponTargetWeights(p.countA, p.ep, p.prevStd);
-          var maxGold = weights.length - 1;
-          var cats = [], vals = [];
-          var expected = 0, total = 0;
-          for (var g = 1; g <= maxGold; g++) {
-            cats.push(g + ' 金');
-            vals.push(weights[g]);
-            expected += g * weights[g];
-            total += weights[g];
+          var t0 = performance.now();
+          var joint = C.weaponPullsJointDistribution(stateOf(p), p.pulls);
+          var spec = P.barSpec(joint);
+          var rules = P.BAR_RULES;
+
+          var eA = 0, eOther = 0, mode = 0, u, s;
+          for (u = 0; u < joint.upMarginal.length; u++) {
+            eA += u * joint.upMarginal[u];
+            if (joint.upMarginal[u] > joint.upMarginal[mode]) mode = u;
+            for (s = 0; s < joint.matrix[u].length; s++) eOther += s * joint.matrix[u][s];
           }
 
           var chart = P.chart(host);
-          ctx.charts.bars(chart, {
-            categories: cats,
-            xLabel: '消耗金数',
-            yLabel: '概率',
-            series: [{ name: '达到目标所需金数', values: vals, color: C.COLORS.primary, maxWidth: 40 }],
-            valueLabels: { show: true, formatter: function (pr) { return (pr.value * 100).toFixed(1) + '%'; } },
-            yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
-            tooltipFormatter: function (v) { return (v * 100).toFixed(2) + '%'; }
+          host.appendChild(P.statRow([
+            ['期望目标数', P.num(eA, 2)],
+            ['期望歪出数', P.num(eOther, 2)],
+            ['合计金数', P.num(eA + eOther, 2)],
+            ['最可能目标数', mode + ' 把']
+          ]));
+          P.stackBars(ctx, chart, spec.bars, {
+            xLabel: '抽到的定轨目标数',
+            agg: function (b) { return '目标 ' + b.label + ' 把（不细分歪出数）'; },
+            total: function (b) { return '恰好 ' + b.label + ' 把定轨目标'; },
+            seg: function (sg) { return '歪出 ' + sg.s + ' 个'; }
           });
-          host.appendChild(P.note('达到目标所需的抽数取决于消耗的金数：先按此分布定金数，' +
-            '再按每金的抽数分布合成，即 CDF 视图的曲线。'));
-          ctx.setStatus('平均消耗 ' + expected.toFixed(2) + ' 金／目标 · 概率和 ' + total.toFixed(3));
+          host.appendChild(P.note('柱高为恰好抽到 n 把定轨目标的概率，柱内按歪出的五星数分色' +
+            '（同一歪出数在各柱同色）。歪出的可能是另一把限定或常驻：未中目标会使命定值 +1、' +
+            '下一金必为目标，歪出常驻还会让下一金必为限定。概率不足 0.01% 的目标数不单独画柱，' +
+            (spec.merged ? '超过 ' + rules.maxBars + ' 根时只留概率之和最大的连续 ' +
+                           (rules.maxBars - 2) + ' 项，' : '') +
+            '两端分别并入「< n」「> m」两根（不细分歪出数，含区间外不足 0.01% 的部分）。'));
+          ctx.setStatus(p.pulls + ' 抽 · ' + spec.bars.length + ' 根柱子 · 用时 ' +
+                        (performance.now() - t0).toFixed(0) + 'ms');
         }
       },
 

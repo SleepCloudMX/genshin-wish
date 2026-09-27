@@ -70,6 +70,64 @@
     return d;
   };
 
+  /* --- 武器池：给定抽数下（目标数, 歪出五星数）的联合分布 ---
+   * 与角色池同理：出金时刻由 pity 过程决定，与「每金是目标 / 另一把限定 / 常驻」独立。
+   * 对应 weapon.py 的 weapon_pulls_joint_distribution。 */
+
+  /* D[g][u] = P(前 g 个金中恰有 u 个是定轨目标)。
+     状态 = (命定值, 上一金为常驻)：命定值满则必为目标；常驻保底生效时池中只有两把限定
+     （各半）；否则 37.5% 目标 / 37.5% 另一把限定 / 25% 常驻。得到目标后状态归零，
+     得到另一把限定 → 命定值 +1，得到常驻 → 命定值 +1 且常驻保底生效。 */
+  C.weaponLabelChain = function (gMax, ep, prevStd) {
+    var P_A = 0, P_B = 1, P_S = 2;
+    var label = [
+      [[0.375, 0.375, 0.25], [0.5, 0.5, 0.0]],   /* 命定值 0：[上金为限定, 上金为常驻] */
+      [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]         /* 命定值 1：无论上金为何，下一金必为目标 */
+    ];
+    /* 状态编号 = ep * 2 + prevStd；后继：目标 → 0，另一把限定 → 2，常驻 → 3 */
+    var next = [0, -1, 2, 3];
+    var A = [];
+    for (var st = 0; st < 4; st++) A.push(new Float64Array(gMax + 1));
+    A[ep * 2 + (prevStd ? 1 : 0)][0] = 1.0;
+
+    var D = [];
+    for (var g0 = 0; g0 <= gMax; g0++) D.push(new Float64Array(gMax + 1));
+    D[0][0] = 1.0;
+    for (var g = 1; g <= gMax; g++) {
+      var B = [];
+      for (var s1 = 0; s1 < 4; s1++) B.push(new Float64Array(gMax + 1));
+      for (var s2 = 0; s2 < 4; s2++) {
+        var src = A[s2];
+        var probs = label[s2 < 2 ? 0 : 1][s2 % 2];
+        if (probs[P_A]) {
+          var dstA = B[next[0]];
+          for (var u1 = 0; u1 < gMax; u1++) dstA[u1 + 1] += src[u1] * probs[P_A];
+        }
+        if (probs[P_B]) {
+          var dstB = B[next[2]];
+          for (var u2 = 0; u2 <= gMax; u2++) dstB[u2] += src[u2] * probs[P_B];
+        }
+        if (probs[P_S]) {
+          var dstS = B[next[3]];
+          for (var u3 = 0; u3 <= gMax; u3++) dstS[u3] += src[u3] * probs[P_S];
+        }
+      }
+      A = B;
+      for (var s3 = 0; s3 < 4; s3++) {
+        var row = A[s3], dst = D[g];
+        for (var u4 = 0; u4 <= g; u4++) dst[u4] += row[u4];
+      }
+    }
+    return D;
+  };
+
+  C.weaponPullsJointDistribution = function (state, pulls) {
+    if (pulls < 0) throw new RangeError('pulls 不能为负');
+    var pmf = C.gold.goldCountPmf('weapon', state.pity || 0, pulls);
+    var chain = C.weaponLabelChain(pmf.length - 1, state.epitomizedPoints, state.prevStandard);
+    return C.jointFromLabels(pmf, chain);
+  };
+
   /* --- 常驻池：纯出金分布 --- */
   C.standardDistribution = function (pity, nGold) {
     if (nGold <= 0) return makeDistribution(new Float64Array([1.0]));
