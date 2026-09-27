@@ -117,24 +117,6 @@
    * 出金时刻由 pity 过程决定，与「每金是 UP 还是常驻」相互独立，故可分解为
    * P(恰好 g 金 | P 抽) ⊗ 标记链 D[g][u]。对应 character.py 的 pulls_joint_distribution。 */
 
-  /* P(恰好 g 金 | pulls 抽)，g = 0..gMax（尾部概率 < eps 时截断）。
-     P(恰好 g 金) = P(T_g ≤ P) − P(T_{g+1} ≤ P)，T_g 由单金 PDF 逐次卷积得到。 */
-  C.goldCountPmf = function (pulls, pity, eps) {
-    if (eps === undefined) eps = 1e-15;
-    var pFirst = C.gold.getGoldPdfs('character')[1];
-    var dist = pity > 0 ? S.shiftedFirstGold(pFirst, pity) : Float64Array.from(pFirst);
-    var out = [], prev = 1.0;
-    for (var g = 0; g <= pulls + 1; g++) {
-      var n = Math.min(dist.length, pulls + 1), cur = 0;
-      for (var i = 0; i < n; i++) cur += dist[i];
-      out.push(Math.max(prev - cur, 0));
-      if (cur < eps) break;
-      dist = S.convolveTrunc(dist, pFirst, pulls + 1);
-      prev = cur;
-    }
-    return out;
-  };
-
   /* D[g][u] = P(前 g 个金中恰有 u 个 UP)。weights 非空时按 k_miss = 0..3 加权（稳态）。 */
   C.labelChain = function (gMax, kMiss, guaranteed, weights) {
     var pUp = C.CAPTURE_RADIANCE_WIN_RATE;
@@ -179,30 +161,33 @@
     return D;
   };
 
-  /* → { matrix[u][s], upMarginal[u] } */
-  C.pullsJointDistribution = function (state, pulls) {
-    if (pulls < 0) throw new RangeError('pulls 不能为负');
-    var pmf = C.goldCountPmf(pulls, state.pity || 0);
+  /* 金数分布 ⊗ 标记链 → { matrix[u][s], upMarginal[u] }（u = 目标数，s = 歪出数） */
+  C.jointFromLabels = function (pmf, chain) {
     var gMax = pmf.length - 1;
-    var chain = C.labelChain(gMax, state.consecutiveLoss,
-                             state.guaranteed, state.stable ? C.STABLE_P : null);
-
     var M = [];
-    for (var u = 0; u <= gMax; u++) M.push(new Float64Array(gMax + 2));
+    for (var u0 = 0; u0 <= gMax; u0++) M.push(new Float64Array(gMax + 2));
     for (var g = 0; g <= gMax; g++) {
       if (pmf[g] === 0) continue;
-      for (var u2 = 0; u2 <= g; u2++) {
-        if (chain[g][u2] !== 0) M[u2][g - u2] += pmf[g] * chain[g][u2];
+      for (var u = 0; u <= g; u++) {
+        if (chain[g][u] !== 0) M[u][g - u] += pmf[g] * chain[g][u];
       }
     }
 
     var marg = new Float64Array(gMax + 1);
-    for (var u3 = 0; u3 <= gMax; u3++) {
-      var row = M[u3], tot = 0;
+    for (var u2 = 0; u2 <= gMax; u2++) {
+      var row = M[u2], tot = 0;
       for (var s = 0; s < row.length; s++) tot += row[s];
-      marg[u3] = tot;
+      marg[u2] = tot;
     }
     return { matrix: M, upMarginal: marg };
+  };
+
+  C.pullsJointDistribution = function (state, pulls) {
+    if (pulls < 0) throw new RangeError('pulls 不能为负');
+    var pmf = C.gold.goldCountPmf('character', state.pity || 0, pulls);
+    var chain = C.labelChain(pmf.length - 1, state.consecutiveLoss,
+                             state.guaranteed, state.stable ? C.STABLE_P : null);
+    return C.jointFromLabels(pmf, chain);
   };
 
   /* --- 金数 + 常驻数联合 DP（_dp_golds_full）---

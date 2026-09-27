@@ -77,6 +77,139 @@
       return html + '</div>';
     },
 
+    /* --- 「给定抽数」类联合分布视图（角色池 / 武器池的「金数分布」）的共用片段 ---
+     * joint = core 的 pullsJointDistribution / weaponPullsJointDistribution：
+     *   matrix[u][s]（u = 目标数，s = 歪出数）、upMarginal[u]
+     */
+
+    BAR_RULES: { minP: 1e-4, maxBars: 20, top: 10, segMinP: 1e-6 },
+
+    /* 取柱规则：概率 > 0.01% 的目标数单独成柱；超过 maxBars 根时只留概率之和最大的连续
+       maxBars−2 项。两端各并成一根「< n」「> m」（不细分，把区间外的全部质量——含不足
+       0.01% 的部分——计入，故柱子之和恒为 100%）；n = 0 或上方无正概率时省去。 */
+    barSpec: function (joint, minP, maxBars) {
+      minP = minP || P.BAR_RULES.minP;
+      maxBars = maxBars || P.BAR_RULES.maxBars;
+      var marg = joint.upMarginal, M = joint.matrix, u, i, j;
+      var qual = [];
+      for (u = 0; u < marg.length; u++) if (marg[u] > minP) qual.push(u);
+
+      var merged = qual.length > maxBars;
+      var lo = 0, hi = qual.length - 1;
+      if (merged) {
+        var width = maxBars - 2, bestSum = -1;
+        for (i = 0; i + width <= qual.length; i++) {
+          var sum = 0;
+          for (j = i; j < i + width; j++) sum += marg[qual[j]];
+          if (sum > bestSum) { bestSum = sum; lo = i; hi = i + width - 1; }
+        }
+      }
+
+      var bars = [];
+      if (qual[lo] > 0) {
+        var below = 0;
+        for (u = 0; u < qual[lo]; u++) below += marg[u];
+        bars.push({ label: '<' + qual[lo], total: below, segs: null });
+      }
+      for (i = lo; i <= hi; i++) {
+        u = qual[i];
+        var segs = [];
+        for (var s = 0; s < M[u].length; s++) {
+          if (M[u][s] > 0) segs.push({ s: s, p: M[u][s] });
+        }
+        bars.push({ label: String(u), total: marg[u], segs: segs });
+      }
+      if (qual[hi] < marg.length - 1) {
+        var above = 0;
+        for (u = qual[hi] + 1; u < marg.length; u++) above += marg[u];
+        bars.push({ label: '>' + qual[hi], total: above, segs: null });
+      }
+      return { bars: bars, merged: merged };
+    },
+
+    /* 堆叠柱状图：柱内按分段值分色（同一值在各柱同色，色带按该值在图中的出现区间拉伸，
+       而不是按柱内排名；只为概率 ≥ 0.0001% 的分段建系列，更小的分段画出来也只是细边），
+       柱顶标注该柱总概率，悬浮框由 segTip 拼装。
+       opts = { xLabel, agg(bar), total(bar), seg(segment), palette, maxWidth } */
+    stackBars: function (ctx, chart, bars, opts) {
+      var palette = opts.palette || W.core.COLORS.stack;
+      var seen = {};
+      bars.forEach(function (b) {
+        if (!b.segs) return;
+        b.segs.forEach(function (sg) { if (sg.p >= P.BAR_RULES.segMinP) seen[sg.s] = true; });
+      });
+      var sList = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+      var minS = sList.length ? sList[0] : 0;
+      var maxS = sList.length ? sList[sList.length - 1] : 0;
+      var width = opts.maxWidth || 34;
+      var series = sList.map(function (s) {
+        return {
+          name: '', stack: 'up', maxWidth: width,
+          color: W.core.stats.ramp(palette, maxS > minS ? (s - minS) / (maxS - minS) : 0),
+          values: bars.map(function (b) {
+            if (!b.segs) return null;
+            for (var k = 0; k < b.segs.length; k++) {
+              if (b.segs[k].s === s) return b.segs[k].p;
+            }
+            return null;
+          })
+        };
+      });
+      if (bars.some(function (b) { return !b.segs; })) {
+        series.push({
+          name: '', stack: 'up', maxWidth: width, color: 'var(--text-dim)',
+          values: bars.map(function (b) { return b.segs ? null : b.total; })
+        });
+      }
+
+      var top = 0;
+      bars.forEach(function (b) { if (b.total > top) top = b.total; });
+      ctx.charts.bars(chart, {
+        categories: bars.map(function (b) { return b.label; }),
+        xLabel: opts.xLabel,
+        yLabel: '概率',
+        yMax: Math.max(top * 1.16, 0.02),
+        legend: false,
+        series: series,
+        /* 柱顶标注柱子的总概率：只要标注，不要折线与符号 */
+        overlays: [{
+          name: '', type: 'line', line: false, color: 'transparent', symbolSize: 1,
+          data: bars.map(function (b, i) { return [i, b.total]; }),
+          label: {
+            pos: 'top', color: 'var(--text)',
+            formatter: function (pr) { return P.pctAdaptive(pr.value[1]); }
+          }
+        }],
+        yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
+        tooltipHtml: function (i) {
+          return P.segTip(bars[i], { agg: opts.agg, total: opts.total, seg: opts.seg });
+        }
+      });
+    },
+
+    /* 悬浮框：柱内各分段按概率降序、最多 top 项，其余（含不足 0.0001% 的）合并一行。
+       opts = { total(bar) → 标题, agg(bar) → 合并柱标题, seg(segment) → 行名, top } */
+    segTip: function (bar, opts) {
+      var top = opts.top || P.BAR_RULES.top;
+      if (!bar.segs) {
+        return P.tip(opts.agg(bar), [['合计', P.pctAdaptive(bar.total)]]);
+      }
+      var segs = bar.segs.slice().sort(function (a, b) { return b.p - a.p; });
+      var rows = [], rest = 0, shown = 0;
+      segs.forEach(function (sg, i) {
+        if (i < top && sg.p >= P.BAR_RULES.segMinP) {
+          rows.push([opts.seg(sg), P.pctAdaptive(sg.p)]);
+          shown++;
+        } else {
+          rest += sg.p;
+        }
+      });
+      if (shown < segs.length) {
+        rows.push(['其余 ' + (segs.length - shown) + ' 项', P.pctAdaptive(rest)]);
+      }
+      return P.tip(opts.total(bar) + ' · ' + P.pctAdaptive(bar.total), rows);
+    },
+
     pct: function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + '%'; },
 
     /* 概率百分数：越靠近 0 或 100 越需要有效位数——

@@ -62,5 +62,24 @@
     return entry.pdfs;
   };
 
+  /* P(恰好 g 金 | pulls 抽)，g = 0..gMax（尾部概率 < eps 时截断）。
+     P(恰好 g 金) = P(T_g ≤ P) − P(T_{g+1} ≤ P)，T_g 由单金 PDF 逐次卷积得到
+     （首金按当前 pity 平移）；只对 t ≤ pulls 求和，卷积可截断到 pulls+1 项。 */
+  G.goldCountPmf = function (poolKey, pity, pulls, eps) {
+    if (eps === undefined) eps = 1e-15;
+    var pFirst = G.getGoldPdfs(poolKey)[1];
+    var dist = pity > 0 ? S.shiftedFirstGold(pFirst, pity) : Float64Array.from(pFirst);
+    var out = [], prev = 1.0;
+    for (var g = 0; g <= pulls + 1; g++) {
+      var n = Math.min(dist.length, pulls + 1), cur = 0;
+      for (var i = 0; i < n; i++) cur += dist[i];
+      out.push(Math.max(prev - cur, 0));
+      if (cur < eps) break;
+      dist = S.convolveTrunc(dist, pFirst, pulls + 1);
+      prev = cur;
+    }
+    return out;
+  };
+
   G.clearCache = function () { cache = {}; };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
