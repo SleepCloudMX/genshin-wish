@@ -78,6 +78,7 @@ python scripts/parity.py
 - **`prev_standard` 不影响 `character.py`**，仅 `weapon.py` 使用。
 - **Capture Radiance**：`p_up[k] = 0.5 + 0.5 * capture_radiance[k]`。稳态概率 `STABLE_P` 由 `guarantee_seq` 转移矩阵解析导出。
 - **武器池仅支持「定轨不取消」**。同时要两把不同限定武器列入后续需求。
+- **git 提交信息一律用英文**（Conventional Commits，如 `feat(web): add steady-state option`）；代码注释、文档、界面文案仍用中文。主仓库与 `docs/ai-output` 都按此。
 - **提交前运行 `python -m pytest tests/ -v`** 确保 90 个测试全绿。
 - **CLI 入口**：`pyproject.toml` 的 `[project.scripts]` 注册，启动 `genshin_wish.cli.main:main`。
 - **`output/analysis/task*/` 数据不得被测试污染**。改完分析脚本后如需验证，用 `temp/` 目录输出，禁止覆盖正式 data.json 和图表。确认无误后再正式运行。
