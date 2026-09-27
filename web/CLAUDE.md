@@ -33,7 +33,8 @@ web/
 │                        about 机制误差 / algorithms 算法介绍 / perf 算法性能
 ├── js/app.js            hash 路由、外壳渲染、主题、状态条
 ├── data/analysis.js     实验数据（由 scripts/build_web_data.py 生成，勿手改）
-└── dev/parity-node.js   JS↔Python 一致性校验的 Node 端（入口是 scripts/parity.py）
+├── dev/parity-node.js   JS↔Python 一致性校验的 Node 端（入口是 scripts/parity.py）
+└── dev/bench-pulls-joint.js  站点内核的性能基准（入口是 scripts/analysis/task4_pulls_to_joint.py）
 ```
 
 图表类型与用途：`line` 类目横轴折线（CDF、PDF）；`curve` 数值/对数横轴折线（性能实验图）；

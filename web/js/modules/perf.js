@@ -100,7 +100,8 @@
     title: '算法性能',
     group: '关于',
     math: true,
-    intro: '四种精确算法与 CLT 近似的实测耗时，以及近似在极端规模下的误差量级。',
+    intro: '四种精确算法与 CLT 近似的实测耗时、固定抽数下联合分布的耗时随抽数的变化，' +
+           '以及近似在极端规模下的误差量级。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },
@@ -120,9 +121,10 @@
 
           para(box, '<b>实验设置</b>：各方法在同一台机器上重复计时，去除两端各 20% 的样本后取均值，' +
             '阴影为剩余样本的最小值与最大值区间。dp-pulls 仅计时至 n ≤ 7，dp-path 仅至 n ≤ 20，' +
-            '其余方法覆盖 n = 1–500。虚线为按数据拟合的复杂度曲线：dp-path 采用指数拟合，' +
-            '其余采用幂律拟合，标注的 k 为拟合指数。数据由 Python 实现实测，生成于 ' +
-            A.meta.generated + '。');
+            '其余方法覆盖 n = 1–500；任务 4 覆盖 P = 100–20000，逐抽递推仅至 P = 500。' +
+            '虚线为按数据拟合的复杂度曲线：dp-path 采用指数拟合，' +
+            '其余采用幂律拟合，标注的 k 为拟合指数。任务 4 由 Python 实现与站点内核（Node 运行' +
+            '同一份 JavaScript）分别实测。数据生成于 ' + A.meta.generated + '。');
 
           var pending = [];
 
@@ -178,6 +180,27 @@
             tooltipHeader: function (v) { return 'n = ' + Math.round(v); }
           }]);
 
+          /* --- 任务 4 --- */
+          if (A.task4) {
+            heading(box, '任务 4：给定抽数下的联合分布的计算耗时');
+            var t4 = chartBox(box, '「金数分布」视图（角色池与武器池）所用的算法：金数分解。' +
+              '抽数越多，需要计入的金数上界越大，耗时随之上升，log-log 图上接近斜率 2。' +
+              '浏览器内核实测 P = 1000 约 ' + t4Time(A, '金数分解（浏览器）', 1000) +
+              '，P = 10000 约 ' + t4Time(A, '金数分解（浏览器）', 10000) + '；' +
+              'Python 实现的卷积交给 numpy，大 P 时反而更快，两条线在 P ≈ 300 处交叉。' +
+              '逐抽递推（红）只测到 P = 500：再往上单点已需秒级，不再计入。');
+            pending.push([t4, {
+              xType: 'log', yType: 'log',
+              xLabel: '抽数 P', yLabel: '耗时 (ms)',
+              xMin: 100, xMax: Math.max.apply(null, A.task4.n),
+              series: toSeries(A.task4, ['金数分解（Python）', '金数分解（浏览器）', '逐抽递推（Python）'],
+                               { fit: true, band: true }, A.colors4),
+              tooltipFormatter: msFmt,
+              xTickFormatter: function (v) { return String(Math.round(v)); },
+              tooltipHeader: function (v) { return 'P = ' + Math.round(v); }
+            }]);
+          }
+
           /* 容器已在文档中，可以初始化 */
           pending.forEach(function (item) {
             var el = item[0], opt = item[1];
@@ -187,6 +210,14 @@
       }
     }
   };
+
+  /* 任务 4 的读数：任务 4 的横轴是抽数，抽数取自数据本身 */
+  function t4Time(A, name, pulls) {
+    var s = A.task4.series[name];
+    var i = A.task4.n.indexOf(pulls);
+    var v = i >= 0 && s ? s.time[i] : null;
+    return v === null || v === undefined ? '—' : msFmt(v) + ' ms';
+  }
 
   function pickTime(A, method) {
     var s = A.task1.series[method];
