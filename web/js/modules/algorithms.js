@@ -24,6 +24,22 @@
       g.toFixed(0) + ' ms，约为前者的 1/' + (s / g).toFixed(0) + '。';
   }
 
+  /* 算法 7 的实测数字同样取自实验数据（P = 1000 的金数分解与 P = 500 的逐抽递推） */
+  function benchLine4() {
+    var A = global.__WISH_ANALYSIS__;
+    var fallback = '实测耗时见 <a href="#/perf">算法性能</a>。';
+    if (!A || !A.task4) return fallback;
+    var i = A.task4.n.indexOf(1000);
+    var j = A.task4.n.indexOf(500);
+    var py = A.task4.series['金数分解（Python）'];
+    var js = A.task4.series['金数分解（浏览器）'];
+    var nv = A.task4.series['逐抽递推（Python）'];
+    if (i < 0 || j < 0 || !py || !js || !nv || nv.time[j] === null) return fallback;
+    return '实测（P = 1000）：Python 实现 ' + py.time[i].toFixed(1) + ' ms，站点内核 ' +
+      js.time[i].toFixed(1) + ' ms；逐抽递推在 P = 500 已需 ' +
+      (nv.time[j] / 1000).toFixed(1) + ' 秒，两者相差三个数量级。';
+  }
+
   var DOC_HEAD = '' +
     '<p>精确求解 n 个 UP 的抽数分布，朴素的逐抽递推在 n 稍大时即不可行。' +
     '以下按复杂度从高到低逐个说明这几种算法：每一种消除哪个维度、代价又转移到哪里；' +
@@ -36,10 +52,13 @@
     row(['任务 1', '目标 UP 数 n、初始状态', '抽到 n 个限定所需抽数的分布 \\(P(\\text{pulls})\\)']) +
     row(['任务 2', '任务 1 的输入 + 常驻数量', '每个常驻数量下的条件分布 \\(P(\\text{pulls} \\mid n_{\\text{std}})\\)']) +
     row(['任务 3', '任务 1 的输入', '歪出多少个常驻的分布 \\(P(n_{\\text{std}})\\)']) +
+    row(['任务 4', '抽数 \\(P\\)、初始状态', '抽出 \\(u\\) 个限定、\\(s\\) 个常驻的联合分布 ' +
+         '\\(P(n_{\\text{up}}, n_{\\text{std}})\\)']) +
     '</tbody></table></div>' +
-    '<p>三者相互关联：任务 1 等于任务 3 加权任务 2，即 ' +
+    '<p>前三者相互关联：任务 1 等于任务 3 加权任务 2，即 ' +
     '\\(P(\\text{pulls}) = \\sum_k P(n_{\\text{std}} = k)\\, P(\\text{pulls} \\mid n_{\\text{std}} = k)\\)。' +
-    '以下以任务 1 为主线；任务 2 与任务 3 仅需在状态中增加一个维度。</p>' +
+    '以下以任务 1 为主线；任务 2 与任务 3 仅需在状态中增加一个维度。' +
+    '任务 4 是反方向的问题——抽数在前、UP 数在后，前六种算法都回答不了，解法见算法 7。</p>' +
 
     '<h2>算法 1（dp-pulls）：朴素逐抽递推</h2>' +
     '<p>最直接的实现按抽推进，状态为（抽数 i，已获得 UP 数 j，已连歪次数 s）。' +
@@ -89,6 +108,27 @@
     '收敛曲线见 <a href="#/perf">算法性能</a>。' +
     '网页界面当前将目标 UP 数限制在 30 以内，均属精确解范围。</p>' +
 
+    '<h2>算法 7（金数分解）：固定抽数下的联合分布</h2>' +
+    '<p>「金数分布」视图要回答反方向的问题：给定抽数 \\(P\\)，抽到 \\(u\\) 个限定、\\(s\\) 个常驻的概率。' +
+    '若沿用算法 1 的逐抽递推，状态为（抽数、连歪次数、保底待发）再乘二维计数，' +
+    'P = 500 时已需 2.9 秒，P = 1000 约 13 秒，不可用。</p>' +
+    '<p>关键观察是两套机制相互独立：<b>出金时刻</b>只由 pity 过程决定，' +
+    '<b>每金是限定还是常驻</b>只由 50/50、捕获明光与大保底决定。于是联合分布可分解为</p>' +
+    '<p>\\[ P(n_{\\text{up}} = u,\\; n_{\\text{std}} = s) = ' +
+    'P(\\text{恰好 } g \\text{ 金} \\mid P \\text{ 抽}) \\cdot D[g][u], \\qquad g = u + s \\]</p>' +
+    '<p>两项都廉价。前者由单金分布逐次卷积得到：第 \\(g\\) 个金的到达时刻 \\(T_g\\) 满足 ' +
+    '\\(P(\\text{恰好 } g \\text{ 金}) = P(T_g \\le P) - P(T_{g+1} \\le P)\\)，' +
+    '只对 \\(t \\le P\\) 求和，故卷积可以截断到 \\(P+1\\) 项。' +
+    '后者是「前 \\(g\\) 个金中有几个限定」的整数 DP，状态为（连歪次数，是否保底待发）。' +
+    '总代价为 \\(O(G)\\) 次卷积加 \\(O(G^2)\\) 的链 DP，' +
+    '其中金数上界 \\(G \\approx P/62.3 + 6\\sigma\\)（P = 10000 时 \\(G \\approx 209\\)）。</p>' +
+    '<p>需要留意的是不能把「抽到第 \\(u\\) 个限定的抽数分布」（算法 1–4 的输出）直接当作答案：' +
+    '那是「至少 \\(u\\) 个」，而这里要的是「恰好 \\(u\\) 个」。逐对枚举 \\((u, s)\\) 组合的抽数分布' +
+    '不但昂贵，还要额外乘上「此后再未出限定」的生存因子，容易写错。</p>' +
+    '<p>武器池共用同一套分解，只把标记链换成（命定值，上一金是否常驻）：命定值满则下一金必为目标，' +
+    '常驻保底生效时池中只有两把限定（各半），否则 37.5% 目标 / 37.5% 另一把限定 / 25% 常驻。</p>' +
+    '<p>%BENCH4%</p>' +
+
     '<h2>算法对照</h2>' +
     '<p>按上文编号汇总；其中算法 5 未予实现，一并列出以便对照。</p>' +
     '<div class="tablewrap"><table class="dtable dtable--plain">' +
@@ -99,6 +139,7 @@
     row(['4（dp-golds）', '\\(O(n^2)\\) + 一次加权卷积', '当前默认，三类任务通用']) +
     row(['5（dp-state-golds）', '\\(O(n^3 m \\log(nm))\\)', '算法 3 的多维扩展，常数远大于算法 4，未实现']) +
     row(['6（CLT）', '\\(O(1)\\)', 'n &gt; 500 的近似方案']) +
+    row(['7（金数分解）', '\\(O(G^2)\\) + \\(O(G)\\) 次卷积', '回答任务 4：给定抽数下的联合分布']) +
     '</tbody></table></div>' +
 
     '<h2>相关代码</h2>' +
@@ -111,6 +152,9 @@
          '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/_dp_golds.py" rel="noopener">src/genshin_wish/_dp_golds.py</a>']) +
     row(['逐抽递推与迭代卷积（长期规模）',
          '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/long_term.py" rel="noopener">src/genshin_wish/long_term.py</a>']) +
+    row(['金数分解（金数分布与标记链）',
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/_gold.py" rel="noopener">src/genshin_wish/_gold.py</a>、' +
+         '<a href="https://github.com/SleepCloudMX/genshin-wish/blob/main/src/genshin_wish/weapon.py" rel="noopener">weapon.py</a>']) +
     row(['耗时与 CLT 误差实验',
          '<a href="https://github.com/SleepCloudMX/genshin-wish/tree/main/scripts/analysis" rel="noopener">scripts/analysis/</a>']) +
     row(['网页侧内核（JavaScript 移植）',
@@ -130,6 +174,7 @@
     row(['单金分布构造', '\\(\\sim 4 \\times 10^{-14}\\)']) +
     row(['多金分布卷积（\\(k\\) 次）', '\\(\\sim k \\times 2 \\times 10^{-14}\\)']) +
     row(['dp-golds（n = 500，约 1000 次卷积）', '\\(\\sim 2 \\times 10^{-11}\\)']) +
+    row(['金数分解（P = 1000，约 40 次卷积）', '\\(\\sim 8 \\times 10^{-13}\\)']) +
     row(['稳态权重的归一化偏差', '\\(\\sim 4 \\times 10^{-7}\\)（系统性，已计入模型）']) +
     '</tbody></table></div>' +
     '<p>卷积的相对误差与数值大小成正比：尾部 \\(10^{-50}\\) 量级的概率与主体 0.1 量级的概率' +
@@ -142,7 +187,8 @@
     group: '关于',
     layout: 'doc',
     math: true,
-    intro: '朴素解在 n 增大后不可行。本文比较五种精确方案与 CLT 近似的复杂度、代价与适用范围。',
+    intro: '朴素解在 n 增大后不可行。本文比较五种精确方案与 CLT 近似的复杂度、代价与适用范围，' +
+           '以及反方向问题（给定抽数，求抽到几个限定、几个常驻）的解法。',
     defaultView: 'doc',
     defaults: {},
     controls: function () { return []; },
@@ -152,7 +198,8 @@
         render: function (host) {
           var box = global.document.createElement('div');
           box.className = 'prose';
-          box.innerHTML = DOC_HEAD.replace('%BENCH%', benchLine());
+          box.innerHTML = DOC_HEAD.replace('%BENCH%', benchLine())
+                                   .replace('%BENCH4%', benchLine4());
           host.appendChild(box);
         }
       }
