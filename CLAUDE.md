@@ -63,6 +63,9 @@ python scripts/build_web_data.py
 python scripts/parity.py
 ```
 
+CI（`.github/workflows/ci.yml`）：push / PR 时跑 `pytest`、`node --check` 全站脚本与 `parity.py`。
+改动内核后即使本地忘了跑 parity，CI 也会挡下来。
+
 测试环境：`conda activate ai`（Python 3.12，numpy 2.x，scipy 1.16，matplotlib 3.10）
 
 ## 开发约定

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . pytest
+
+      - name: 单元测试（pytest）
+        run: python -m pytest tests/ -q
+
+      - name: 网页脚本语法检查
+        run: |
+          for f in web/js/core/*.js web/js/ui/*.js web/js/modules/*.js web/js/app.js web/dev/*.js; do
+            node --check "$f"
+          done
+
+      - name: JS ↔ Python 一致性校验（站点内核）
+        run: python scripts/parity.py
