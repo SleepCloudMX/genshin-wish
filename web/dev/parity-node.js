@@ -67,6 +67,17 @@ const out = refs.map((ref) => {
       return distOut(C.weaponUpDistribution(
         C.makeWeaponState({ pity: c.pity, epitomizedPoints: c.ep, prevStandard: !!c.prevStd }),
         c.countA), ref.cdf_idx);
+    case 'weapon_pulls_joint': {
+      const joint = C.weaponPullsJointDistribution(
+        C.makeWeaponState({ pity: c.pity, epitomizedPoints: c.ep,
+                            prevStandard: !!c.prevStd }),
+        c.pulls);
+      const o = {};
+      joint.matrix.forEach((row, u) => row.forEach((p, s) => {
+        if (p > 1e-10) o[u + '|' + s] = p;
+      }));
+      return { map: o };
+    }
     case 'std':
       return distOut(C.standardDistribution(c.pity, c.nGold), ref.cdf_idx);
     case 'joint':

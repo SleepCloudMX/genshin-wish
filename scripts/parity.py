@@ -42,7 +42,12 @@ from genshin_wish.character import (  # noqa: E402
 from genshin_wish.joint import joint_distribution  # noqa: E402
 from genshin_wish.long_term import LongTermState, make_long_solver  # noqa: E402
 from genshin_wish.standard import StandardState, standard_distribution  # noqa: E402
-from genshin_wish.weapon import WeaponState, WeaponTarget, weapon_up_distribution  # noqa: E402
+from genshin_wish.weapon import (  # noqa: E402
+    WeaponState,
+    WeaponTarget,
+    weapon_pulls_joint_distribution,
+    weapon_up_distribution,
+)
 
 ALPHAS = [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
 NODE_RUNNER = ROOT / "web" / "dev" / "parity-node.js"
@@ -196,6 +201,18 @@ def build_references() -> list[dict]:
                                         prev_standard=prev_std)
                     refs.append(dist_ref("weapon", case, weapon_up_distribution(
                         state, WeaponTarget(count_a=count_a))))
+
+    # --- 固定抽数下的（目标武器数, 歪出五星数）联合分布 ---
+    for n_pulls, ep, prev_std, pity in [(100, 0, False, 0), (500, 0, False, 0),
+                                        (1000, 0, False, 0), (1000, 1, False, 0),
+                                        (1000, 0, True, 0), (1000, 0, False, 45),
+                                        (2000, 0, False, 0)]:
+        case = {"pulls": n_pulls, "ep": ep, "prevStd": prev_std, "pity": pity}
+        dist = weapon_pulls_joint_distribution(
+            WeaponState(pity=pity, epitomized_points=ep, prev_standard=prev_std), n_pulls)
+        refs.append(map_ref("weapon_pulls_joint", case,
+                            {f"{u}|{s}": p for u, row in dist.items() for s, p in row.items()
+                             if p > 1e-10}))
 
     # --- 常驻池 ---
     for pity in [0, 45, 89]:
@@ -354,8 +371,8 @@ def compare(refs: list[dict], got: list[dict]) -> int:
     return failed_all
 
 
-ORDER = ["norm", "char", "pulls_joint", "weapon", "std", "joint", "nstd", "nstd_cond",
-         "radiance", "radiance_seq", "pre50", "tenpull", "longterm"]
+ORDER = ["norm", "char", "pulls_joint", "weapon", "weapon_pulls_joint", "std", "joint",
+         "nstd", "nstd_cond", "radiance", "radiance_seq", "pre50", "tenpull", "longterm"]
 
 
 def main() -> int:
