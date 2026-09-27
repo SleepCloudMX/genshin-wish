@@ -15,8 +15,6 @@
     menu: icon('<path d="M4 7h16M4 12h16M4 17h16"/>'),
     sun: icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>'),
     moon: icon('<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>'),
-    image: icon('<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L5 21"/>', 16),
-    download: icon('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/>', 16),
 
     /* 导航图标：一页一个，取该页计算对象的形状——
        人物（角色）／剑（武器）／人物+剑（两者合并）／一颗星（常驻池的"金"）／
@@ -167,7 +165,7 @@
         a.innerHTML = ICONS[item.icon] + '<span>' + item.label + '</span>';
         if (!item.ready) {
           a.setAttribute('aria-disabled', 'true');
-          a.onclick = function (e) { e.preventDefault(); showToast('本页尚未实现'); };
+          a.onclick = function (e) { e.preventDefault(); W.ui.panels.toast('本页尚未实现'); };
         }
         if (item.id === activeId) a.setAttribute('aria-current', 'page');
         host.appendChild(a);
@@ -397,14 +395,9 @@
     /* 图像导出放在参数面板里：图上的浮动按钮会压住数据标注。
        链接不进面板——地址栏里那份就是（hash 即全部状态）。 */
     var acts = el('div', 'inspector__acts');
-    var copyImg = el('button', 'btn', ICONS.image + '<span>复制图像</span>');
-    copyImg.type = 'button';
-    copyImg.onclick = function () { copyChartImage(viewHost); };
-    var saveImg = el('button', 'btn', ICONS.download + '<span>下载图像</span>');
-    saveImg.type = 'button';
-    saveImg.onclick = function () { saveChartImage(viewHost); };
-    acts.appendChild(copyImg);
-    acts.appendChild(saveImg);
+    W.ui.panels.chartActionButtons(function () {
+      return viewHost ? viewHost.querySelector('.chart') : null;
+    }, 'btn').forEach(function (b) { acts.appendChild(b); });
     inspector.appendChild(acts);
     colParams.appendChild(inspector);
     grid.appendChild(colParams);
@@ -455,71 +448,6 @@
     if (mod.math) W.ui.math.typeset(viewHost);
     W.ui.controls.refresh(app.controlHost, app.params);
     status.setAttribute('data-ms', ms());
-  }
-
-  /* --- 图像导出：作用于当前视图的图（每个视图只有一张图） --- */
-
-  function currentChart(host) {
-    var node = host.querySelector('.chart');
-    var echarts = global.echarts;
-    return node && echarts ? echarts.getInstanceByDom(node) : null;
-  }
-
-  /* 底色取当前主题的 --surface：canvas 本身透明，暗色下导出的图也该是深底 */
-  function chartPng(inst) {
-    var surface = global.getComputedStyle(doc.documentElement)
-      .getPropertyValue('--surface').trim() || '#ffffff';
-    return inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
-  }
-
-  function downloadPng(url) {
-    var path = String(global.location.hash || '').replace(/^#\/?/, '').split('?')[0]
-      .replace(/\//g, '-');
-    var a = doc.createElement('a');
-    a.href = url;
-    a.download = 'genshin-wish' + (path ? '-' + path : '') + '.png';
-    doc.body.appendChild(a);
-    a.click();
-    doc.body.removeChild(a);
-  }
-
-  /* data URL → Blob：剪贴板只收 Blob，而 atob 在 file:// 下同样可用 */
-  function dataUrlToBlob(url) {
-    var bin = global.atob(url.split(',')[1]);
-    var bytes = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new global.Blob([bytes], { type: 'image/png' });
-  }
-
-  function copyChartImage(host) {
-    var inst = currentChart(host);
-    if (!inst) { showToast('当前视图没有图表'); return; }
-    var url = chartPng(inst);
-    var clip = global.navigator.clipboard;
-    if (!global.ClipboardItem || !clip || !clip.write) {
-      downloadPng(url);
-      showToast('浏览器不支持复制图像，已改为下载');
-      return;
-    }
-    clip.write([new global.ClipboardItem({ 'image/png': dataUrlToBlob(url) })])
-      .then(function () { showToast('已复制图像'); },
-            function () { downloadPng(url); showToast('复制失败，已改为下载'); });
-  }
-
-  function saveChartImage(host) {
-    var inst = currentChart(host);
-    if (!inst) { showToast('当前视图没有图表'); return; }
-    downloadPng(chartPng(inst));
-    showToast('已开始下载');
-  }
-
-  var toastTimer = null;
-  function showToast(msg) {
-    var t = doc.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('is-on');
-    global.clearTimeout(toastTimer);
-    toastTimer = global.setTimeout(function () { t.classList.remove('is-on'); }, 1800);
   }
 
   function route() {

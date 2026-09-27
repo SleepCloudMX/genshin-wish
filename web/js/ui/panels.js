@@ -5,6 +5,49 @@
   var UI = W.ui = W.ui || {};
   var doc = global.document;
 
+  var ICON_IMAGE = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" ' +
+    'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+    'stroke-linejoin="round">' +
+    '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/>' +
+    '<path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L5 21"/></svg>';
+  var ICON_DOWN = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" ' +
+    'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+    'stroke-linejoin="round">' +
+    '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>';
+
+  /* 底色取当前主题的 --surface：canvas 本身透明，暗色下导出的图也该是深底 */
+  function chartPng(inst) {
+    var surface = global.getComputedStyle(doc.documentElement)
+      .getPropertyValue('--surface').trim() || '#ffffff';
+    return inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
+  }
+
+  function downloadChartPng(url) {
+    var path = String(global.location.hash || '').replace(/^#\/?/, '').split('?')[0]
+      .replace(/\//g, '-');
+    var a = doc.createElement('a');
+    a.href = url;
+    a.download = 'genshin-wish' + (path ? '-' + path : '') + '.png';
+    doc.body.appendChild(a);
+    a.click();
+    doc.body.removeChild(a);
+  }
+
+  /* data URL → Blob：剪贴板只收 Blob；用 atob 而不是 fetch，file:// 下同样可用 */
+  function dataUrlToBlob(url) {
+    var bin = global.atob(url.split(',')[1]);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new global.Blob([bytes], { type: 'image/png' });
+  }
+
+  function instanceOf(chartEl) {
+    var echarts = global.echarts;
+    return chartEl && echarts ? echarts.getInstanceByDom(chartEl) : null;
+  }
+
+  var toastTimer = null;
+
   var P = UI.panels = {
     /* items: [[指标, 数值], ...]，数值列自动等宽对齐 */
     statRow: function (items) {
@@ -209,6 +252,58 @@
         rows.push(['其余 ' + (segs.length - shown) + ' 项', P.pctAdaptive(rest)]);
       }
       return P.tip(opts.total(bar) + ' · ' + P.pctAdaptive(bar.total), rows);
+    },
+
+    /* 轻提示：状态类反馈统一走这里（app.js 的外壳也用） */
+    toast: function (msg) {
+      var t = doc.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('is-on');
+      global.clearTimeout(toastTimer);
+      toastTimer = global.setTimeout(function () { t.classList.remove('is-on'); }, 1800);
+    },
+
+    /* --- 图像导出：图是 canvas，读者既选不中也复制不了 --- */
+
+    copyChartImage: function (chartEl) {
+      var inst = instanceOf(chartEl);
+      if (!inst) { P.toast('当前视图没有图表'); return; }
+      var url = chartPng(inst);
+      var clip = global.navigator.clipboard;
+      if (!global.ClipboardItem || !clip || !clip.write) {
+        downloadChartPng(url);
+        P.toast('浏览器不支持复制图像，已改为下载');
+        return;
+      }
+      clip.write([new global.ClipboardItem({ 'image/png': dataUrlToBlob(url) })])
+        .then(function () { P.toast('已复制图像'); },
+              function () { downloadChartPng(url); P.toast('复制失败，已改为下载'); });
+    },
+
+    saveChartImage: function (chartEl) {
+      var inst = instanceOf(chartEl);
+      if (!inst) { P.toast('当前视图没有图表'); return; }
+      downloadChartPng(chartPng(inst));
+      P.toast('已开始下载');
+    },
+
+    /* 「复制图像 / 下载图像」两个按钮。target 可以是图表节点或返回节点的函数
+       （参数面板在图表创建前就建好了，只能惰性取）；样式与摆放由调用方决定。 */
+    chartActionButtons: function (target, btnClass) {
+      var get = typeof target === 'function' ? target : function () { return target; };
+      var cls = btnClass || 'btn btn--ghost';
+      var copy = doc.createElement('button');
+      copy.type = 'button';
+      copy.className = cls;
+      copy.innerHTML = ICON_IMAGE + '<span>复制图像</span>';
+      copy.onclick = function () { P.copyChartImage(get()); };
+      var save = doc.createElement('button');
+      save.type = 'button';
+      save.className = cls;
+      save.innerHTML = ICON_DOWN + '<span>下载图像</span>';
+      save.onclick = function () { P.saveChartImage(get()); };
+      return [copy, save];
     },
 
     pct: function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + '%'; },

@@ -472,8 +472,10 @@ input[type="range"] {
   border-radius: var(--r-sm); border: 1px solid var(--border);
   background: var(--surface); color: var(--text);
   font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+  white-space: nowrap;
   transition: background var(--dur), border-color var(--dur), color var(--dur);
 }
+.btn svg { flex: none; }
 .btn:hover { border-color: var(--gold); color: var(--gold-strong); }
 .btn--ghost { border-color: transparent; color: var(--text-dim); min-height: 30px; padding: 0 var(--sp-2); }
 .btn--ghost:hover { background: var(--surface-2); border-color: transparent; }
@@ -546,6 +548,9 @@ input[type="range"] {
 }
 .perf__h:first-child { margin-top: 0; }
 .perf .chart { margin-top: var(--sp-3); }
+/* 无参数面板的页面：导出按钮摆在图的上方，不进画布 */
+.chartbar { display: flex; justify-content: flex-end; gap: var(--sp-1); margin-top: var(--sp-4); }
+.chartbar + .chart, .perf .chartbar + .chart { margin-top: var(--sp-1); }
 /* 与 .viewhost .chart 同写两个类，否则被那条基础高度盖掉 */
 .viewhost .chart.chart--perf { height: 380px; }
 .viewhost .chart.chart--tall { height: 460px; }

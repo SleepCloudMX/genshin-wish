@@ -36,8 +36,14 @@
     host.appendChild(h);
   }
 
+  /* 本页没有参数面板（模块没有控件），图像导出改摆在每张图上方的小工具条里——
+     仍然不进画布，免得压住图例与标注 */
   function chartBox(host, caption, cls) {
     var chart = W.ui.panels.chart(host, (cls || 'chart--perf').replace('chart--', ''));
+    var bar = doc.createElement('div');
+    bar.className = 'chartbar';
+    W.ui.panels.chartActionButtons(chart).forEach(function (b) { bar.appendChild(b); });
+    host.insertBefore(bar, chart);
     if (caption) para(host, caption);
     return chart;
   }

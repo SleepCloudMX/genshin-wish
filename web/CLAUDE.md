@@ -148,6 +148,9 @@ CLT 是唯一的近似通道，**仅在 n > 500 时启用**（Python 侧 `CLT_TH
   `C.COLORS.stack`（恒亮彩虹：同明度只翻色相）——`spectral` 的中段近白，层数多时相邻档糊成一片。
 - **柱顶标注**用 `overlays` 的折线 + `line: false`（只留标注，不画线与符号；符号颜色给
   `transparent`，标注文字用 `label.color` 单独指定），见「金数分布」。
-- **图像导出在参数面板底部**（「复制图像」「下载图像」两个按钮，作用于当前视图的图，
-  由 `app.js` 实现：`getDataURL` 取 PNG、底色取 `--surface`，剪贴板不支持时退化为下载）。
+- **图像导出在参数面板底部**（「复制图像」「下载图像」，作用于当前视图的图）。实现都在
+  `ui/panels.js`（`chartActionButtons` / `copyChartImage` / `saveChartImage` / `toast`）：
+  `getDataURL` 取 PNG、底色取 `--surface`，剪贴板不支持或被拒时退化为下载。
+  **没有参数面板的页面**（模块无控件，如「算法性能」）把同两个按钮摆进 `.chartbar` 小工具条，
+  放在每张图的上方。
   **不要在图里放浮动按钮**——那个角落会压住柱顶标注与右上角的图例。
