@@ -10,8 +10,18 @@
 
   var MISS = C.MISS_LABELS;
 
+  function isStable(p) { return p.loss === C.STABLE_LOSS; }
+
   function stateOf(p) {
-    return C.makeCharacterState({ pity: 0, consecutiveLoss: p.loss, guaranteed: false });
+    return C.makeCharacterState({
+      pity: 0, consecutiveLoss: isStable(p) ? 0 : p.loss,
+      guaranteed: false, stable: isStable(p)
+    });
+  }
+
+  /* 稳态时在状态条标注，免得只有控件上的选中态提示 */
+  function setStatus(ctx, p, text) {
+    ctx.setStatus(isStable(p) ? text + ' · 连歪次数取稳态' : text);
   }
 
   function mapToArrays(map) {
@@ -42,7 +52,9 @@
         {
           type: 'segmented', key: 'loss', label: '已连歪次数',
           options: [{ value: 0, label: '0' }, { value: 1, label: '1' },
-                    { value: 2, label: '2' }, { value: 3, label: '3' }]
+                    { value: 2, label: '2' }, { value: 3, label: '3' },
+                    { value: C.STABLE_LOSS, label: '稳态' }],
+          help: '「稳态」按连歪次数的长期分布加权'
         },
         {
           type: 'range', key: 'nStd', label: '常驻数（条件视图）', min: 0, max: 15,
@@ -82,7 +94,7 @@
           });
           host.appendChild(P.note('每次歪都会带来一个常驻五星，因此常驻数与「歪的次数」同分布；' +
             '捕获明光生效时该次不再计入歪。'));
-          ctx.setStatus(p.nUp + ' 个 UP 中共 ' + arr.maxK + ' 种常驻数量');
+          setStatus(ctx, p, p.nUp + ' 个 UP 中共 ' + arr.maxK + ' 种常驻数量');
         }
       },
 
@@ -143,7 +155,7 @@
           }
           host.appendChild(P.note('曲线为 P(抽数 | 常驻数量)，即已经知道歪出 m 个常驻时的抽数分布；' +
             '括号内为该情形的边际概率。仅显示占比 ≥ 1% 的情形。'));
-          ctx.setStatus('已列出 ' + shown.length + ' 条条件分布 · 条件视图参数 n_std = ' + p.nStd);
+          setStatus(ctx, p, '已列出 ' + shown.length + ' 条条件分布 · 条件视图参数 n_std = ' + p.nStd);
         }
       },
 
@@ -156,6 +168,8 @@
             maps.push(C.nStdDistribution(
               C.makeCharacterState({ pity: 0, consecutiveLoss: k }), p.nUp));
           }
+          maps.push(C.nStdDistribution(
+            C.makeCharacterState({ pity: 0, stable: true }), p.nUp));
           maps.forEach(function (map) {
             Object.keys(map).forEach(function (kk) { if (Number(kk) > maxK) maxK = Number(kk); });
           });
@@ -170,14 +184,15 @@
 
           ctx.charts.table(host, {
             rowHeader: '已连歪次数',
-            rowLabels: [MISS[0][0], MISS[1][0], MISS[2][0], MISS[3][0]],
+            rowLabels: [MISS[0][0], MISS[1][0], MISS[2][0], MISS[3][0], MISS[4][0]],
             colLabels: cols,
             values: values,
             format: function (v) { return (v * 100).toFixed(1) + '%'; },
             note: '行是抽卡开始时的连歪次数，列是最终歪出的常驻五星数量，单元格为概率。' +
-                  '连歪次数越高，捕获明光生效越早，常驻数量整体左移。'
+                  '连歪次数越高，捕获明光生效越早，常驻数量整体左移；' +
+                  '稳态行按连歪次数的长期占比 55.0%/27.5%/12.4%/5.1% 加权。'
           });
-          ctx.setStatus(p.nUp + ' 个 UP · 常驻数 0–' + maxK);
+          setStatus(ctx, p, p.nUp + ' 个 UP · 常驻数 0–' + maxK);
         }
       }
     }

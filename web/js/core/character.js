@@ -168,6 +168,18 @@
   /* {n_std: P} —— 仅支持 pity = 0 */
   C.nStdDistribution = function (state, nUp) {
     if (state.pity !== 0) throw new RangeError('n_std 分布仅支持 pity = 0');
+    if (state.stable) {
+      var mixed = {};
+      for (var kk = 0; kk < 4; kk++) {
+        var part = C.nStdDistribution(C.makeCharacterState({
+          pity: 0, consecutiveLoss: kk, guaranteed: state.guaranteed
+        }), nUp);
+        Object.keys(part).forEach(function (ns) {
+          mixed[ns] = (mixed[ns] || 0) + C.STABLE_P[kk] * part[ns];
+        });
+      }
+      return mixed;
+    }
     var nUncertain = nUp - (state.guaranteed ? 1 : 0);
     if (nUncertain <= 0) return { 0: 1.0 };
     var byNs = C.dpGoldsFull(nUncertain, state.consecutiveLoss);
@@ -183,6 +195,34 @@
   /* {n_std: 条件抽数分布} —— 仅支持 pity = 0 */
   C.nStdConditionalPulls = function (state, nUp) {
     if (state.pity !== 0) throw new RangeError('条件抽数分布仅支持 pity = 0');
+    if (state.stable) {
+      /* 混合：各状态的条件分布按 STABLE_P × P(n_std | 该状态) 加权，再各自归一 */
+      var acc = {};
+      for (var kk = 0; kk < 4; kk++) {
+        var sub = C.makeCharacterState({
+          pity: 0, consecutiveLoss: kk, guaranteed: state.guaranteed
+        });
+        var marg = C.nStdDistribution(sub, nUp);
+        var maps = C.nStdConditionalPulls(sub, nUp);
+        Object.keys(maps).forEach(function (ns) {
+          var w = C.STABLE_P[kk] * (marg[ns] || 0);
+          if (w === 0) return;
+          var pdf = maps[ns].pdf;
+          var cur = acc[ns] || (acc[ns] = []);
+          for (var i = 0; i < pdf.length; i++) cur[i] = (cur[i] || 0) + w * pdf[i];
+        });
+      }
+      var out = {};
+      Object.keys(acc).forEach(function (ns) {
+        var arr = acc[ns], total = 0, i;
+        for (i = 0; i < arr.length; i++) total += arr[i] || 0;
+        if (total <= 0) return;
+        var dense = new Float64Array(arr.length);
+        for (i = 0; i < arr.length; i++) dense[i] = (arr[i] || 0) / total;
+        out[ns] = makeDistribution(dense);
+      });
+      return out;
+    }
     var nUncertain = nUp - (state.guaranteed ? 1 : 0);
     var pdfs = C.gold.getGoldPdfs('character', 3);
     var pGold = pdfs[1];
