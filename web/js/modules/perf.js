@@ -37,9 +37,7 @@
   }
 
   function chartBox(host, caption, cls) {
-    var chart = doc.createElement('div');
-    chart.className = 'chart ' + (cls || 'chart--perf');
-    host.appendChild(chart);
+    var chart = W.ui.panels.chart(host, (cls || 'chart--perf').replace('chart--', ''));
     if (caption) para(host, caption);
     return chart;
   }

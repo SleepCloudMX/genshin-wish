@@ -270,6 +270,20 @@ a:hover { text-decoration: underline; }
 }
 .statusbar--warn { color: var(--warn); font-weight: 600; }
 
+/* 图表容器：右上角的「下载 PNG」按钮（图是 canvas，读者无法选中或复制） */
+.chartbox { position: relative; }
+.chartbox__dl {
+  position: absolute; top: 2px; right: 4px; z-index: 3;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text-dim);
+  cursor: pointer; opacity: .5;
+  transition: opacity var(--dur), color var(--dur), border-color var(--dur);
+}
+.chartbox__dl:hover { opacity: 1; color: var(--text); border-color: var(--gold); }
+.chartbox__dl:focus-visible { opacity: 1; outline: 2px solid var(--gold); outline-offset: 1px; }
+
 .statrow {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-3);
@@ -544,8 +558,9 @@ input[type="range"] {
 }
 .perf__h:first-child { margin-top: 0; }
 .perf .chart { margin-top: var(--sp-3); }
-.chart--perf { height: 380px; }
-.chart--tall { height: 460px; }
+/* 与 .viewhost .chart 同写两个类，否则被那条基础高度盖掉 */
+.viewhost .chart.chart--perf { height: 380px; }
+.viewhost .chart.chart--tall { height: 460px; }
 
 .dtable--plain { font-family: var(--font); font-variant-numeric: normal; }
 .dtable--plain th, .dtable--plain td { text-align: left; white-space: normal; line-height: 1.55; }
