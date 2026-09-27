@@ -35,7 +35,7 @@ function distOut(d, cdfIdx) {
 
 function charState(c) {
   return C.makeCharacterState({
-    guaranteed: !!c.g, pity: c.pity || 0, consecutiveLoss: c.loss || 0,
+    guaranteed: !!c.g, pity: c.pity || 0, consecutiveLoss: c.loss || 0, stable: !!c.stable,
   });
 }
 
@@ -54,8 +54,7 @@ const out = refs.map((ref) => {
         ppf: ref.p.map((p) => C.stats.normPpf(p)),
       };
     case 'char':
-      return distOut(c.stable ? C.stableUpDistribution(c.n) : C.upDistribution(charState(c), c.n),
-                     ref.cdf_idx);
+      return distOut(C.upDistribution(charState(c), c.n), ref.cdf_idx);
     case 'weapon':
       return distOut(C.weaponUpDistribution(
         C.makeWeaponState({ pity: c.pity, epitomizedPoints: c.ep, prevStandard: !!c.prevStd }),

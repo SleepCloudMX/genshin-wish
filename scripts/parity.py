@@ -24,10 +24,11 @@ sys.path.insert(0, str(ROOT / "src"))
 import numpy as np  # noqa: E402
 
 from genshin_wish._capture_radiance import radiance_dist_from_seq  # noqa: E402
-from genshin_wish._constants import CHARACTER_POOL, WEAPON_POOL  # noqa: E402
+from genshin_wish._constants import CHARACTER_POOL, STABLE_P, WEAPON_POOL  # noqa: E402
 from genshin_wish._gold import get_gold_pdfs  # noqa: E402
 from genshin_wish.character import (  # noqa: E402
     CharacterState,
+    UpDistribution,
     n_std_conditional_pulls,
     n_std_distribution,
     radiance_distribution,
@@ -73,6 +74,18 @@ def dist_ref(kind, case, dist, alphas=ALPHAS) -> dict:
     }
 
 
+def stable_state_dist(n_up: int, pity: int, guaranteed: bool) -> UpDistribution:
+    """对照 JS 的 ``stableUpDistribution(n_up, {pity, guaranteed})``：
+    STABLE_P 加权 k_miss = 0..3，已知的 pity / guaranteed 照常施加。"""
+    dists = [up_distribution(
+        CharacterState(guaranteed=guaranteed, pity=pity, consecutive_loss=k), n_up)
+        for k in range(4)]
+    pdf = np.zeros(max(len(d.pdf) for d in dists), dtype=np.float64)
+    for d, weight in zip(dists, STABLE_P):
+        pdf[: len(d.pdf)] += d.pdf * weight
+    return UpDistribution(pdf=pdf, cdf=np.cumsum(pdf), method=dists[0].method)
+
+
 def map_ref(kind, case, mapping) -> dict:
     return {"kind": kind, "case": case,
             "map": {str(k): float(v) for k, v in sorted(mapping.items())}}
@@ -103,6 +116,12 @@ def build_references() -> list[dict]:
                                          up_distribution(state, n)))
     for n in [1, 2, 7, 20]:
         refs.append(dist_ref("char", {"n": n, "stable": True}, stable_up_distribution(n)))
+    # 稳态 + 已知状态（已垫抽数 / 大保底）：JS 侧由 upDistribution 分流到 stableUpDistribution
+    for n in [1, 2, 3, 7]:
+        for pity in [0, 34]:
+            for g in [False, True]:
+                case = {"n": n, "pity": pity, "stable": True, "g": g}
+                refs.append(dist_ref("char", case, stable_state_dist(n, pity, g)))
 
     # --- 武器池 ---
     for count_a in [1, 2, 3]:
