@@ -142,6 +142,6 @@ CLT 是唯一的近似通道，**仅在 n > 500 时启用**（Python 侧 `CLT_TH
   而不是按柱内排名），不加圆角、改用 1px 底色描边分隔相邻段；legend 关掉（层数太多），
   读数交给 `tooltipHtml(dataIndex)`（堆叠柱的读数是跨系列排序 + 截断，单条系列表达不了）。
   只为概率 ≥ 0.0001% 的层建系列，更小的层画出来也只是细边。层数多、面积大时用
-  `C.COLORS.spectralDeep`（`spectral` 压暗版，原色带中段近白、太刺眼）。
+  `C.COLORS.stack`（恒亮彩虹：同明度只翻色相）——`spectral` 的中段近白，层数多时相邻档糊成一片。
 - **柱顶标注**用 `overlays` 的折线 + `line: false`（只留标注，不画线与符号；符号颜色给
   `transparent`，标注文字用 `label.color` 单独指定），见「金数分布」。

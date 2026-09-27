@@ -295,7 +295,7 @@
               name: '常驻 ' + s2 + ' 个',
               stack: 'up',
               maxWidth: 34,
-              color: S.ramp(C.COLORS.spectralDeep, maxS > minS ? (s2 - minS) / (maxS - minS) : 0),
+              color: S.ramp(C.COLORS.stack, maxS > minS ? (s2 - minS) / (maxS - minS) : 0),
               values: bars.map(function (b) {
                 if (!b.segs) return null;
                 for (var k = 0; k < b.segs.length; k++) {
