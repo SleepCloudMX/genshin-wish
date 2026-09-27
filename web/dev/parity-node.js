@@ -69,10 +69,12 @@ const out = refs.map((ref) => {
         c.weaponCount), ref.cdf_idx);
     case 'nstd':
       return { map: mapOut(C.nStdDistribution(
-        C.makeCharacterState({ pity: 0, consecutiveLoss: c.loss }), c.nUp)) };
+        C.makeCharacterState({ pity: 0, consecutiveLoss: c.loss || 0, stable: !!c.stable }),
+        c.nUp)) };
     case 'nstd_cond': {
       const dists = C.nStdConditionalPulls(
-        C.makeCharacterState({ pity: 0, consecutiveLoss: c.loss }), c.nUp);
+        C.makeCharacterState({ pity: 0, consecutiveLoss: c.loss || 0, stable: !!c.stable }),
+        c.nUp);
       const o = {};
       Object.keys(dists).forEach((k) => { o[k] = dists[k].expected; });
       return { map: o };

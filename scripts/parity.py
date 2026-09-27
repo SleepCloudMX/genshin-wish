@@ -86,6 +86,45 @@ def stable_state_dist(n_up: int, pity: int, guaranteed: bool) -> UpDistribution:
     return UpDistribution(pdf=pdf, cdf=np.cumsum(pdf), method=dists[0].method)
 
 
+def stable_n_std_distribution(n_up: int) -> dict[int, float]:
+    """对照 JS 的稳态 n_std 分布：STABLE_P 加权 k_miss = 0..3。"""
+    out: dict[int, float] = {}
+    for k, weight in enumerate(STABLE_P):
+        state = CharacterState(pity=0, consecutive_loss=k)
+        for ns, p in n_std_distribution(state, n_up).items():
+            out[ns] = out.get(ns, 0.0) + weight * p
+    return out
+
+
+def stable_n_std_conditional(n_up: int) -> dict[int, UpDistribution]:
+    """对照 JS 的稳态条件抽数分布：各状态按 STABLE_P × P(n_std | 该状态) 加权，再归一。"""
+    acc: dict[int, np.ndarray] = {}
+    for k, weight in enumerate(STABLE_P):
+        state = CharacterState(pity=0, consecutive_loss=k)
+        marg = n_std_distribution(state, n_up)
+        for ns, d in n_std_conditional_pulls(state, n_up).items():
+            w = weight * marg.get(ns, 0.0)
+            if w == 0.0:
+                continue
+            pdf = np.asarray(d.pdf, dtype=float) * w
+            cur = acc.get(ns)
+            if cur is None:
+                acc[ns] = pdf
+            else:
+                buf = np.zeros(max(len(cur), len(pdf)), dtype=np.float64)
+                buf[: len(cur)] += cur
+                buf[: len(pdf)] += pdf
+                acc[ns] = buf
+    out: dict[int, UpDistribution] = {}
+    for ns, pdf in acc.items():
+        total = pdf.sum()
+        if total <= 0:
+            continue
+        norm = pdf / total
+        out[ns] = UpDistribution(pdf=norm, cdf=np.cumsum(norm))
+    return out
+
+
 def map_ref(kind, case, mapping) -> dict:
     return {"kind": kind, "case": case,
             "map": {str(k): float(v) for k, v in sorted(mapping.items())}}
@@ -161,6 +200,12 @@ def build_references() -> list[dict]:
         cond = n_std_conditional_pulls(state, n_up)
         refs.append(map_ref("nstd_cond", {"nUp": n_up, "loss": loss},
                             {ns: d.expected for ns, d in cond.items()}))
+    for n_up in [1, 7, 20, 30]:
+        refs.append(map_ref("nstd", {"nUp": n_up, "stable": True},
+                            stable_n_std_distribution(n_up)))
+    for n_up in [7, 20]:
+        refs.append(map_ref("nstd_cond", {"nUp": n_up, "stable": True},
+                            {ns: d.expected for ns, d in stable_n_std_conditional(n_up).items()}))
 
     # --- 捕获明光 ---
     for n_up in [1, 7, 20, 50]:
