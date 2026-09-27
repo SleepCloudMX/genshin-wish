@@ -148,3 +148,6 @@ CLT 是唯一的近似通道，**仅在 n > 500 时启用**（Python 侧 `CLT_TH
   `C.COLORS.stack`（恒亮彩虹：同明度只翻色相）——`spectral` 的中段近白，层数多时相邻档糊成一片。
 - **柱顶标注**用 `overlays` 的折线 + `line: false`（只留标注，不画线与符号；符号颜色给
   `transparent`，标注文字用 `label.color` 单独指定），见「金数分布」。
+- **每张图右上角有「下载 PNG」**：图是 canvas，读者选不中、复制不了，导出只能靠按钮。
+  容器由 `P.chart` 统一包一层 `.chartbox`（按钮在其中，`getDataURL` 取图、底色用 `--surface`），
+  因此所有走 `P.chart` 的视图自动带按钮，不要在模块里另建 `.chart` 节点。
