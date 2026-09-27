@@ -270,20 +270,6 @@ a:hover { text-decoration: underline; }
 }
 .statusbar--warn { color: var(--warn); font-weight: 600; }
 
-/* 图表容器：右上角的「下载 PNG」按钮（图是 canvas，读者无法选中或复制） */
-.chartbox { position: relative; }
-.chartbox__dl {
-  position: absolute; top: 2px; right: 4px; z-index: 3;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; padding: 0;
-  border: 1px solid var(--border); border-radius: var(--r-sm);
-  background: var(--surface); color: var(--text-dim);
-  cursor: pointer; opacity: .5;
-  transition: opacity var(--dur), color var(--dur), border-color var(--dur);
-}
-.chartbox__dl:hover { opacity: 1; color: var(--text); border-color: var(--gold); }
-.chartbox__dl:focus-visible { opacity: 1; outline: 2px solid var(--gold); outline-offset: 1px; }
-
 .statrow {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-3);
@@ -491,7 +477,9 @@ input[type="range"] {
 .btn:hover { border-color: var(--gold); color: var(--gold-strong); }
 .btn--ghost { border-color: transparent; color: var(--text-dim); min-height: 30px; padding: 0 var(--sp-2); }
 .btn--ghost:hover { background: var(--surface-2); border-color: transparent; }
-.btn--block { width: 100%; margin-top: var(--sp-3); }
+/* 面板底部的图像导出：两个按钮各占一半 */
+.inspector__acts { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+.inspector__acts .btn { flex: 1; padding: 0 var(--sp-2); }
 
 /* --- 数值表 --------------------------------------------------------------- */
 .tablewrap { overflow-x: auto; }

@@ -5,23 +5,6 @@
   var UI = W.ui = W.ui || {};
   var doc = global.document;
 
-  /* 导出当前图：ECharts 的 getDataURL 给 PNG，文件名取 hash 里的「模块-视图」 */
-  function saveChartPng(chartEl) {
-    var echarts = global.echarts;
-    var inst = echarts && echarts.getInstanceByDom(chartEl);
-    if (!inst) return;
-    var surface = global.getComputedStyle(doc.documentElement)
-      .getPropertyValue('--surface').trim() || '#ffffff';
-    var path = String(global.location.hash || '').replace(/^#\/?/, '').split('?')[0]
-      .replace(/\//g, '-');
-    var a = doc.createElement('a');
-    a.href = inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
-    a.download = 'genshin-wish' + (path ? '-' + path : '') + '.png';
-    doc.body.appendChild(a);
-    a.click();
-    doc.body.removeChild(a);
-  }
-
   var P = UI.panels = {
     /* items: [[指标, 数值], ...]，数值列自动等宽对齐 */
     statRow: function (items) {
@@ -43,26 +26,11 @@
       return wrap;
     },
 
-    /* 图表容器：外层 chartbox 承载右上角的「下载 PNG」按钮。
-       图是 canvas，读者既选不中也复制不了，导出只能靠按钮。 */
+    /* 图表容器。导出按钮不放在图上（会压住数据标注），由外壳的参数面板统一提供 */
     chart: function (host, modifier) {
-      var box = doc.createElement('div');
-      box.className = 'chartbox';
       var node = doc.createElement('div');
       node.className = 'chart' + (modifier ? ' chart--' + modifier : '');
-      box.appendChild(node);
-      var btn = doc.createElement('button');
-      btn.type = 'button';
-      btn.className = 'chartbox__dl';
-      btn.title = '下载 PNG';
-      btn.setAttribute('aria-label', '下载图表为 PNG');
-      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
-        'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
-        'stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/>' +
-        '<path d="M4 20h16"/></svg>';
-      btn.onclick = function () { saveChartPng(node); };
-      box.appendChild(btn);
-      host.appendChild(box);
+      host.appendChild(node);
       return node;
     },
 
