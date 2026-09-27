@@ -113,6 +113,98 @@
     return makeDistribution(pdf);
   };
 
+  /* --- 给定抽数下（限定数, 常驻数）的联合分布 ---
+   * 出金时刻由 pity 过程决定，与「每金是 UP 还是常驻」相互独立，故可分解为
+   * P(恰好 g 金 | P 抽) ⊗ 标记链 D[g][u]。对应 character.py 的 pulls_joint_distribution。 */
+
+  /* P(恰好 g 金 | pulls 抽)，g = 0..gMax（尾部概率 < eps 时截断）。
+     P(恰好 g 金) = P(T_g ≤ P) − P(T_{g+1} ≤ P)，T_g 由单金 PDF 逐次卷积得到。 */
+  C.goldCountPmf = function (pulls, pity, eps) {
+    if (eps === undefined) eps = 1e-15;
+    var pFirst = C.gold.getGoldPdfs('character')[1];
+    var dist = pity > 0 ? S.shiftedFirstGold(pFirst, pity) : Float64Array.from(pFirst);
+    var out = [], prev = 1.0;
+    for (var g = 0; g <= pulls + 1; g++) {
+      var n = Math.min(dist.length, pulls + 1), cur = 0;
+      for (var i = 0; i < n; i++) cur += dist[i];
+      out.push(Math.max(prev - cur, 0));
+      if (cur < eps) break;
+      dist = S.convolveTrunc(dist, pFirst, pulls + 1);
+      prev = cur;
+    }
+    return out;
+  };
+
+  /* D[g][u] = P(前 g 个金中恰有 u 个 UP)。weights 非空时按 k_miss = 0..3 加权（稳态）。 */
+  C.labelChain = function (gMax, kMiss, guaranteed, weights) {
+    var pUp = C.CAPTURE_RADIANCE_WIN_RATE;
+    var D = [];
+    for (var g0 = 0; g0 <= gMax; g0++) D.push(new Float64Array(gMax + 1));
+    D[0][0] = 1.0;
+
+    for (var k0 = 0; k0 < 4; k0++) {
+      var w = weights ? weights[k0] : (k0 === kMiss ? 1.0 : 0.0);
+      if (w === 0) continue;
+      var A = [];
+      for (var s0 = 0; s0 < 4; s0++) {
+        A.push([new Float64Array(gMax + 1), new Float64Array(gMax + 1)]);
+      }
+      A[k0][guaranteed ? 1 : 0][0] = w;
+      for (var g = 1; g <= gMax; g++) {
+        var B = [];
+        for (var s1 = 0; s1 < 4; s1++) {
+          B.push([new Float64Array(gMax + 1), new Float64Array(gMax + 1)]);
+        }
+        for (var k = 0; k < 4; k++) {
+          for (var pend = 0; pend < 2; pend++) {
+            var src = A[k][pend];
+            if (pend) {
+              for (var u1 = 0; u1 < gMax; u1++) B[k][0][u1 + 1] += src[u1];
+            } else {
+              var pw = pUp[k], pl = 1 - pw;
+              for (var u2 = 0; u2 < gMax; u2++) B[0][0][u2 + 1] += src[u2] * pw;
+              if (k < 3) for (var u3 = 0; u3 <= gMax; u3++) B[k + 1][1][u3] += src[u3] * pl;
+            }
+          }
+        }
+        A = B;
+        for (var k2 = 0; k2 < 4; k2++) {
+          for (var p2 = 0; p2 < 2; p2++) {
+            var row = A[k2][p2], dst = D[g];
+            for (var u4 = 0; u4 <= g; u4++) dst[u4] += row[u4];
+          }
+        }
+      }
+    }
+    return D;
+  };
+
+  /* → { matrix[u][s], upMarginal[u] } */
+  C.pullsJointDistribution = function (state, pulls) {
+    if (pulls < 0) throw new RangeError('pulls 不能为负');
+    var pmf = C.goldCountPmf(pulls, state.pity || 0);
+    var gMax = pmf.length - 1;
+    var chain = C.labelChain(gMax, state.consecutiveLoss,
+                             state.guaranteed, state.stable ? C.STABLE_P : null);
+
+    var M = [];
+    for (var u = 0; u <= gMax; u++) M.push(new Float64Array(gMax + 2));
+    for (var g = 0; g <= gMax; g++) {
+      if (pmf[g] === 0) continue;
+      for (var u2 = 0; u2 <= g; u2++) {
+        if (chain[g][u2] !== 0) M[u2][g - u2] += pmf[g] * chain[g][u2];
+      }
+    }
+
+    var marg = new Float64Array(gMax + 1);
+    for (var u3 = 0; u3 <= gMax; u3++) {
+      var row = M[u3], tot = 0;
+      for (var s = 0; s < row.length; s++) tot += row[s];
+      marg[u3] = tot;
+    }
+    return { matrix: M, upMarginal: marg };
+  };
+
   /* --- 金数 + 常驻数联合 DP（_dp_golds_full）---
    * 返回 byNs[ns][gold] = P(恰好 gold 金、其中 ns 个常驻)。 */
   C.dpGoldsFull = function (nUncertain, kMissStart) {

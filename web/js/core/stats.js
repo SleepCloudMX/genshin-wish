@@ -30,6 +30,21 @@
     return dst;
   };
 
+  /* 截断卷积：只保留前 limit 项。下限项只依赖下限项，故结果与全卷积一致，
+     供「只关心 ≤ N 抽的累积量」的场合省一半以上运算。 */
+  S.convolveTrunc = function (a, b, limit) {
+    var la = Math.min(a.length, limit), lb = b.length;
+    var out = new Float64Array(Math.min(la + lb - 1, limit));
+    for (var i = 0; i < la; i++) {
+      var ai = a[i];
+      if (ai === 0) continue;
+      var jmax = out.length - i;
+      if (jmax > lb) jmax = lb;
+      for (var j = 0; j < jmax; j++) out[i + j] += ai * b[j];
+    }
+    return out;
+  };
+
   S.cumsum = function (a) {
     var out = new Float64Array(a.length), acc = 0;
     for (var i = 0; i < a.length; i++) { acc += a[i]; out[i] = acc; }

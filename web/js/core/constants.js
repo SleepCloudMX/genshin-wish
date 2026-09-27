@@ -39,6 +39,7 @@
   C.LIMITS = {
     goldTableMax: 64,
     charExactNUp: 30,
+    pullsMax: 10000,
     maxPity: { character: 89, weapon: 79 }
   };
 

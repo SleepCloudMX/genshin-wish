@@ -40,6 +40,71 @@
 
   function label(n) { return n === 7 ? '满命' : (n - 1) + ' 命'; }
 
+  /* --- 金数分布：给定抽数下 (限定数, 常驻数) 的联合分布 --- */
+  var BAR_MIN_P = 1e-4;      /* 概率不足 0.01% 的限定数不单独画柱 */
+  var BAR_MAX = 20;          /* 柱子总数上限，超出时两端合并为「< n」「> m」 */
+  var TIP_TOP = 10;          /* 悬浮框列出的常驻数项数上限 */
+  var TIP_MIN_P = 1e-6;      /* 低于 0.0001% 的项（读数只能印出 0.0000%）并入「其余」 */
+
+  /* 选出要画的柱：概率达标的限定数；超过 BAR_MAX 根时取概率最高的连续 18 项，
+     两端各自合并成一根（合并柱不细分常驻数），使总数为 BAR_MAX */
+  function barSpec(joint) {
+    var marg = joint.upMarginal, M = joint.matrix, u, i, j;
+    var qual = [];
+    for (u = 0; u < marg.length; u++) if (marg[u] > BAR_MIN_P) qual.push(u);
+
+    var merged = qual.length > BAR_MAX;
+    var lo = 0, hi = qual.length - 1;
+    if (merged) {
+      var width = BAR_MAX - 2, bestSum = -1;
+      for (i = 0; i + width <= qual.length; i++) {
+        var sum = 0;
+        for (j = i; j < i + width; j++) sum += marg[qual[j]];
+        if (sum > bestSum) { bestSum = sum; lo = i; hi = i + width - 1; }
+      }
+    }
+
+    var bars = [];
+    if (merged && qual[lo] > 0) {
+      var below = 0;
+      for (u = 0; u < qual[lo]; u++) below += marg[u];
+      bars.push({ label: '<' + qual[lo], total: below, segs: null });
+    }
+    for (i = lo; i <= hi; i++) {
+      u = qual[i];
+      var segs = [];
+      for (var s = 0; s < M[u].length; s++) if (M[u][s] > 0) segs.push({ s: s, p: M[u][s] });
+      bars.push({ label: String(u), total: marg[u], segs: segs });
+    }
+    if (merged && qual[hi] < marg.length - 1) {
+      var above = 0;
+      for (u = qual[hi] + 1; u < marg.length; u++) above += marg[u];
+      bars.push({ label: '>' + qual[hi], total: above, segs: null });
+    }
+    return { bars: bars, merged: merged };
+  }
+
+  function barTip(b) {
+    if (!b.segs) {
+      return P.tip('限定 ' + b.label + ' 个（不细分常驻数）',
+                   [['合计', P.pctAdaptive(b.total)]]);
+    }
+    var segs = b.segs.slice().sort(function (x, y) { return y.p - x.p; });
+    var rows = [], rest = 0, shown = 0;
+    segs.forEach(function (sg, i) {
+      if (i < TIP_TOP && sg.p >= TIP_MIN_P) {
+        rows.push(['常驻 ' + sg.s + ' 个', P.pctAdaptive(sg.p)]);
+        shown++;
+      } else {
+        rest += sg.p;
+      }
+    });
+    if (shown < segs.length) {
+      rows.push(['其余 ' + (segs.length - shown) + ' 项', P.pctAdaptive(rest)]);
+    }
+    return P.tip('恰好 ' + b.label + ' 个限定 · ' + P.pctAdaptive(b.total), rows);
+  }
+
   /* P(≥ n UP | pulls) 网格：n = 0..upto，长度统一为 maxPulls（尾部补 1） */
   function cdfGrid(p, upto, maxPulls) {
     var out = [];
@@ -65,14 +130,20 @@
            '模型依据：前 73 抽出金概率 0.6%，此后每抽递增 6 个百分点，第 90 抽必出金；' +
            '出金时 50% 为限定角色，歪后下一金必为限定，连歪触发捕获明光' +
            '（等效 UP 率 50.0%/54.8%/59.2%/100%）。参数取自社区总结的模型，结果仅供参考。',
-    defaults: { nUp: 7, loss: 0, pity: 0, guaranteed: false },
+    defaults: { nUp: 7, loss: 0, pity: 0, guaranteed: false, pulls: 1000 },
 
     controls: function () {
       return [
         {
           type: 'range', key: 'nUp', label: '目标 UP 数', min: 1,
           max: C.LIMITS.charExactNUp, step: 1, unit: ' 个',
+          views: ['cdf', 'pdf', 'fan', 'column', 'stack', 'staircase', 'table'],
           help: '含角色本体；7 对应满命'
+        },
+        {
+          type: 'number', key: 'pulls', label: '抽数', min: 1,
+          max: C.LIMITS.pullsMax, step: 1, views: ['gold'],
+          help: '给定抽数下能抽到几个限定角色'
         },
         {
           type: 'segmented', key: 'loss', label: '已连歪次数',
@@ -188,6 +259,84 @@
             }
           });
           setStatus(ctx, p, '单峰分布，峰值在 ' + mode + ' 抽 · 用时 ' +
+                            (performance.now() - t0).toFixed(0) + 'ms');
+        }
+      },
+
+      gold: {
+        label: '金数分布',
+        render: function (host, ctx) {
+          var p = ctx.state;
+          var t0 = performance.now();
+          var joint = C.pullsJointDistribution(stateOf(p), p.pulls);
+          var spec = barSpec(joint);
+          var bars = spec.bars;
+
+          var eUp = 0, eStd = 0, mode = 0, u, s;
+          for (u = 0; u < joint.upMarginal.length; u++) {
+            eUp += u * joint.upMarginal[u];
+            if (joint.upMarginal[u] > joint.upMarginal[mode]) mode = u;
+            for (s = 0; s < joint.matrix[u].length; s++) eStd += s * joint.matrix[u][s];
+          }
+
+          /* 只为画得出来的常驻数建系列（比 TIP_MIN_P 还小的段连细边都算不上），
+             同一个常驻数在各柱同色：在图中出现过的区间上取色带，拉满对比度 */
+          var seen = {};
+          bars.forEach(function (b) {
+            if (!b.segs) return;
+            b.segs.forEach(function (sg) { if (sg.p >= TIP_MIN_P) seen[sg.s] = true; });
+          });
+          var sList = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+          var minS = sList.length ? sList[0] : 0;
+          var maxS = sList.length ? sList[sList.length - 1] : 0;
+          var series = sList.map(function (s2) {
+            return {
+              name: '常驻 ' + s2 + ' 个',
+              stack: 'up',
+              maxWidth: 34,
+              color: S.ramp(C.COLORS.spectral, maxS > minS ? (s2 - minS) / (maxS - minS) : 0),
+              values: bars.map(function (b) {
+                if (!b.segs) return null;
+                for (var k = 0; k < b.segs.length; k++) {
+                  if (b.segs[k].s === s2) return b.segs[k].p;
+                }
+                return null;
+              })
+            };
+          });
+          if (spec.merged) {
+            series.push({
+              name: '合并', stack: 'up', maxWidth: 34, color: 'var(--text-dim)',
+              values: bars.map(function (b) { return b.segs ? null : b.total; })
+            });
+          }
+
+          var top = 0;
+          bars.forEach(function (b) { if (b.total > top) top = b.total; });
+
+          var chart = P.chart(host);
+          host.appendChild(P.statRow([
+            ['期望限定数', P.num(eUp, 2)],
+            ['期望常驻数', P.num(eStd, 2)],
+            ['合计金数', P.num(eUp + eStd, 2)],
+            ['最可能限定数', mode + ' 个']
+          ]));
+          ctx.charts.bars(chart, {
+            categories: bars.map(function (b) { return b.label; }),
+            xLabel: '抽到的限定角色数',
+            yLabel: '概率',
+            yMax: Math.max(top * 1.08, 0.02),
+            legend: false,
+            series: series,
+            yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
+            tooltipHtml: function (i) { return barTip(bars[i]); }
+          });
+          host.appendChild(P.note('柱高为恰好抽到 n 个限定角色的概率，柱内按常驻五星数分色' +
+            '（同一常驻数在各柱同色）。概率不足 0.01% 的限定数不单独画柱' +
+            (spec.merged ? '；超过 ' + BAR_MAX + ' 根时取概率最高的连续 ' + (BAR_MAX - 2) +
+                           ' 项，其余两端各并成一根，合并柱不细分常驻数' : '') +
+            '。常驻数含「歪了大保底、保底尚未兑现」的那个常驻五星。'));
+          setStatus(ctx, p, p.pulls + ' 抽 · ' + bars.length + ' 根柱子 · 用时 ' +
                             (performance.now() - t0).toFixed(0) + 'ms');
         }
       },

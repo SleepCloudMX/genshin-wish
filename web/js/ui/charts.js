@@ -578,9 +578,16 @@
       tooltip: {
         trigger: 'axis', confine: true, backgroundColor: t.surface,
         borderColor: t.axis, textStyle: { color: t.text, fontSize: 12, fontFamily: MONO },
-        valueFormatter: opt.tooltipFormatter
+        /* tooltipHtml(dataIndex)：堆叠柱的读数要跨系列排序、截断，交给模块拼装 */
+        formatter: opt.tooltipHtml
+          ? function (params) {
+              var list = params instanceof Array ? params : [params];
+              return opt.tooltipHtml(list[0].dataIndex);
+            }
+          : undefined,
+        valueFormatter: opt.tooltipHtml ? undefined : opt.tooltipFormatter
       },
-      legend: (opt.series.length + (opt.overlays || []).length) > 1 ? {
+      legend: hasLegend ? {
         top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10,
         textStyle: { color: t.dim, fontSize: 12 },
         data: opt.series.map(function (s) { return s.name; })
@@ -616,6 +623,7 @@
           : color;
         return {
           name: s.name, type: 'bar',
+          stack: s.stack,
           barMaxWidth: s.maxWidth || 20,
           barGap: s.gap,
           z: 2,
@@ -624,8 +632,11 @@
             color: s.colors
               ? function (p) { return s.colors[p.dataIndex]; }
               : fill,
-            borderRadius: s.gradient ? 0 : [3, 3, 0, 0],
-            borderColor: s.borderColor, borderWidth: s.borderWidth
+            /* 堆叠柱不加圆角，改用 1px 底色描边把相邻段分开 */
+            borderRadius: (s.stack || s.gradient) ? 0 : [3, 3, 0, 0],
+            borderColor: s.stack ? (s.borderColor || t.surface) : s.borderColor,
+            borderWidth: s.stack ? (s.borderWidth === undefined ? 1 : s.borderWidth)
+                                 : s.borderWidth
           },
           label: (opt.valueLabels && opt.valueLabels.show) ? {
             show: true, position: s.labelPos || 'top', fontSize: 10,

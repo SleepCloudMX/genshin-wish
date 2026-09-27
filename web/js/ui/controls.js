@@ -75,6 +75,35 @@
       return wrap;
     }
 
+    if (spec.type === 'number') {
+      wrap.appendChild(labelFor(spec, null));
+      var num = doc.createElement('input');
+      num.type = 'number';
+      num.className = 'field__input field__input--mono';
+      num.min = spec.min;
+      num.max = spec.max;
+      num.step = spec.step || 1;
+      num.value = value;
+      num.setAttribute('aria-label', spec.label);
+      /* 只认 change（回车/失焦）：输入途中的中间值（1、10、100…）没有意义，
+         超范围时夹回区间并把纠正后的值写回输入框 */
+      num.addEventListener('change', function () {
+        var v = Number(num.value);
+        if (!isFinite(v)) v = value;
+        v = Math.min(spec.max, Math.max(spec.min, Math.round(v)));
+        num.value = v;
+        onChange(spec.key, v, false);
+      });
+      wrap.appendChild(num);
+      if (spec.help) {
+        var nh = doc.createElement('span');
+        nh.className = 'field__help field__help--block';
+        nh.textContent = spec.help;
+        wrap.appendChild(nh);
+      }
+      return wrap;
+    }
+
     if (spec.type === 'text') {
       wrap.appendChild(labelFor({ label: spec.label }, null));
       var text = doc.createElement('input');
