@@ -214,6 +214,105 @@ def stable_up_distribution(n_up: int, method: str = "auto") -> UpDistribution:
     return UpDistribution(pdf=stable_pdf, cdf=stable_cdf, method=dists[0].method)
 
 
+def pulls_joint_distribution(
+    state: CharacterState, n_pulls: int,
+) -> dict[int, dict[int, float]]:
+    """Joint distribution of (rate-ups, standard 5★) within *n_pulls* pulls.
+
+    出金时刻由 pity 过程决定，与「每金是 UP 还是常驻」相互独立，故可分解为
+    ``P(恰好 g 金 | n_pulls 抽) · D[g][u]``（g = u + n_std，D 为标记链给出的
+    「前 g 金的 UP 数分布」）。
+
+    Returns ``{n_up: {n_std: probability}}``，只列出概率非零的项。
+    """
+    if n_pulls < 0:
+        raise ValueError(f"n_pulls must be >= 0, got {n_pulls}")
+
+    pmf = _gold_count_pmf(state.pity, n_pulls)
+    chain = _label_chain(len(pmf) - 1, state.consecutive_loss, state.guaranteed)
+
+    acc: dict[int, dict[int, float]] = defaultdict(dict)
+    for g, p in enumerate(pmf):
+        if p == 0.0:
+            continue
+        for u in range(g + 1):
+            w = chain[g][u]
+            if w == 0.0:
+                continue
+            row = acc[u]
+            row[g - u] = row.get(g - u, 0.0) + p * w
+    return {u: dict(row) for u, row in acc.items()}
+
+
+def stable_pulls_joint_distribution(n_pulls: int) -> dict[int, dict[int, float]]:
+    """Steady-state variant: k_miss weighted by the stationary distribution."""
+    acc: dict[int, dict[int, float]] = {}
+    for k_miss, weight in enumerate(STABLE_P):
+        state = CharacterState(guaranteed=False, pity=0, consecutive_loss=k_miss)
+        for u, row in pulls_joint_distribution(state, n_pulls).items():
+            dst = acc.setdefault(u, {})
+            for n_std, p in row.items():
+                dst[n_std] = dst.get(n_std, 0.0) + weight * p
+    return acc
+
+
+def _gold_count_pmf(pity: int, n_pulls: int, eps: float = 1e-15) -> np.ndarray:
+    """P(恰好 g 金 | n_pulls 抽)，g = 0..g_max，尾部概率 < eps 时截断。
+
+    ``P(恰好 g 金) = P(T_g ≤ P) − P(T_{g+1} ≤ P)``，T_g 由单金 PDF 逐次卷积得到
+    （首金按当前 pity 平移）；只对 t ≤ n_pulls 求和，卷积可截断到 n_pulls + 1 项。
+    """
+    p_first = get_gold_pdfs(CHARACTER_POOL)[1]
+    if pity == 0:
+        dist = p_first.copy()
+    else:
+        tail = p_first[pity + 1:]
+        dist = np.insert(tail / tail.sum(), 0, 0)
+
+    out: list[float] = []
+    prev = 1.0
+    for _ in range(n_pulls + 2):
+        cur = float(dist[: n_pulls + 1].sum())
+        out.append(max(prev - cur, 0.0))
+        if cur < eps:
+            break
+        dist = np.convolve(dist[: n_pulls + 1], p_first)
+        prev = cur
+    return np.array(out, dtype=np.float64)
+
+
+def _label_chain(g_max: int, k_miss: int, guaranteed: bool) -> np.ndarray:
+    """D[g][u] = P(前 g 个金中恰有 u 个 UP)。
+
+    标记链：中的金 1 金换 1 UP 且 k_miss 归零；歪的金计 2 金（歪出的常驻 + 下一金
+    保底 UP），k_miss + 1（上限 3）；保底待发时下一金必为 UP。
+    """
+    p_up = CAPTURE_RADIANCE_WIN_RATE
+    A = [[np.zeros(g_max + 1), np.zeros(g_max + 1)] for _ in range(4)]
+    A[k_miss][1 if guaranteed else 0][0] = 1.0
+
+    D = np.zeros((g_max + 1, g_max + 1))
+    D[0, 0] = 1.0
+    for g in range(1, g_max + 1):
+        B = [[np.zeros(g_max + 1), np.zeros(g_max + 1)] for _ in range(4)]
+        for k in range(4):
+            for pend in (0, 1):
+                src = A[k][pend]
+                if not src.any():
+                    continue
+                if pend:
+                    B[k][0][1:] += src[:-1]
+                else:
+                    B[0][0][1:] += src[:-1] * p_up[k]
+                    if k < 3:
+                        B[k + 1][1] += src * (1.0 - p_up[k])
+        A = B
+        for k in range(4):
+            for pend in (0, 1):
+                D[g] += A[k][pend]
+    return D
+
+
 def n_std_distribution(state: CharacterState, n_up: int) -> dict[int, float]:
     """Marginal distribution of standard character count given *n_up* rate-ups.
 

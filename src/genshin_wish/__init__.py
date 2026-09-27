@@ -11,7 +11,14 @@ Usage::
 """
 
 from genshin_wish._constants import PoolConfig, CHARACTER_POOL, WEAPON_POOL, STABLE_P
-from genshin_wish.character import CharacterState, UpDistribution, up_distribution, stable_up_distribution
+from genshin_wish.character import (
+    CharacterState,
+    UpDistribution,
+    pulls_joint_distribution,
+    stable_pulls_joint_distribution,
+    stable_up_distribution,
+    up_distribution,
+)
 from genshin_wish.standard import StandardState, standard_distribution
 from genshin_wish.weapon import WeaponState, WeaponTarget, WeaponUpDistribution, weapon_up_distribution
 from genshin_wish.joint import JointDistribution, joint_distribution
@@ -25,6 +32,8 @@ __all__ = [
     "UpDistribution",
     "up_distribution",
     "stable_up_distribution",
+    "pulls_joint_distribution",
+    "stable_pulls_joint_distribution",
     "StandardState",
     "standard_distribution",
     "WeaponState",
