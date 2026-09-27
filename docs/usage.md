@@ -395,6 +395,24 @@ dist.expected    # 期望抽数
 dist.quantile(0.5)
 ```
 
+**固定抽数下的（限定数, 常驻数）联合分布：** 给定抽数时能抽到几个限定、几个常驻。
+与上面按 `n_up` 索引的分布相反，这里抽数是输入、UP 数是结果。
+
+```python
+from genshin_wish import CharacterState, pulls_joint_distribution
+
+state = CharacterState(guaranteed=False, pity=0, consecutive_loss=0)
+joint = pulls_joint_distribution(state, n_pulls=1000)
+# joint = {10: {3: 0.011, 4: 0.059, ...}, 11: {...}, ...}  # {n_up: {n_std: 概率}}
+
+# 稳态（连歪次数按 STABLE_P 加权）：角色池「金数分布」页的默认口径
+from genshin_wish import stable_pulls_joint_distribution
+joint_stable = stable_pulls_joint_distribution(n_pulls=1000)
+```
+
+实现用金数分解：出金时刻与「每金是 UP 还是常驻」相互独立，
+`P(n_up=u, n_std=s) = P(恰好 u+s 金 | n_pulls 抽) · D[u+s][u]`。
+
 ### 武器池
 
 ```python
