@@ -18,16 +18,24 @@
     { a: 0.9, color: '#d62728' }, { a: 0.99, color: '#4b0082' }
   ];
 
+  function isStable(p) { return p.loss === C.STABLE_LOSS; }
+
   function stateOf(p) {
     return C.makeCharacterState({
       guaranteed: p.guaranteed,
       pity: p.pity,
-      consecutiveLoss: p.loss
+      consecutiveLoss: isStable(p) ? 0 : p.loss,
+      stable: isStable(p)
     });
   }
 
   function distOf(p) {
     return C.upDistribution(stateOf(p), p.nUp);
+  }
+
+  /* 稳态时在状态条标注，免得只有控件上的选中态提示 */
+  function setStatus(ctx, p, text) {
+    ctx.setStatus(isStable(p) ? text + ' · 连歪次数取稳态' : text);
   }
 
   function label(n) { return n === 7 ? '满命' : (n - 1) + ' 命'; }
@@ -69,8 +77,9 @@
         {
           type: 'segmented', key: 'loss', label: '已连歪次数',
           options: [{ value: 0, label: '0' }, { value: 1, label: '1' },
-                    { value: 2, label: '2' }, { value: 3, label: '3' }],
-          help: '连歪会提升捕获明光概率'
+                    { value: 2, label: '2' }, { value: 3, label: '3' },
+                    { value: C.STABLE_LOSS, label: '稳态' }],
+          help: '「稳态」按连歪次数的长期分布加权'
         },
         {
           type: 'range', key: 'pity', label: '已垫抽数', min: 0, max: 89, step: 1,
@@ -129,7 +138,7 @@
               return '≤ <b>' + pulls + '</b> 抽：<b>' + P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + ' 抽');
+          setStatus(ctx, p, '最坏情况 ' + (dist.cdf.length - 1) + ' 抽');
         }
       },
 
@@ -178,8 +187,8 @@
                      P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('单峰分布，峰值在 ' + mode + ' 抽 · 用时 ' +
-                        (performance.now() - t0).toFixed(0) + 'ms');
+          setStatus(ctx, p, '单峰分布，峰值在 ' + mode + ' 抽 · 用时 ' +
+                            (performance.now() - t0).toFixed(0) + 'ms');
         }
       },
 
@@ -260,8 +269,8 @@
           });
           host.appendChild(P.note('纵轴为抽到第 n 个 UP 的总抽数除以 n。' +
             '区间自内向外依次为 40%–60%、30%–70%、20%–80%、10%–90%、1%–99%。'));
-          ctx.setStatus('第 ' + maxN + ' 个 UP 的期望成本 ' + exps[maxN - 1].toFixed(1) +
-                        ' 抽/UP · 区间为同一 UP 的对称分位点');
+          setStatus(ctx, p, '第 ' + maxN + ' 个 UP 的期望成本 ' + exps[maxN - 1].toFixed(1) +
+                            ' 抽/UP · 区间为同一 UP 的对称分位点');
         }
       },
 
@@ -324,7 +333,7 @@
           });
           host.appendChild(P.note('柱高为 99.5% 分位（近似上限），柱内颜色由浅至深对应达成概率自 0 到 1 递增；' +
                                   '横线为各分位点，黑线为期望抽数。'));
-          ctx.setStatus('每列对应抽到前 n 个 UP 所需的总抽数');
+          setStatus(ctx, p, '每列对应抽到前 n 个 UP 所需的总抽数');
         }
       },
 
@@ -383,7 +392,7 @@
           host.appendChild(P.note('各层为「恰好持有 n 个限定角色」的玩家占比，随抽数累积此消彼长；' +
             (N > layers ? '超过 ' + layers + ' 个的部分合并计入最上层。'
                         : '最上层为持有全部 ' + layers + ' 个的占比。')));
-          ctx.setStatus('横轴至 ' + maxPulls + ' 抽（' + N + ' 个 UP 的 99.5% 分位）');
+          setStatus(ctx, p, '横轴至 ' + maxPulls + ' 抽（' + N + ' 个 UP 的 99.5% 分位）');
         }
       },
 
@@ -476,7 +485,7 @@
             '\\(E[n]=\\sum_{k=1}^{' + calcLimit + '} P(\\geq k\\ \\text{个 UP})\\)。' +
             '虚线切面标出期望达到各整数个 UP 所需的抽数。'));
           UI.math.typeset(host);
-          ctx.setStatus('分位带为 UP 数的对称区间；求和截止到第 ' + calcLimit + ' 个 UP');
+          setStatus(ctx, p, '分位带为 UP 数的对称区间；求和截止到第 ' + calcLimit + ' 个 UP');
         }
       },
 

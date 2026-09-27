@@ -59,12 +59,18 @@
       throw new RangeError('pity 必须为 0..' + C.LIMITS.maxPity.character);
     }
     if (loss < 0 || loss > 3) throw new RangeError('consecutive_loss 必须为 0..3');
-    return { guaranteed: !!opts.guaranteed, pity: pity, consecutiveLoss: loss };
+    return { guaranteed: !!opts.guaranteed, pity: pity, consecutiveLoss: loss,
+             stable: !!opts.stable };
   };
 
   C.upDistribution = function (state, nUp) {
     if (nUp < 0) throw new RangeError('n_up 不能为负');
     if (nUp === 0) return makeDistribution(Float64Array.from([1.0]));
+    if (state.stable) {
+      return C.stableUpDistribution(nUp, {
+        pity: state.pity, guaranteed: state.guaranteed
+      });
+    }
 
     var nUncertain = nUp - (state.guaranteed ? 1 : 0);
     var pdfs = C.gold.getGoldPdfs('character', nUncertain === 0 ? 3 : nUncertain * 2 + 3);
@@ -88,11 +94,15 @@
     return makeDistribution(pdf);
   };
 
-  /* 稳态：按 STABLE_P 加权 k_miss = 0..3 的分布，零填充到最长 */
-  C.stableUpDistribution = function (nUp) {
+  /* 稳态：连歪次数未知，按 STABLE_P 加权 k_miss = 0..3 的分布，零填充到最长。
+     opts 的 pity / guaranteed 是已知的当前状态，照常施加（缺省即 pity=0、非大保底）。 */
+  C.stableUpDistribution = function (nUp, opts) {
+    opts = opts || {};
     var dists = [], maxLen = 0, i;
     for (i = 0; i < 4; i++) {
-      var d = C.upDistribution(C.makeCharacterState({ consecutiveLoss: i }), nUp);
+      var d = C.upDistribution(C.makeCharacterState({
+        guaranteed: !!opts.guaranteed, pity: opts.pity || 0, consecutiveLoss: i
+      }), nUp);
       dists.push(d);
       if (d.pdf.length > maxLen) maxLen = d.pdf.length;
     }

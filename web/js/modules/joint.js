@@ -10,9 +10,12 @@
 
   var ALPHAS = C.CDF_ALPHAS;
 
+  function isStable(p) { return p.charLoss === C.STABLE_LOSS; }
+
   function charStateOf(p) {
     return C.makeCharacterState({
-      guaranteed: p.charGuaranteed, pity: p.charPity, consecutiveLoss: p.charLoss
+      guaranteed: p.charGuaranteed, pity: p.charPity,
+      consecutiveLoss: isStable(p) ? 0 : p.charLoss, stable: isStable(p)
     });
   }
 
@@ -22,6 +25,11 @@
 
   function distOf(p) {
     return C.jointDistribution(charStateOf(p), p.charUp, weaponStateOf(p), p.weaponCount);
+  }
+
+  /* 稳态时在状态条标注，免得只有控件上的选中态提示 */
+  function setStatus(ctx, p, text) {
+    ctx.setStatus(isStable(p) ? text + ' · 角色连歪次数取稳态' : text);
   }
 
   M.joint = {
@@ -45,8 +53,9 @@
         {
           type: 'segmented', key: 'charLoss', label: '已连歪次数',
           options: [{ value: 0, label: '0' }, { value: 1, label: '1' },
-                    { value: 2, label: '2' }, { value: 3, label: '3' }],
-          help: '连歪会提升捕获明光概率'
+                    { value: 2, label: '2' }, { value: 3, label: '3' },
+                    { value: C.STABLE_LOSS, label: '稳态' }],
+          help: '「稳态」按连歪次数的长期分布加权'
         },
         {
           type: 'range', key: 'charPity', label: '角色池已垫', min: 0, max: 89,
@@ -75,7 +84,8 @@
       cdf: {
         label: '累积分布 (CDF)',
         render: function (host, ctx) {
-          var dist = distOf(ctx.state);
+          var p = ctx.state;
+          var dist = distOf(p);
           var xMax = Math.max(1, Math.ceil(S.supportEnd(dist.cdf) * 1.05));
           var x = [], y = [];
           for (var i = 0; i <= xMax; i++) {
@@ -111,7 +121,7 @@
                      P.pctAdaptive(y[i]) + '</b>';
             }
           });
-          ctx.setStatus('最坏情况 ' + (dist.cdf.length - 1) + '抽');
+          setStatus(ctx, p, '最坏情况 ' + (dist.cdf.length - 1) + '抽');
         }
       },
 
@@ -141,8 +151,8 @@
             note: '单元格为达到该概率所需的抽数（期望列单位为抽）。合计行的期望等于两行之和；' +
                   '分位点因两者独立而不可直接相加。本组合中角色占期望的 ' + share + '%。'
           });
-          ctx.setStatus('角色期望 ' + joint.char.expected.toFixed(0) + '抽 · 武器期望 ' +
-                        joint.weapon.expected.toFixed(0) + '抽');
+          setStatus(ctx, p, '角色期望 ' + joint.char.expected.toFixed(0) + '抽 · 武器期望 ' +
+                            joint.weapon.expected.toFixed(0) + '抽');
         }
       }
     }
