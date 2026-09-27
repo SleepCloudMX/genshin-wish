@@ -120,6 +120,7 @@ def main() -> None:
     t1 = json.loads((ANALYSIS / "task1-n_up-to-pulls" / "data.json").read_text(encoding="utf-8"))
     t2 = json.loads((ANALYSIS / "task2-n_up-n_std-to-pulls" / "data.json").read_text(encoding="utf-8"))
     t3 = json.loads((ANALYSIS / "task3-n_up-to-n_std" / "data.json").read_text(encoding="utf-8"))
+    t4 = json.loads((ANALYSIS / "task4-pulls-to-joint" / "data.json").read_text(encoding="utf-8"))
 
     n1 = sorted(int(k) for k in t1["dp-state"])
     methods1 = ["dp-pulls", "dp-path", "dp-state", "dp-golds", "CLT"]
@@ -145,11 +146,21 @@ def main() -> None:
         "dp-golds": [_round(dist_golds[str(k)], 8) for k in keys],
     }
 
+    # Task 4：给定抽数 → 联合分布，三条线分别对应 Python 实现、站点内核（JS）与朴素逐抽递推
+    n4 = t4["pulls"]
+    series4 = {}
+    for label, key in [("金数分解（Python）", "split"), ("金数分解（浏览器）", "split_js"),
+                       ("逐抽递推（Python）", "naive")]:
+        s = speed_series(t4.get(key) or {}, n4)
+        s["fit"] = fit_params(key, n4, s)
+        series4[label] = s
+
     payload = {
         "meta": {
             "generated": date.today().isoformat(),
             "trim": TRIM,
-            "source": "output/analysis/task1-n_up-to-pulls, task2-n_up-n_std-to-pulls, task3-n_up_to-n_std",
+            "source": ("output/analysis/task1-n_up-to-pulls, task2-n_up-n_std-to-pulls, "
+                       "task3-n_up_to-n_std, task4-pulls-to-joint"),
         },
         "quantiles": task1.QUANTILES,
         "colors": task1.METHOD_COLORS,
@@ -157,6 +168,9 @@ def main() -> None:
         "task1": {"n": n1, "series": series1, "clt": clt_errors(t1, n1)},
         "task2": {"n": n2, "series": series2},
         "task3": {"n": n3, "series": series3, "nstd20": nstd20},
+        "task4": {"n": n4, "series": series4, "runs": t4["meta"]["runs"]},
+        "colors4": {"金数分解（Python）": "#2ca02c", "金数分解（浏览器）": "#1f77b4",
+                    "逐抽递推（Python）": "#d62728"},
     }
 
     body = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
