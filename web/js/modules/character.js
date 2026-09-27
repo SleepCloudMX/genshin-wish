@@ -46,8 +46,9 @@
   var TIP_TOP = 10;          /* 悬浮框列出的常驻数项数上限 */
   var TIP_MIN_P = 1e-6;      /* 低于 0.0001% 的项（读数只能印出 0.0000%）并入「其余」 */
 
-  /* 选出要画的柱：概率达标的限定数；超过 BAR_MAX 根时取概率最高的连续 18 项，
-     两端各自合并成一根（合并柱不细分常驻数），使总数为 BAR_MAX */
+  /* 选出要画的柱：概率达标的限定数单独成柱；超过 BAR_MAX 根时只留概率之和最大的连续
+     18 项。两端各并成一根「< n」「> m」（不细分常驻数）——n = 0 或 m 已是最大可能时省去，
+     这两根把区间外的全部质量（含不足 0.01% 的部分）计入，因此柱子之和恒为 100%。 */
   function barSpec(joint) {
     var marg = joint.upMarginal, M = joint.matrix, u, i, j;
     var qual = [];
@@ -65,7 +66,7 @@
     }
 
     var bars = [];
-    if (merged && qual[lo] > 0) {
+    if (qual[lo] > 0) {
       var below = 0;
       for (u = 0; u < qual[lo]; u++) below += marg[u];
       bars.push({ label: '<' + qual[lo], total: below, segs: null });
@@ -76,7 +77,7 @@
       for (var s = 0; s < M[u].length; s++) if (M[u][s] > 0) segs.push({ s: s, p: M[u][s] });
       bars.push({ label: String(u), total: marg[u], segs: segs });
     }
-    if (merged && qual[hi] < marg.length - 1) {
+    if (qual[hi] < marg.length - 1) {
       var above = 0;
       for (u = qual[hi] + 1; u < marg.length; u++) above += marg[u];
       bars.push({ label: '>' + qual[hi], total: above, segs: null });
@@ -294,7 +295,7 @@
               name: '常驻 ' + s2 + ' 个',
               stack: 'up',
               maxWidth: 34,
-              color: S.ramp(C.COLORS.spectral, maxS > minS ? (s2 - minS) / (maxS - minS) : 0),
+              color: S.ramp(C.COLORS.spectralDeep, maxS > minS ? (s2 - minS) / (maxS - minS) : 0),
               values: bars.map(function (b) {
                 if (!b.segs) return null;
                 for (var k = 0; k < b.segs.length; k++) {
@@ -325,17 +326,26 @@
             categories: bars.map(function (b) { return b.label; }),
             xLabel: '抽到的限定角色数',
             yLabel: '概率',
-            yMax: Math.max(top * 1.08, 0.02),
+            yMax: Math.max(top * 1.16, 0.02),
             legend: false,
             series: series,
+            /* 柱顶标注柱子的总概率：只要标注，不要折线与符号 */
+            overlays: [{
+              name: '', type: 'line', line: false, color: 'transparent', symbolSize: 1,
+              data: bars.map(function (b, i) { return [i, b.total]; }),
+              label: {
+                pos: 'top', color: 'var(--text)',
+                formatter: function (pr) { return P.pctAdaptive(pr.value[1]); }
+              }
+            }],
             yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
             tooltipHtml: function (i) { return barTip(bars[i]); }
           });
           host.appendChild(P.note('柱高为恰好抽到 n 个限定角色的概率，柱内按常驻五星数分色' +
-            '（同一常驻数在各柱同色）。概率不足 0.01% 的限定数不单独画柱' +
-            (spec.merged ? '；超过 ' + BAR_MAX + ' 根时取概率最高的连续 ' + (BAR_MAX - 2) +
-                           ' 项，其余两端各并成一根，合并柱不细分常驻数' : '') +
-            '。常驻数含「歪了大保底、保底尚未兑现」的那个常驻五星。'));
+            '（同一常驻数在各柱同色）。概率不足 0.01% 的限定数不单独画柱，' +
+            (spec.merged ? '超过 ' + BAR_MAX + ' 根时只留概率之和最大的连续 ' + (BAR_MAX - 2) + ' 项，' : '') +
+            '两端分别并入「< n」「> m」两根（不细分常驻数，含区间外不足 0.01% 的部分）。' +
+            '常驻数含「歪了大保底、保底尚未兑现」的那个常驻五星。'));
           setStatus(ctx, p, p.pulls + ' 抽 · ' + bars.length + ' 根柱子 · 用时 ' +
                             (performance.now() - t0).toFixed(0) + 'ms');
         }

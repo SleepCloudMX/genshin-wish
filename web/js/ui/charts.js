@@ -662,11 +662,14 @@
           name: o.name, type: 'line', z: 4, symbol: o.symbol === false ? 'none' : 'circle',
           symbolSize: o.symbolSize || 5, smooth: false,
           data: o.data,
-          lineStyle: { color: color, width: o.width || 1.6, type: o.dash ? 'dashed' : 'solid' },
+          /* line: false —— 只要标注不要折线（符号用透明色隐去，标注文字另给颜色） */
+          lineStyle: o.line === false ? { opacity: 0 }
+                   : { color: color, width: o.width || 1.6, type: o.dash ? 'dashed' : 'solid' },
           itemStyle: { color: color },
           label: o.label ? {
             show: true, position: o.label.pos || 'top', formatter: o.label.formatter,
-            fontSize: 10, fontFamily: MONO, color: color
+            fontSize: 10, fontFamily: MONO,
+            color: o.label.color ? resolveColor(o.label.color, t) : color
           } : undefined
         };
       }))
