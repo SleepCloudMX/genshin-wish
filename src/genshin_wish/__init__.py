@@ -20,7 +20,13 @@ from genshin_wish.character import (
     up_distribution,
 )
 from genshin_wish.standard import StandardState, standard_distribution
-from genshin_wish.weapon import WeaponState, WeaponTarget, WeaponUpDistribution, weapon_up_distribution
+from genshin_wish.weapon import (
+    WeaponState,
+    WeaponTarget,
+    WeaponUpDistribution,
+    weapon_pulls_joint_distribution,
+    weapon_up_distribution,
+)
 from genshin_wish.joint import JointDistribution, joint_distribution
 
 __all__ = [
@@ -40,6 +46,7 @@ __all__ = [
     "WeaponTarget",
     "WeaponUpDistribution",
     "weapon_up_distribution",
+    "weapon_pulls_joint_distribution",
     "JointDistribution",
     "joint_distribution",
 ]

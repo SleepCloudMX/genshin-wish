@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ._constants import WEAPON_POOL
-from ._gold import get_gold_pdfs
+from ._gold import get_gold_pdfs, gold_count_pmf, joint_from_labels
 
 
 @dataclass
@@ -78,6 +78,64 @@ def _single_copy_weights(
 
     # Default: 25% standard, 37.5% A, 37.5% B
     return {1: 0.375, 2: 0.625}
+
+
+def weapon_pulls_joint_distribution(
+    state: WeaponState, n_pulls: int,
+) -> dict[int, dict[int, float]]:
+    """给定抽数下（定轨目标数, 歪出的五星数）的联合分布。
+
+    与角色池同理：出金时刻由 pity 过程决定，与「每金是目标 / 另一把限定 / 常驻」相互独立，
+    故分解为 ``P(恰好 g 金 | n_pulls 抽) · D[g][u]``（g = u + 歪出数）。
+
+    Returns ``{目标数: {歪出数: 概率}}``，只列出概率非零的项。
+    """
+    if n_pulls < 0:
+        raise ValueError(f"n_pulls must be >= 0, got {n_pulls}")
+
+    pmf = gold_count_pmf(WEAPON_POOL, state.pity, n_pulls)
+    chain = _weapon_label_chain(len(pmf) - 1, state.epitomized_points, state.prev_standard)
+    return joint_from_labels(pmf, chain)
+
+
+def _weapon_label_chain(
+    g_max: int, epitomized_points: int, prev_standard: bool,
+) -> np.ndarray:
+    """D[g][u] = P(前 g 个金中恰有 u 个是定轨目标)。
+
+    每金的标签取决于状态 (命定值, 上一金为常驻)：命定值满则必为目标；常驻保底生效时
+    池中只有两把限定（各半）；否则 37.5% 目标 / 37.5% 另一把限定 / 25% 常驻。
+    得到目标后状态归零；得到另一把限定 → 命定值 +1；得到常驻 → 命定值 +1 且常驻保底生效。
+    """
+    states = [(0, False), (0, True), (1, False), (1, True)]
+    label = {
+        (0, False): (0.375, 0.375, 0.25),
+        (0, True): (0.5, 0.5, 0.0),
+        (1, False): (1.0, 0.0, 0.0),
+        (1, True): (1.0, 0.0, 0.0),
+    }
+    A = {st: np.zeros(g_max + 1) for st in states}
+    A[(epitomized_points, bool(prev_standard))][0] = 1.0
+
+    D = np.zeros((g_max + 1, g_max + 1))
+    D[0, 0] = 1.0
+    for g in range(1, g_max + 1):
+        B = {st: np.zeros(g_max + 1) for st in states}
+        for st in states:
+            src = A[st]
+            if not src.any():
+                continue
+            p_a, p_b, p_s = label[st]
+            if p_a:
+                B[(0, False)][1:] += src[:-1] * p_a      # 目标
+            if p_b:
+                B[(1, False)] += src * p_b               # 另一把限定 → 命定值 +1
+            if p_s:
+                B[(1, True)] += src * p_s                # 常驻 → 命定值 +1 且保底生效
+        A = B
+        for st in states:
+            D[g] += A[st]
+    return D
 
 
 def weapon_target_weights(

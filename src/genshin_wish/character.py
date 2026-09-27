@@ -9,7 +9,7 @@ from scipy.stats import norm
 
 from ._constants import CHARACTER_POOL, STABLE_P, CLT_THRESHOLD, CAPTURE_RADIANCE_WIN_RATE
 from ._capture_radiance import guarantee_seq
-from ._gold import get_gold_pdfs
+from ._gold import get_gold_pdfs, gold_count_pmf, joint_from_labels
 from .long_term import _post50_moments, _pre50_moments, _solve_exact, _solve_pre50
 
 
@@ -228,20 +228,9 @@ def pulls_joint_distribution(
     if n_pulls < 0:
         raise ValueError(f"n_pulls must be >= 0, got {n_pulls}")
 
-    pmf = _gold_count_pmf(state.pity, n_pulls)
+    pmf = gold_count_pmf(CHARACTER_POOL, state.pity, n_pulls)
     chain = _label_chain(len(pmf) - 1, state.consecutive_loss, state.guaranteed)
-
-    acc: dict[int, dict[int, float]] = defaultdict(dict)
-    for g, p in enumerate(pmf):
-        if p == 0.0:
-            continue
-        for u in range(g + 1):
-            w = chain[g][u]
-            if w == 0.0:
-                continue
-            row = acc[u]
-            row[g - u] = row.get(g - u, 0.0) + p * w
-    return {u: dict(row) for u, row in acc.items()}
+    return joint_from_labels(pmf, chain)
 
 
 def stable_pulls_joint_distribution(n_pulls: int) -> dict[int, dict[int, float]]:
@@ -254,31 +243,6 @@ def stable_pulls_joint_distribution(n_pulls: int) -> dict[int, dict[int, float]]
             for n_std, p in row.items():
                 dst[n_std] = dst.get(n_std, 0.0) + weight * p
     return acc
-
-
-def _gold_count_pmf(pity: int, n_pulls: int, eps: float = 1e-15) -> np.ndarray:
-    """P(恰好 g 金 | n_pulls 抽)，g = 0..g_max，尾部概率 < eps 时截断。
-
-    ``P(恰好 g 金) = P(T_g ≤ P) − P(T_{g+1} ≤ P)``，T_g 由单金 PDF 逐次卷积得到
-    （首金按当前 pity 平移）；只对 t ≤ n_pulls 求和，卷积可截断到 n_pulls + 1 项。
-    """
-    p_first = get_gold_pdfs(CHARACTER_POOL)[1]
-    if pity == 0:
-        dist = p_first.copy()
-    else:
-        tail = p_first[pity + 1:]
-        dist = np.insert(tail / tail.sum(), 0, 0)
-
-    out: list[float] = []
-    prev = 1.0
-    for _ in range(n_pulls + 2):
-        cur = float(dist[: n_pulls + 1].sum())
-        out.append(max(prev - cur, 0.0))
-        if cur < eps:
-            break
-        dist = np.convolve(dist[: n_pulls + 1], p_first)
-        prev = cur
-    return np.array(out, dtype=np.float64)
 
 
 def _label_chain(g_max: int, k_miss: int, guaranteed: bool) -> np.ndarray:

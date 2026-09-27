@@ -118,6 +118,51 @@ def get_gold_pdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
     return pdfs
 
 
+def gold_count_pmf(pool: PoolConfig, pity: int, n_pulls: int,
+                   eps: float = 1e-15) -> np.ndarray:
+    """P(exactly *g* 5-stars within *n_pulls* pulls), g = 0..g_max.
+
+    ``P(g) = P(T_g ≤ n_pulls) − P(T_{g+1} ≤ n_pulls)``，``T_g`` 由单金 PDF 逐次卷积得到
+    （首金按当前 pity 平移）。只对 t ≤ n_pulls 求和，卷积可截断到 n_pulls+1 项；
+    当 ``P(T_{g+1} ≤ n_pulls) < eps`` 时截断（尾部再往上可忽略）。
+    """
+    p_first = get_gold_pdfs(pool)[1]
+    if pity == 0:
+        dist = p_first.copy()
+    else:
+        tail = p_first[pity + 1:]
+        dist = np.insert(tail / tail.sum(), 0, 0)
+
+    out: list[float] = []
+    prev = 1.0
+    for _ in range(n_pulls + 2):
+        cur = float(dist[: n_pulls + 1].sum())
+        out.append(max(prev - cur, 0.0))
+        if cur < eps:
+            break
+        dist = np.convolve(dist[: n_pulls + 1], p_first)
+        prev = cur
+    return np.array(out, dtype=np.float64)
+
+
+def joint_from_labels(pmf: np.ndarray, chain: np.ndarray) -> dict[int, dict[int, float]]:
+    """金数分布 ⊗ 标记链 → ``{目标数: {歪出数: 概率}}``。
+
+    ``chain[g][u]`` 为「前 g 个金中恰有 u 个目标」的概率，且 ``g = u + 歪出数``。
+    """
+    acc: dict[int, dict[int, float]] = {}
+    for g, p in enumerate(pmf):
+        if p == 0.0:
+            continue
+        for u in range(g + 1):
+            w = chain[g][u]
+            if w == 0.0:
+                continue
+            row = acc.setdefault(u, {})
+            row[g - u] = row.get(g - u, 0.0) + p * w
+    return acc
+
+
 def get_gold_cdfs(pool: PoolConfig, min_gold: int = 0) -> list[np.ndarray]:
     """Return multi-gold CDFs.  Mirrors ``get_gold_pdfs`` caching strategy."""
     path = _cache_path(pool, "cdfs")

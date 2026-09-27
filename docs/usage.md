@@ -435,6 +435,17 @@ dist.probability(200)
 dist.gold_weights    # dict, 各出金数分支的概率权重
 ```
 
+**固定抽数下的（目标数, 歪出五星数）联合分布：** 与角色池的同名函数对应，
+横轴换成定轨目标数、分段换成歪出的五星（另一把限定或常驻）。
+
+```python
+from genshin_wish import WeaponState, weapon_pulls_joint_distribution
+
+state = WeaponState(pity=0, epitomized_points=0, prev_standard=False)
+joint = weapon_pulls_joint_distribution(state, n_pulls=1000)
+# joint = {10: {6: 0.012, 7: 0.031, ...}, 11: {...}, ...}   # {目标数: {歪出数: 概率}}
+```
+
 ### 常驻池
 
 ```python
