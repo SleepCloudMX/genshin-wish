@@ -31,7 +31,9 @@ from genshin_wish.character import (  # noqa: E402
     UpDistribution,
     n_std_conditional_pulls,
     n_std_distribution,
+    pulls_joint_distribution,
     radiance_distribution,
+    stable_pulls_joint_distribution,
     stable_up_distribution,
     stable_up_distribution_pre50,
     up_distribution,
@@ -161,6 +163,28 @@ def build_references() -> list[dict]:
             for g in [False, True]:
                 case = {"n": n, "pity": pity, "stable": True, "g": g}
                 refs.append(dist_ref("char", case, stable_state_dist(n, pity, g)))
+
+    # --- 固定抽数下的 (限定数, 常驻数) 联合分布 ---
+    joint_cases = [
+        (100, {"pity": 0, "loss": 0, "g": False}),
+        (500, {"pity": 0, "loss": 0, "g": False}),
+        (1000, {"pity": 0, "loss": 0, "g": False}),
+        (1000, {"pity": 34, "loss": 0, "g": True}),
+        (1000, {"pity": 0, "loss": 2, "g": False}),
+        (2000, {"pity": 0, "loss": 0, "g": False}),
+        (2000, {"pity": 0, "loss": 0, "g": False, "stable": True}),
+    ]
+    for n_pulls, kw in joint_cases:
+        case = dict(kw, pulls=n_pulls)
+        if kw.get("stable"):
+            dist = stable_pulls_joint_distribution(n_pulls)
+        else:
+            dist = pulls_joint_distribution(
+                CharacterState(guaranteed=kw["g"], pity=kw["pity"],
+                               consecutive_loss=kw["loss"]), n_pulls)
+        refs.append(map_ref("pulls_joint", case,
+                            {f"{u}|{s}": p for u, row in dist.items() for s, p in row.items()
+                             if p > 1e-10}))
 
     # --- 武器池 ---
     for count_a in [1, 2, 3]:
@@ -330,8 +354,8 @@ def compare(refs: list[dict], got: list[dict]) -> int:
     return failed_all
 
 
-ORDER = ["norm", "char", "weapon", "std", "joint", "nstd", "nstd_cond", "radiance",
-         "radiance_seq", "pre50", "tenpull", "longterm"]
+ORDER = ["norm", "char", "pulls_joint", "weapon", "std", "joint", "nstd", "nstd_cond",
+         "radiance", "radiance_seq", "pre50", "tenpull", "longterm"]
 
 
 def main() -> int:
