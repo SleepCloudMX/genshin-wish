@@ -9,10 +9,10 @@ genshin-wish — 原神抽卡概率计算器。基于玩家总结的概率机制
 ```
 src/genshin_wish/       # Python 包
 ├── _constants.py       # PoolConfig, STABLE_P, 概率参数
-├── _gold.py            # 出金 PDF/CDF (pickle 缓存到 .cache/)
+├── _gold.py            # 出金 PDF/CDF 构建与缓存，金数分布与标记链合成 (pickle 到 .cache/)
 ├── _capture_radiance.py # guarantee_seq (捕获明光 win/loss 序列枚举)
-├── character.py        # CharacterState, UpDistribution, up_distribution
-├── weapon.py           # WeaponState, WeaponTarget, weapon_up_distribution
+├── character.py        # CharacterState, UpDistribution, up_distribution, pulls_joint_distribution
+├── weapon.py           # WeaponState, WeaponTarget, weapon_up_distribution, weapon_pulls_joint_distribution
 ├── joint.py            # 角色+武器联合分布
 ├── viz/                # matplotlib 可视化 (10 个模块)
 │   ├── _base.py        # setup_style(), 配色, 通用工具
@@ -32,11 +32,12 @@ tests/                  # pytest
 app/                    # Gradio Web UI (见 app/CLAUDE.md)
 index.html              # Web 站点入口（纯静态，见 web/CLAUDE.md）
 web/                    # 站点资源：js/core 概率内核 + ui 封装 + modules 页面模块
-scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3)
+scripts/main_analysis.py # 统一运行分析脚本 (task1/2/3/4)
 scripts/main_plot.py    # 一键生成全部绘图
 scripts/plots/          # 各类型图表子模块 (character/weapon/multi_gold/long_term/nstd)
 scripts/build_web_data.py # 实验数据导出给站点 (output/analysis → web/data/analysis.js)
 scripts/parity.py       # 站点概率内核 vs Python 的一致性校验
+.github/workflows/ci.yml # CI：pytest + node --check + parity
 output/                 # 图表输出 (gitignore)
 .cache/                 # PDF/CDF pickle 缓存 (gitignore)
 temp/                   # 临时测试缓存，已 gitignore，仅在不宜污染 .cache/ 时使用
