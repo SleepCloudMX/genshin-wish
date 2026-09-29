@@ -218,7 +218,7 @@
       cmpRow(OFFICIAL_PER_UP.toFixed(3), '按官方综合概率', null) +
       cmpRow(one.expected.toFixed(2), '按玩家总结的概率机制', '#/about') +
       '<p class="stat-card__h">不考虑捕获明光时：' +
-      OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公式）／ ' +
+      OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公示）／ ' +
       (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）</p>';
     stats.appendChild(card1);
 
