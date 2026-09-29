@@ -695,6 +695,10 @@
     curve: function (host, opt) { return draw(host, 'curve', opt); },
     bars: function (host, opt) { return draw(host, 'bars', opt); },
 
+    /* 图内同款颜色：hex 在暗色下会按图内的规则提亮（见 resolveColor），
+       悬浮框里的色块要走同一条路径，否则暗色下与柱子对不上 */
+    color: function (c) { return resolveColor(c, themeTokens()); },
+
     regions: function (host, opt) { return draw(host, 'regions', opt); },
 
     table: function (host, opt) {

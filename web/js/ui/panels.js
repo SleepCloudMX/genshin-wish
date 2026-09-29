@@ -186,15 +186,18 @@
       var sList = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
       var minS = sList.length ? sList[0] : 0;
       var maxS = sList.length ? sList[sList.length - 1] : 0;
-      /* 色带按分段值在图中的出现区间取色；悬浮框的色块复用同一个函数，保证与柱子同色 */
-      var colorOf = function (s) {
+      var rawColorOf = function (s) {
         return W.core.stats.ramp(palette, maxS > minS ? (s - minS) / (maxS - minS) : 0);
       };
+      /* 悬浮框的色块与横排小柱：同一条色带，但要按图内的提亮规则解析
+         （series.color 交给 charts 去解析，这里不能解析两遍）；留到悬浮时再算，
+         切换主题后重画的是图，悬浮框跟着新主题走 */
+      var colorOf = function (s) { return UI.charts.color(rawColorOf(s)); };
       var width = opts.maxWidth || 34;
       var series = sList.map(function (s) {
         return {
           name: '', stack: 'up', maxWidth: width,
-          color: colorOf(s),
+          color: rawColorOf(s),
           values: bars.map(function (b) {
             if (!b.segs) return null;
             for (var k = 0; k < b.segs.length; k++) {
