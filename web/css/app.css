@@ -361,14 +361,14 @@ a.statcmp__tag { font-weight: 600; }
 .home__lead { margin-bottom: var(--sp-4); font-size: var(--fs-sm); color: var(--text-dim); }
 .home__foot { margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--text-dim); }
 
-/* 推导悬浮：数值带虚线下划线，悬停/聚焦时亮出 LaTeX 推导。
-   popover 绝对定位在数值下方（卡片不裁剪溢出），MathJax 排版完成前先不显形；
+/* 推导悬浮：数值带虚线下划线，悬停/聚焦时亮出推导。
+   浮层默认挂在数值右侧、顶边与数值齐平——表里的数值是纵排的，这样可以一路往下看；
    :focus-within 让键盘 Tab 进「复制」按钮时也保持展开 */
 .deriv { position: relative; cursor: help; border-bottom: 1px dashed var(--border); }
 .deriv:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .deriv__pop {
-  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
-  width: max-content; max-width: min(552px, 86vw);
+  position: absolute; top: 0; bottom: auto; left: calc(100% + 8px); right: auto; z-index: 40;
+  width: max-content; max-width: min(552px, 84vw);
   padding: var(--sp-3) var(--sp-4);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-sm); box-shadow: var(--shadow-1);
@@ -382,11 +382,12 @@ a.statcmp__tag { font-weight: 600; }
 /* 数值与浮层之间那 8px 的空隙用透明「桥」补上：鼠标从数值移进浮层时
    不会因为踩空而关掉（浮层是 .deriv 的子元素，停在上面也算悬停） */
 .deriv__pop::before {
-  content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px;
+  content: ''; position: absolute; top: 0; bottom: 0; left: -8px; width: 8px;
 }
-/* 下方放不下时由 placePop 挂到数值上方，桥跟着挪到底边 */
-.deriv--up .deriv__pop { top: auto; bottom: calc(100% + 8px); }
-.deriv--up .deriv__pop::before { top: auto; bottom: -8px; }
+/* 右侧放不下改挂左侧、下方放不下改成底边对齐（由 placePop 判定） */
+.deriv--left .deriv__pop { left: auto; right: calc(100% + 8px); }
+.deriv--left .deriv__pop::before { left: auto; right: -8px; }
+.deriv--up .deriv__pop { top: auto; bottom: 0; }
 .deriv__body { display: block; opacity: 0; transition: opacity var(--dur) ease-out; }
 .deriv__body.is-ready { opacity: 1; }
 

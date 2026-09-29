@@ -214,7 +214,12 @@
     var weapon1 = C.weaponUpDistribution(C.makeWeaponState({}), 1);
     var weapon5 = C.weaponUpDistribution(C.makeWeaponState({}), 5);
 
-    var UNKNOWN = { v: '未知', span: 3, plain: true };
+    /* 官方行只有综合概率，给不出分布，故分位数一律「未知」；悬停说明为什么 */
+    var NO_MECH = '官方未公示具体概率机制，无法计算。';
+    function unknown() {
+      return { v: '未知', plain: true, box: { tex: NO_MECH, math: false } };
+    }
+    var MODEL = '（<a href="#/about">玩家总结</a>）';
 
     /* 分位数（50% / 90% / 99%） */
     function quantiles(d) {
@@ -266,18 +271,19 @@
     card1.appendChild(statTable([
       {
         label: '1 个限定（官方公示）',
-        cells: [cell(OFFICIAL_PER_UP.toFixed(3), OFFICIAL_UP_TEX), UNKNOWN]
+        cells: [cell(OFFICIAL_PER_UP.toFixed(3), OFFICIAL_UP_TEX), unknown(), unknown(), unknown()]
       },
       {
-        label: '1 个限定（玩家总结）',
+        label: '1 个限定' + MODEL,
         cells: [cell(one.expected.toFixed(2),
           '软保底的逐抽出金概率：' + PITY_CHAR + SUM_TEX + '62.30$$' +
           '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
           CHAR_GOLD_CODE)].concat(quantiles(one))
       },
       {
-        label: '满命（玩家总结）',
-        cells: [cell(seven.expected.toFixed(1))].concat(quantiles(seven))
+        label: '满命' + MODEL,
+        cells: [cell(seven.expected.toFixed(1), '\\(90.33\\times7=632.3\\) 抽。')]
+          .concat(quantiles(seven))
       }
     ]));
     stats.appendChild(card1);
@@ -287,10 +293,10 @@
     card2.appendChild(statTable([
       {
         label: '1 把（官方公示）',
-        cells: [cell('87.84', OFFICIAL_WEAPON_TEX), UNKNOWN]
+        cells: [cell('87.84', OFFICIAL_WEAPON_TEX), unknown(), unknown(), unknown()]
       },
       {
-        label: '1 把（玩家总结）',
+        label: '1 把' + MODEL,
         cells: [cell(weapon1.expected.toFixed(1),
           '软保底的逐抽出金概率（63 抽起 +7%，74 抽起 +3.5%）：' + PITY_WEAPON +
           SUM_TEX + '53.25$$' +
@@ -298,8 +304,9 @@
           WEAPON_GOLD_CODE)].concat(quantiles(weapon1))
       },
       {
-        label: '满精（玩家总结）',
-        cells: [cell(weapon5.expected.toFixed(1))].concat(quantiles(weapon5))
+        label: '满精' + MODEL,
+        cells: [cell(weapon5.expected.toFixed(1), '\\(86.53\\times5=432.7\\) 抽。')]
+          .concat(quantiles(weapon5))
       }
     ]));
     stats.appendChild(card2);
@@ -369,22 +376,17 @@
     stage.appendChild(page);
   }
 
-  /* 靠边就换边：右侧放不下往左挂，下方放不下且上方放得下才翻上去
+  /* 靠边就换边：右侧放不下改挂左侧；下方放不下且底边对齐放得下才改成底对齐
      （浮层是 absolute + visibility 隐藏，尺寸量得到，不必先显形） */
   function placePop(box) {
     var pop = box.querySelector('.deriv__pop');
-    box.classList.remove('deriv--up');
-    pop.style.left = '0';
-    pop.style.right = 'auto';
-    var r = pop.getBoundingClientRect();
-    if (r.right > global.innerWidth - 12) {
-      pop.style.left = 'auto';
-      pop.style.right = '0';
-      r = pop.getBoundingClientRect();
+    box.classList.remove('deriv--left', 'deriv--up');
+    if (pop.getBoundingClientRect().right > global.innerWidth - 12) {
+      box.classList.add('deriv--left');
     }
-    /* 翻上去要真放得下（浮层高 + 上下留白 ≤ 数值的上沿），否则不如留在下方 */
+    var r = pop.getBoundingClientRect();
     if (r.bottom > global.innerHeight - 12 &&
-        r.height + 20 <= box.getBoundingClientRect().top) {
+        box.getBoundingClientRect().bottom - r.height >= 12) {
       box.classList.add('deriv--up');
     }
   }
@@ -441,7 +443,11 @@
     }
     pop.appendChild(body);
     box.appendChild(pop);
-    var show = function () { typesetOnce(box, body); placePop(box); };
+    var show = function () {
+      if (opts.math === false) body.classList.add('is-ready');   /* 纯文字，不必拉 MathJax */
+      else typesetOnce(box, body);
+      placePop(box);
+    };
     box.addEventListener('mouseenter', show);
     box.addEventListener('focusin', show);
     return box;
@@ -482,18 +488,13 @@
       var tr = el('tr');
       tr.appendChild(el('th', null, r.label));
       r.cells.forEach(function (c, i) {
-        var td = el('td', i === 0 ? 'stattable__e' : null);
-        if (c.span) td.colSpan = c.span;
-        if (c.plain) {                       /* 「未知」这类非读数的格子：不带单位、居中 */
-          td.className = 'stattable__unknown';
-          td.textContent = c.v;
-        } else {
-          var holder = el('span', c.box ? 'deriv' : null);
-          holder.appendChild(el('span', 'stattable__v', c.v));
-          holder.appendChild(el('span', 'stattable__u', '抽'));
-          if (c.box) attachPop(holder, c.box.tex, { code: c.box.code });
-          td.appendChild(holder);
-        }
+        /* plain 的格子（「未知」）不带单位、居中、用正文字体 */
+        var td = el('td', i === 0 ? 'stattable__e' : (c.plain ? 'stattable__unknown' : null));
+        var holder = el('span', c.box ? 'deriv' : null);
+        holder.appendChild(el('span', c.plain ? null : 'stattable__v', c.v));
+        if (!c.plain) holder.appendChild(el('span', 'stattable__u', '抽'));
+        if (c.box) attachPop(holder, c.box.tex, c.box);
+        td.appendChild(holder);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
