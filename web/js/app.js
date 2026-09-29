@@ -42,6 +42,10 @@
 
   /* --- 导航结构：可视化 / 说明 --- */
   var NAV = [
+    /* 首页不归组：它是概览与入口，不是某张图，也不属于「说明」 */
+    { group: '', items: [
+      { id: '', icon: 'home', label: '首页', ready: true }
+    ] },
     { group: '可视化', items: [
       { id: 'char', icon: 'user', label: '角色池', ready: true },
       { id: 'weapon', icon: 'sword', label: '武器池', ready: true },
@@ -157,7 +161,7 @@
     var host = doc.getElementById('navList');
     host.textContent = '';
     NAV.forEach(function (group) {
-      host.appendChild(el('p', 'nav__group', group.group));
+      if (group.group) host.appendChild(el('p', 'nav__group', group.group));
       group.items.forEach(function (item) {
         var a = el('a', 'nav__item' + (item.id === activeId ? ' is-active' : '') +
                    (item.ready ? '' : ' is-disabled'));
@@ -330,16 +334,15 @@
 
     var charCard = el('div', 'stat-card');
     charCard.innerHTML = '<p class="stat-card__k">角色池</p>';
-    charCard.appendChild(derivRow('1.0917', '四星均未满命', '×',
+    charCard.appendChild(derivRow('1.0917', '四星角色均未满命', '×',
       '每抽平均返还 \\(13.000\\%\\times\\frac{2}{5}+1.600\\%\\times\\frac{10}{5}=0.084\\) 抽；' +
       '\\(1+0.084+0.084^{2}+\\cdots=\\frac{1}{1-0.084}=1.0917\\)。'));
-    charCard.appendChild(derivRow('1.1933', '四星均已满命', '×',
+    charCard.appendChild(derivRow('1.1933', '假设四星均为满命四星角色', '×',
       '每抽平均返还 \\(13.000\\%\\times\\frac{5}{5}+1.600\\%\\times\\frac{10}{5}=0.162\\) 抽；' +
       '\\(1+0.162+0.162^{2}+\\cdots=\\frac{1}{1-0.162}=1.1933\\)。'));
     charCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.42 / 0.81 星辉'));
     charCard.appendChild(el('p', 'stat-card__note',
-      '四星武器固定 2 星辉，且四星中角色与武器的占比随版本变化：' +
-      '1.1933 以四星全为已满命角色为前提，是上界。'));
+      '四星武器固定 2 星辉；四星中角色与武器的占比随版本变化。'));
     glareCards.appendChild(charCard);
 
     var weaponCard = el('div', 'stat-card');
