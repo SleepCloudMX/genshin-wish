@@ -341,12 +341,13 @@ a.statcmp__tag { font-weight: 600; }
 .home__foot { margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--text-dim); }
 
 /* 推导悬浮：数值带虚线下划线，悬停/聚焦时亮出 LaTeX 推导。
-   popover 绝对定位在数值下方（卡片不裁剪溢出），MathJax 排版完成前先不显形 */
+   popover 绝对定位在数值下方（卡片不裁剪溢出），MathJax 排版完成前先不显形；
+   :focus-within 让键盘 Tab 进「复制」按钮时也保持展开 */
 .deriv { position: relative; cursor: help; border-bottom: 1px dashed var(--border); }
 .deriv:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .deriv__pop {
   position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
-  width: max-content; max-width: min(430px, 76vw);
+  width: max-content; max-width: min(520px, 84vw);
   padding: var(--sp-3) var(--sp-4);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-sm); box-shadow: var(--shadow-1);
@@ -355,9 +356,27 @@ a.statcmp__tag { font-weight: 600; }
   visibility: hidden; opacity: 0; transition: opacity var(--dur) ease-out;
 }
 .deriv:hover .deriv__pop,
-.deriv:focus .deriv__pop { visibility: visible; opacity: 1; }
-.deriv__tex { opacity: 0; transition: opacity var(--dur) ease-out; }
-.deriv__tex.is-ready { opacity: 1; }
+.deriv:focus .deriv__pop,
+.deriv:focus-within .deriv__pop { visibility: visible; opacity: 1; }
+.deriv__body { display: block; opacity: 0; transition: opacity var(--dur) ease-out; }
+.deriv__body.is-ready { opacity: 1; }
+
+/* 悬浮框里的 python 片段（宽度超出时横向滚动，不折行）；
+   「复制」摆在代码下方右对齐，免得压住第一行 */
+.deriv__code { display: block; margin-top: var(--sp-2); }
+.deriv__code code {
+  display: block; padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2); border-radius: var(--r-sm);
+  font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.7;
+  white-space: pre; overflow-x: auto;
+}
+.deriv__copy {
+  display: block; margin: 6px 0 0 auto;
+  padding: 1px var(--sp-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); background: var(--surface);
+  color: var(--text-dim); font-size: var(--fs-xs); cursor: pointer;
+}
+.deriv__copy:hover { color: var(--text); border-color: var(--gold); }
 
 /* 入口：平铺的浅色块，与抬起的读数卡片区分开 */
 .entry {

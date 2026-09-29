@@ -213,26 +213,47 @@
     var modelPerGold = C.stats.expected(C.gold.getGoldPdfs('character', 1)[1]);
 
     var card1 = el('div', 'stat-card');
-    card1.innerHTML =
-      '<p class="stat-card__k">抽到 1 个限定</p>' +
-      cmpRow(OFFICIAL_PER_UP.toFixed(3), '按官方综合概率', null) +
-      cmpRow(one.expected.toFixed(2), '按玩家总结的概率机制', '#/about') +
-      '<p class="stat-card__h">不考虑捕获明光时：' +
+    card1.appendChild(el('p', 'stat-card__k', '抽到 1 个限定'));
+    card1.appendChild(derivRow(OFFICIAL_PER_UP.toFixed(3), '按官方综合概率', '抽',
+      '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
+      '\\(\\frac{1}{2-55.000\\%}=1.45\\) 个金，单金 ' +
+      '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
+      '\\(1.45\\times62.5=90.625\\) 抽。'));
+    card1.appendChild(derivRow(one.expected.toFixed(2), '按玩家总结的概率机制', '抽',
+      '单金期望按软保底逐抽概率求生存和（期望 = 各抽仍未出金的概率之和）：' +
+      '\\(E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30\\) 抽，其中 ' +
+      '\\(p_i=0.6\\%\\)（\\(i\\le73\\)）、' +
+      '\\(p_i=0.6\\%+6\\%(i-73)\\)（\\(74\\le i\\le89\\)）、\\(p_{90}=100\\%\\)；' +
+      '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
+      { href: '#/about', code: [
+        'p = [0.006]*73 + [min(0.006 + 0.06*(i - 73), 1) for i in range(74, 91)]',
+        's, e = 1.0, 0.0',
+        'for pi in p:',
+        '    e += s          # 期望 = Σ P(第 n 抽仍未出金)',
+        '    s *= 1 - pi',
+        'print(round(e, 6))  # 62.297332'
+      ].join('\n') }));
+    card1.appendChild(el('p', 'stat-card__h', '不考虑捕获明光时：' +
       OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公示）／ ' +
-      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）</p>';
+      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）'));
     stats.appendChild(card1);
 
+    var q90 = String(seven.quantile(0.9));
     [
       ['抽到 7 个限定（满命）', seven.expected.toFixed(1),
-       '中位数 ' + seven.quantile(0.5) + ' 抽'],
-      ['90% 的玩家满命需要', String(seven.quantile(0.9)),
-       '99% 分位 ' + seven.quantile(0.99) + ' 抽']
+       '中位数 ' + seven.quantile(0.5) + ' 抽',
+       '期望按 UP 数累加：7 个 UP 平均消耗 \\(7\\times1.45=10.15\\) 个金，' +
+       '\\(10.15\\times62.30=632.3\\) 抽。'],
+      ['90% 的玩家满命需要', q90,
+       '99% 分位 ' + seven.quantile(0.99) + ' 抽',
+       '分位点：\\(' + q90 + '=\\min\\{x:\\ P(T\\le x)\\ge0.9\\}\\)，\\(T\\) 为 7 个 UP 的总抽数。' +
+       '它要反解卷积后的分布，没有闭式，只能数值算出。']
     ].forEach(function (row) {
       var card = el('div', 'stat-card');
-      card.innerHTML = '<p class="stat-card__k">' + row[0] + '</p>' +
-        cmpRow(row[1], '按玩家总结的概率机制', '#/about') +
-        '<p class="stat-card__h">' + row[2] + '</p>' +
-        '<p class="stat-card__note">官方未公示具体概率，无法计算</p>';
+      card.appendChild(el('p', 'stat-card__k', row[0]));
+      card.appendChild(derivRow(row[1], '按玩家总结的概率机制', '抽', row[3], { href: '#/about' }));
+      card.appendChild(el('p', 'stat-card__h', row[2]));
+      card.appendChild(el('p', 'stat-card__note', '官方未公示具体概率，无法计算'));
       stats.appendChild(card);
     });
     page.appendChild(homeSection('期望抽数', stats));
@@ -309,27 +330,79 @@
            '<span class="statcmp__u">' + (unit || '抽') + '</span></span>' + tagHtml + '</div>';
   }
 
-  /* 排版一次即可：MathJax 把 \(…\) 换成 SVG 后，重复调用没有意义 */
-  function typesetOnce(box, math) {
-    if (box.getAttribute('data-ts')) return;
-    box.setAttribute('data-ts', '1');
-    W.ui.math.typeset(math).then(function () { math.classList.add('is-ready'); });
+  /* 靠右的卡片放不下就往左挂：浮层是 absolute + visibility 隐藏，量得到宽度 */
+  function placePop(box) {
+    var pop = box.querySelector('.deriv__pop');
+    pop.style.left = '0';
+    pop.style.right = 'auto';
+    if (pop.getBoundingClientRect().right > global.innerWidth - 12) {
+      pop.style.left = 'auto';
+      pop.style.right = '0';
+    }
   }
 
-  /* 带推导悬浮的读数行：数值虚线下划线，悬停（或键盘聚焦）时用 LaTeX 排版推导过程。
+  /* 排版一次即可：MathJax 把 \(…\) 换成 SVG 后，重复调用没有意义 */
+  function typesetOnce(box, body) {
+    if (box.getAttribute('data-ts')) return;
+    box.setAttribute('data-ts', '1');
+    W.ui.math.typeset(body).then(function () {
+      body.classList.add('is-ready');
+      placePop(box);              /* 公式排完宽度会变，重挂一次 */
+    });
+  }
+
+  /* 复制代码：剪贴板不可用或被拒时，退化为选中代码由读者自行复制 */
+  function copyCode(code, node) {
+    var fallback = function () {
+      var range = doc.createRange();
+      range.selectNodeContents(node);
+      var sel = global.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      W.ui.panels.toast('复制失败，已选中代码');
+    };
+    var clip = global.navigator.clipboard;
+    if (clip && clip.writeText) {
+      clip.writeText(code).then(function () { W.ui.panels.toast('已复制'); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  /* 带推导悬浮的读数行：数值虚线下划线，悬停（或键盘聚焦，含「复制」按钮）时显示推导。
+     opts.code 追加一段可复制的 python，opts.href 让口径说明变成链接。
      MathJax 是 vendor 里的大文件，进入该区域才预热、真正悬停才排版 */
-  function derivRow(value, tag, unit, tex) {
+  function derivRow(value, tag, unit, tex, opts) {
+    opts = opts || {};
     var row = el('div', 'statcmp');
     var box = el('span', 'deriv');
     box.tabIndex = 0;
     box.innerHTML = '<span class="statcmp__v">' + value +
                     '<span class="statcmp__u">' + unit + '</span></span>' +
-                    '<span class="deriv__pop"><span class="deriv__tex">' + tex + '</span></span>';
+                    '<span class="deriv__pop"><span class="deriv__body">' +
+                    '<span class="deriv__tex">' + tex + '</span>' +
+                    (opts.code ? '<span class="deriv__code"></span>' : '') +
+                    '</span></span>';
+    var body = box.querySelector('.deriv__body');
+    if (opts.code) {
+      var codeBox = box.querySelector('.deriv__code');
+      var code = doc.createElement('code');
+      code.textContent = opts.code;
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'deriv__copy';
+      btn.textContent = '复制';
+      btn.onclick = function () { copyCode(opts.code, code); };
+      codeBox.appendChild(code);
+      codeBox.appendChild(btn);
+    }
     row.appendChild(box);
-    row.appendChild(el('span', 'statcmp__tag', tag));
-    var math = box.querySelector('.deriv__tex');
-    box.addEventListener('mouseenter', function () { typesetOnce(box, math); });
-    box.addEventListener('focus', function () { typesetOnce(box, math); });
+    var tagNode = el(opts.href ? 'a' : 'span', 'statcmp__tag');
+    if (opts.href) tagNode.href = opts.href;
+    tagNode.textContent = tag;
+    row.appendChild(tagNode);
+    box.addEventListener('mouseenter', function () { typesetOnce(box, body); placePop(box); });
+    box.addEventListener('focusin', function () { typesetOnce(box, body); placePop(box); });
     return row;
   }
 
