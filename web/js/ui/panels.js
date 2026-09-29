@@ -100,8 +100,10 @@
 
     /* 悬浮框：读数行 + 分位区间行。
      * 上下界各占一列（右对齐、等宽数字），比「85.3 – 93.3」整串文本对得齐；
-     * 色块取自图中对应的区间颜色。bands: [{label, color, lo, hi}] */
-    tipBands: function (title, rows, bands) {
+     * 色块取自图中对应的区间颜色。bands: [{label, color, lo, hi}]
+     * amount 是图内画该颜色时的暗色提亮幅度（区间带 0.2、参考线 0.18），
+     * 要跟着图走，否则暗色下色块比图里深一档 */
+    tipBands: function (title, rows, bands, amount) {
       var html = '<p class="tip__t">' + title + '</p>';
       if (rows.length) {
         html += '<table class="tip__table">';
@@ -112,7 +114,8 @@
       }
       html += '<div class="tip__bands">';
       bands.forEach(function (b) {
-        html += '<span class="tip__sw" style="background:' + b.color + '"></span>' +
+        html += '<span class="tip__sw" style="background:' +
+                UI.charts.color(b.color, amount === undefined ? 0.2 : amount) + '"></span>' +
                 '<span class="tip__band-k">' + b.label + '</span>' +
                 '<span class="tip__num">' + b.lo + '</span>' +
                 '<span class="tip__dash">–</span>' +
@@ -222,6 +225,7 @@
         yLabel: '概率',
         yMax: Math.max(top * 1.16, 0.02),
         legend: false,
+        emphasis: false,
         series: series,
         /* 柱顶标注柱子的总概率：只要标注，不要折线与符号 */
         overlays: [{

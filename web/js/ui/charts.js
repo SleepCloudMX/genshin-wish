@@ -627,6 +627,9 @@
           barMaxWidth: s.maxWidth || 20,
           barGap: s.gap,
           z: 2,
+          /* emphasis: false 关掉悬停提亮：堆叠柱的颜色是数据（常驻数），
+             提亮既破坏「同一值在各柱同色」，也让悬浮框的色块对不上 */
+          emphasis: opt.emphasis === false ? { disabled: true } : undefined,
           data: (s.colors || s.values),
           itemStyle: {
             color: s.colors
@@ -696,8 +699,9 @@
     bars: function (host, opt) { return draw(host, 'bars', opt); },
 
     /* 图内同款颜色：hex 在暗色下会按图内的规则提亮（见 resolveColor），
-       悬浮框里的色块要走同一条路径，否则暗色下与柱子对不上 */
-    color: function (c) { return resolveColor(c, themeTokens()); },
+       悬浮框里的色块要走同一条路径，否则暗色下与柱子对不上。
+       amount 缺省与柱状/区间图一致（0.3 / 0.2），参考线是 0.18 */
+    color: function (c, amount) { return resolveColor(c, themeTokens(), amount); },
 
     regions: function (host, opt) { return draw(host, 'regions', opt); },
 

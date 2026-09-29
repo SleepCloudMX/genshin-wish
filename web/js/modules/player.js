@@ -223,7 +223,8 @@
                   hi: a.refPulls[1 - r.a][i]
                 };
               });
-              return P.tipBands('第 ' + xs[i] + ' 个 UP · 同期所需抽数', rows, bands);
+              /* 参考线在图内按 0.18 提亮，色块跟着走 */
+              return P.tipBands('第 ' + xs[i] + ' 个 UP · 同期所需抽数', rows, bands, 0.18);
             }
           });
           host.appendChild(P.note('曲线为该 UP 数量下的累计百分位：纵值 70% 表示同期有 70% 的玩家' +
