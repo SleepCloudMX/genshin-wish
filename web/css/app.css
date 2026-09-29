@@ -336,7 +336,7 @@ a:hover { text-decoration: underline; }
 .statcmp__tag { font-size: var(--fs-xs); color: var(--text-dim); text-align: right; }
 a.statcmp__tag { font-weight: 600; }
 
-/* 首页「期望抽数」的小表：行 = 目标，列 = 期望 / 50% / 90% / 99% 分位 */
+/* 首页「期望与分位」的小表：行 = 目标（带口径），列 = 期望 / 50% / 90% / 99% 分位 */
 .stattable {
   width: 100%; border-collapse: collapse;
   font-size: var(--fs-sm); font-variant-numeric: tabular-nums;
@@ -353,6 +353,7 @@ a.statcmp__tag { font-weight: 600; }
 }
 .stattable td { padding: var(--sp-2) 0; text-align: right; font-family: var(--mono); }
 .stattable__v { font-size: var(--fs-base); }
+.stattable__unknown { text-align: center; font-family: var(--font); color: var(--text-dim); }
 .stattable__u { margin-left: 3px; font-size: var(--fs-xs); color: var(--text-dim); }
 .stattable__e .stattable__v { font-size: var(--fs-xl); font-weight: 650; color: var(--gold-strong); }
 

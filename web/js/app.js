@@ -214,74 +214,103 @@
     var weapon1 = C.weaponUpDistribution(C.makeWeaponState({}), 1);
     var weapon5 = C.weaponUpDistribution(C.makeWeaponState({}), 5);
 
+    var UNKNOWN = { v: '未知', span: 3, plain: true };
+
+    /* 分位数（50% / 90% / 99%） */
     function quantiles(d) {
-      return [0.5, 0.9, 0.99].map(function (a) { return String(d.quantile(a)); });
+      return [0.5, 0.9, 0.99].map(function (a) {
+        return { v: String(d.quantile(a)) };
+      });
     }
+    /* tex 有值时该格带推导悬浮，没有就是普通读数 */
+    function cell(v, tex, code) {
+      return tex ? { v: v, box: { tex: tex, code: code } } : { v: v };
+    }
+
+    /* 「官方公示」两行的推导：都只用官方数据（角色池 1.600% / 55.000%，武器池 1.850% / 37.5% 命中） */
+    var OFFICIAL_UP_TEX = '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
+      '\\(\\frac{1}{2-55.000\\%}=1.45\\) 个金，单金 ' +
+      '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
+      '\\(1.45\\times62.5=90.625\\) 抽。';
+    var OFFICIAL_WEAPON_TEX = '综合出金率 1.850% → 单金 \\(\\frac{1}{1.850\\%}=54.05\\) 抽；' +
+      '每金命中定轨目标的概率 37.5%，未中使命定值填满、下一金必中，' +
+      '故每个目标平均 \\(1+62.5\\%=1.625\\) 个金：' +
+      '\\(54.05\\times1.625=87.84\\) 抽。';
+
+    /* 「玩家总结」两行的推导：单金期望按软保底逐抽概率求生存和 */
+    var PITY_CHAR = '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
+      '0.6\\%+6\\%(i-73), & 74\\le i\\le89,\\\\ 100\\%, & i=90.\\end{cases}$$';
+    var PITY_WEAPON = '$$p_i=\\begin{cases}0.7\\%, & i\\le62,\\\\ ' +
+      '0.7\\%+7\\%(i-62), & 63\\le i\\le73,\\\\ ' +
+      '77.7\\%+3.5\\%(i-73), & 74\\le i\\le79,\\\\ 100\\%, & i=80.\\end{cases}$$';
+    var SUM_TEX = '期望不必卷积，等于各抽仍未出金的概率之和：' +
+      '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=';
+    /* 代码只算「单金期望」那一项（与页面上的乘法分开），免得末位对不上 */
+    function goldCode(pLine, comment) {
+      return [
+        pLine, 's, e = 1.0, 0.0', 'for pi in p:',
+        '    e += s          # 期望 = Σ P(第 n 抽仍未出金)', '    s *= 1 - pi',
+        'print(round(e, 6))  # ' + comment
+      ].join('\n');
+    }
+    var CHAR_GOLD_CODE = goldCode(
+      'p = [0.006] * 73 + [0.006 + 0.06*(i - 73) for i in range(74, 90)] + [1.]',
+      '62.297332');
+    var WEAPON_GOLD_CODE = goldCode(
+      'p = ([0.007]*62 + [0.007 + 0.07*(i-62) for i in range(63, 74)]\n' +
+      '     + [0.777 + 0.035*(i-73) for i in range(74, 80)] + [1.])',
+      '53.250420');
 
     var card1 = el('div', 'stat-card');
     card1.appendChild(el('p', 'stat-card__k', '角色池'));
     card1.appendChild(statTable([
       {
-        label: '1 个限定',
-        cells: [{ v: one.expected.toFixed(2), box: {
-          tex: '软保底的逐抽出金概率：' +
-            '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
-            '0.6\\%+6\\%(i-73), & 74\\le i\\le89,\\\\ 100\\%, & i=90.\\end{cases}$$' +
-            '期望不必卷积，等于各抽仍未出金的概率之和：' +
-            '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30$$' +
-            '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
-          code: [
-            'p = [0.006] * 73 + [0.006 + 0.06*(i - 73) for i in range(74, 90)] + [1.]',
-            's, e = 1.0, 0.0',
-            'for pi in p:',
-            '    e += s          # 期望 = Σ P(第 n 抽仍未出金)',
-            '    s *= 1 - pi',
-            'print(round(e, 6))  # 62.297332'
-          ].join('\n')
-        } }].concat(quantiles(one).map(function (q) { return { v: q }; }))
+        label: '1 个限定（官方公示）',
+        cells: [cell(OFFICIAL_PER_UP.toFixed(3), OFFICIAL_UP_TEX), UNKNOWN]
       },
       {
-        label: '满命',
-        cells: [{ v: seven.expected.toFixed(1) }]
-          .concat(quantiles(seven).map(function (q) { return { v: q }; }))
+        label: '1 个限定（玩家总结）',
+        cells: [cell(one.expected.toFixed(2),
+          '软保底的逐抽出金概率：' + PITY_CHAR + SUM_TEX + '62.30$$' +
+          '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
+          CHAR_GOLD_CODE)].concat(quantiles(one))
+      },
+      {
+        label: '满命（玩家总结）',
+        cells: [cell(seven.expected.toFixed(1))].concat(quantiles(seven))
       }
     ]));
-    var offNote = el('p', 'stat-card__h');
-    offNote.appendChild(doc.createTextNode('官方综合概率口径：1 个限定 '));
-    var offBox = el('span', 'deriv');
-    offBox.appendChild(el('span', null, OFFICIAL_PER_UP.toFixed(3) + ' 抽'));
-    attachPop(offBox, '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
-      '\\(\\frac{1}{2-55.000\\%}=1.45\\) 个金，单金 ' +
-      '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
-      '\\(1.45\\times62.5=90.625\\) 抽。');
-    offNote.appendChild(offBox);
-    offNote.appendChild(doc.createTextNode('；不考虑捕获明光时 ' +
-      OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公示）／ ' +
-      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）。'));
-    card1.appendChild(offNote);
-    card1.appendChild(el('p', 'stat-card__note',
-      '满命 = 7 个限定；表中数值按玩家总结的概率机制测算。'));
     stats.appendChild(card1);
 
     var card2 = el('div', 'stat-card');
     card2.appendChild(el('p', 'stat-card__k', '武器池'));
     card2.appendChild(statTable([
-      { label: '1 把', cells: [{ v: weapon1.expected.toFixed(1) }]
-          .concat(quantiles(weapon1).map(function (q) { return { v: q }; })) },
-      { label: '满精', cells: [{ v: weapon5.expected.toFixed(1) }]
-          .concat(quantiles(weapon5).map(function (q) { return { v: q }; })) }
+      {
+        label: '1 把（官方公示）',
+        cells: [cell('87.84', OFFICIAL_WEAPON_TEX), UNKNOWN]
+      },
+      {
+        label: '1 把（玩家总结）',
+        cells: [cell(weapon1.expected.toFixed(1),
+          '软保底的逐抽出金概率（63 抽起 +7%，74 抽起 +3.5%）：' + PITY_WEAPON +
+          SUM_TEX + '53.25$$' +
+          '再乘每个目标的 1.625 个金：\\(53.25\\times1.625=86.53\\) 抽。',
+          WEAPON_GOLD_CODE)].concat(quantiles(weapon1))
+      },
+      {
+        label: '满精（玩家总结）',
+        cells: [cell(weapon5.expected.toFixed(1))].concat(quantiles(weapon5))
+      }
     ]));
-    card2.appendChild(el('p', 'stat-card__note',
-      '满精 = 5 把；按定轨不取消、命定值 0、未垫抽的模型测算。'));
     stats.appendChild(card2);
 
-    page.appendChild(homeSection('期望抽数', stats));
+    page.appendChild(homeSection('期望与分位', stats));
 
     /* 星辉兑换：抽卡返还的无主星辉可再换抽数，上面的读数都没计入。
        两池的推荐口径不同——角色池看四星是否满命，武器池与账号状态无关 */
     var glare = el('div', 'home__block');
     glare.appendChild(el('p', 'home__lead',
-      '抽卡返还的无主星辉可再兑换为抽数，期望抽数一节尚未计入。' +
+      '抽卡返还的无主星辉可再兑换为抽数，上表尚未计入。' +
       '每 5 星辉兑换 1 抽且不限量，长期口径下等额预算能抽到的抽数如下。'));
     var glareCards = el('div', 'cardgrid');
 
@@ -454,11 +483,17 @@
       tr.appendChild(el('th', null, r.label));
       r.cells.forEach(function (c, i) {
         var td = el('td', i === 0 ? 'stattable__e' : null);
-        var holder = el('span', c.box ? 'deriv' : null);
-        holder.appendChild(el('span', 'stattable__v', c.v));
-        holder.appendChild(el('span', 'stattable__u', '抽'));
-        if (c.box) attachPop(holder, c.box.tex, { code: c.box.code });
-        td.appendChild(holder);
+        if (c.span) td.colSpan = c.span;
+        if (c.plain) {                       /* 「未知」这类非读数的格子：不带单位、居中 */
+          td.className = 'stattable__unknown';
+          td.textContent = c.v;
+        } else {
+          var holder = el('span', c.box ? 'deriv' : null);
+          holder.appendChild(el('span', 'stattable__v', c.v));
+          holder.appendChild(el('span', 'stattable__u', '抽'));
+          if (c.box) attachPop(holder, c.box.tex, { code: c.box.code });
+          td.appendChild(holder);
+        }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
