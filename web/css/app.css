@@ -336,6 +336,29 @@ a:hover { text-decoration: underline; }
 .statcmp__tag { font-size: var(--fs-xs); color: var(--text-dim); text-align: right; }
 a.statcmp__tag { font-weight: 600; }
 
+/* 首页「星辉等效抽数」：段内导语与脚注 */
+.home__lead { margin-bottom: var(--sp-4); font-size: var(--fs-sm); color: var(--text-dim); }
+.home__foot { margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--text-dim); }
+
+/* 推导悬浮：数值带虚线下划线，悬停/聚焦时亮出 LaTeX 推导。
+   popover 绝对定位在数值下方（卡片不裁剪溢出），MathJax 排版完成前先不显形 */
+.deriv { position: relative; cursor: help; border-bottom: 1px dashed var(--border); }
+.deriv:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.deriv__pop {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
+  width: max-content; max-width: min(430px, 76vw);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); box-shadow: var(--shadow-1);
+  font-size: var(--fs-sm); font-weight: 400; color: var(--text);
+  text-align: left; white-space: normal; line-height: 1.8;
+  visibility: hidden; opacity: 0; transition: opacity var(--dur) ease-out;
+}
+.deriv:hover .deriv__pop,
+.deriv:focus .deriv__pop { visibility: visible; opacity: 1; }
+.deriv__tex { opacity: 0; transition: opacity var(--dur) ease-out; }
+.deriv__tex.is-ready { opacity: 1; }
+
 /* 入口：平铺的浅色块，与抬起的读数卡片区分开 */
 .entry {
   display: block; color: var(--text);

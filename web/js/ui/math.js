@@ -24,10 +24,14 @@
   }
 
   UI.math = {
-    /* 渲染 root 子树里的公式；加载失败时保留原文（形如 \(O(n^2)\)） */
+    /* 预热：进入含公式的区域时先把 vendor 拉下来，首次悬停就不必等加载 */
+    preload: function () { return ensure(); },
+
+    /* 渲染 root 子树里的公式；加载失败时保留原文（形如 \(O(n^2)\)）。
+       返回的 promise 在排版结束（或失败）后兑现，供调用方做显隐切换 */
     typeset: function (root) {
-      if (!root) return;
-      ensure().then(function () {
+      if (!root) return Promise.resolve(null);
+      return ensure().then(function () {
         var MJ = global.MathJax;
         if (!MJ) return null;
         /* typesetPromise 要等 startup 完成才存在，直接调用会静默失败 */
@@ -38,7 +42,7 @@
           }
           return null;
         });
-      }).catch(function () { /* 保留原文 */ });
+      }).catch(function () { return null; });   /* 保留原文 */
     }
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

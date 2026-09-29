@@ -237,6 +237,44 @@
     });
     page.appendChild(homeSection('期望抽数', stats));
 
+    /* 星辉兑换：抽卡返还的无主星辉可再换抽数，上面的读数都没计入。
+       两池的推荐口径不同——角色池看四星是否满命，武器池与账号状态无关 */
+    var glare = el('div', 'home__block');
+    glare.appendChild(el('p', 'home__lead',
+      '抽卡返还的无主星辉可再兑换为抽数，期望抽数一节尚未计入。' +
+      '每 5 星辉兑换 1 抽且不限量，长期口径下等额预算能抽到的抽数如下。'));
+    var glareCards = el('div', 'cardgrid');
+
+    var charCard = el('div', 'stat-card');
+    charCard.innerHTML = '<p class="stat-card__k">角色池</p>';
+    charCard.appendChild(derivRow('1.0917', '四星均未满命', '×',
+      '每抽平均返还 \\(13.000\\%\\times\\frac{2}{5}+1.600\\%\\times\\frac{10}{5}=0.084\\) 抽；' +
+      '\\(1+0.084+0.084^{2}+\\cdots=\\frac{1}{1-0.084}=1.0917\\)。'));
+    charCard.appendChild(derivRow('1.1933', '四星均已满命', '×',
+      '每抽平均返还 \\(13.000\\%\\times\\frac{5}{5}+1.600\\%\\times\\frac{10}{5}=0.162\\) 抽；' +
+      '\\(1+0.162+0.162^{2}+\\cdots=\\frac{1}{1-0.162}=1.1933\\)。'));
+    charCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.42 / 0.81 星辉'));
+    charCard.appendChild(el('p', 'stat-card__note',
+      '四星武器固定 2 星辉，故 1.1933 要求四星全为已满命角色，是上界。'));
+    glareCards.appendChild(charCard);
+
+    var weaponCard = el('div', 'stat-card');
+    weaponCard.innerHTML = '<p class="stat-card__k">武器池</p>';
+    weaponCard.appendChild(derivRow('1.1050', '与账号状态无关', '×',
+      '每抽平均返还 \\(14.500\\%\\times\\frac{2}{5}+1.850\\%\\times\\frac{10}{5}=0.095\\) 抽；' +
+      '\\(1+0.095+0.095^{2}+\\cdots=\\frac{1}{1-0.095}=1.1050\\)。'));
+    weaponCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.475 星辉'));
+    weaponCard.appendChild(el('p', 'stat-card__note',
+      '武器不因满精炼增加星辉：四星固定 2、五星固定 10，故只有一个读数。'));
+    glareCards.appendChild(weaponCard);
+
+    glare.appendChild(glareCards);
+    glare.appendChild(el('p', 'home__foot',
+      '以上倍数均为长期期望，以星辉最终都换回抽数为前提；整抽兑换使实际结果至多少 1 抽。'));
+    var glareSec = homeSection('星辉等效抽数', glare);
+    glareSec.addEventListener('mouseenter', function () { W.ui.math.preload(); }, { once: true });
+    page.appendChild(glareSec);
+
     var entries = el('div', 'cardgrid');
     [
       ['角色池', 'char', '按目标命座、已垫抽数与连歪次数，查看累积概率、幸运扇形与分位点。'],
@@ -263,12 +301,36 @@
   }
 
   /* 首页对比行：数值在左，口径说明在右下角 */
-  function cmpRow(value, tag, href) {
+  function cmpRow(value, tag, href, unit) {
     var tagHtml = href
       ? '<a class="statcmp__tag" href="' + href + '">' + tag + '</a>'
       : '<span class="statcmp__tag">' + tag + '</span>';
     return '<div class="statcmp"><span class="statcmp__v">' + value +
-           '<span class="statcmp__u">抽</span></span>' + tagHtml + '</div>';
+           '<span class="statcmp__u">' + (unit || '抽') + '</span></span>' + tagHtml + '</div>';
+  }
+
+  /* 排版一次即可：MathJax 把 \(…\) 换成 SVG 后，重复调用没有意义 */
+  function typesetOnce(box, math) {
+    if (box.getAttribute('data-ts')) return;
+    box.setAttribute('data-ts', '1');
+    W.ui.math.typeset(math).then(function () { math.classList.add('is-ready'); });
+  }
+
+  /* 带推导悬浮的读数行：数值虚线下划线，悬停（或键盘聚焦）时用 LaTeX 排版推导过程。
+     MathJax 是 vendor 里的大文件，进入该区域才预热、真正悬停才排版 */
+  function derivRow(value, tag, unit, tex) {
+    var row = el('div', 'statcmp');
+    var box = el('span', 'deriv');
+    box.tabIndex = 0;
+    box.innerHTML = '<span class="statcmp__v">' + value +
+                    '<span class="statcmp__u">' + unit + '</span></span>' +
+                    '<span class="deriv__pop"><span class="deriv__tex">' + tex + '</span></span>';
+    row.appendChild(box);
+    row.appendChild(el('span', 'statcmp__tag', tag));
+    var math = box.querySelector('.deriv__tex');
+    box.addEventListener('mouseenter', function () { typesetOnce(box, math); });
+    box.addEventListener('focus', function () { typesetOnce(box, math); });
+    return row;
   }
 
   function renderPlaceholder(stage, id) {
