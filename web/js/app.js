@@ -220,13 +220,14 @@
       '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
       '\\(1.45\\times62.5=90.625\\) 抽。'));
     card1.appendChild(derivRow(one.expected.toFixed(2), '按玩家总结的概率机制', '抽',
-      '单金期望按软保底逐抽概率求生存和（期望 = 各抽仍未出金的概率之和）：' +
-      '\\(E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30\\) 抽，其中 ' +
-      '\\(p_i=0.6\\%\\)（\\(i\\le73\\)）、' +
-      '\\(p_i=0.6\\%+6\\%(i-73)\\)（\\(74\\le i\\le89\\)）、\\(p_{90}=100\\%\\)；' +
+      '软保底的逐抽出金概率：' +
+      '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
+      '0.6\\%+6\\%(i-73), & 74\\le i\\le89,\\\\ 100\\%, & i=90.\\end{cases}$$' +
+      '期望不必卷积，等于各抽仍未出金的概率之和：' +
+      '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30$$' +
       '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
       { href: '#/about', code: [
-        'p = [0.006]*73 + [min(0.006 + 0.06*(i - 73), 1) for i in range(74, 91)]',
+        'p = [0.006] * 73 + [0.006 + 0.06*(i - 73) for i in range(74, 90)] + [1.]',
         's, e = 1.0, 0.0',
         'for pi in p:',
         '    e += s          # 期望 = Σ P(第 n 抽仍未出金)',
@@ -238,22 +239,17 @@
       (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）'));
     stats.appendChild(card1);
 
-    var q90 = String(seven.quantile(0.9));
     [
       ['抽到 7 个限定（满命）', seven.expected.toFixed(1),
-       '中位数 ' + seven.quantile(0.5) + ' 抽',
-       '期望按 UP 数累加：7 个 UP 平均消耗 \\(7\\times1.45=10.15\\) 个金，' +
-       '\\(10.15\\times62.30=632.3\\) 抽。'],
-      ['90% 的玩家满命需要', q90,
-       '99% 分位 ' + seven.quantile(0.99) + ' 抽',
-       '分位点：\\(' + q90 + '=\\min\\{x:\\ P(T\\le x)\\ge0.9\\}\\)，\\(T\\) 为 7 个 UP 的总抽数。' +
-       '它要反解卷积后的分布，没有闭式，只能数值算出。']
+       '中位数 ' + seven.quantile(0.5) + ' 抽'],
+      ['90% 的玩家满命需要', String(seven.quantile(0.9)),
+       '99% 分位 ' + seven.quantile(0.99) + ' 抽']
     ].forEach(function (row) {
       var card = el('div', 'stat-card');
-      card.appendChild(el('p', 'stat-card__k', row[0]));
-      card.appendChild(derivRow(row[1], '按玩家总结的概率机制', '抽', row[3], { href: '#/about' }));
-      card.appendChild(el('p', 'stat-card__h', row[2]));
-      card.appendChild(el('p', 'stat-card__note', '官方未公示具体概率，无法计算'));
+      card.innerHTML = '<p class="stat-card__k">' + row[0] + '</p>' +
+        cmpRow(row[1], '按玩家总结的概率机制', '#/about') +
+        '<p class="stat-card__h">' + row[2] + '</p>' +
+        '<p class="stat-card__note">官方未公示具体概率，无法计算</p>';
       stats.appendChild(card);
     });
     page.appendChild(homeSection('期望抽数', stats));

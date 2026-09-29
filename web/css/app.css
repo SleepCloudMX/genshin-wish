@@ -358,6 +358,11 @@ a.statcmp__tag { font-weight: 600; }
 .deriv:hover .deriv__pop,
 .deriv:focus .deriv__pop,
 .deriv:focus-within .deriv__pop { visibility: visible; opacity: 1; }
+/* 数值与浮层之间那 8px 的空隙用透明「桥」补上：鼠标从数值移进浮层时
+   不会因为踩空而关掉（浮层是 .deriv 的子元素，停在上面也算悬停） */
+.deriv__pop::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px;
+}
 .deriv__body { display: block; opacity: 0; transition: opacity var(--dur) ease-out; }
 .deriv__body.is-ready { opacity: 1; }
 
