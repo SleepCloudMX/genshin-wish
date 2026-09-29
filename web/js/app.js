@@ -341,21 +341,16 @@
       '四星武器固定 2 星辉，故 1.1933 要求四星全为已满命角色，是上界。'));
     glareCards.appendChild(charCard);
 
-    /* 武器池也会出四星角色（75% 当期 UP 武器 + 25% 角色），故读数同样分两档 */
     var weaponCard = el('div', 'stat-card');
     weaponCard.innerHTML = '<p class="stat-card__k">武器池</p>';
     weaponCard.appendChild(derivRow('1.1050', '四星角色均未满命', '×',
       '四星一律 2 星辉（武器不因满精炼增加），每抽平均返还 ' +
       '\\(14.500\\%\\times\\frac{2}{5}+1.850\\%\\times\\frac{10}{5}=0.095\\) 抽；' +
       '\\(1+0.095+0.095^{2}+\\cdots=\\frac{1}{1-0.095}=1.1050\\)。'));
-    weaponCard.appendChild(derivRow('1.1322', '四星角色均已满命', '×',
-      '四星 75% 为当期 UP 武器（2 星辉）、25% 为非 UP 四星（角色满命时 5 星辉），' +
-      '每抽平均返还 \\(14.500\\%\\times\\frac{0.75\\times2+0.25\\times5}{5}' +
-      '+1.850\\%\\times\\frac{10}{5}=0.1168\\) 抽；' +
-      '\\(1+0.1168+0.1168^{2}+\\cdots=\\frac{1}{1-0.1168}=1.1322\\)。'));
-    weaponCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.475 / 0.584 星辉'));
+    weaponCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.475 星辉'));
+    /* 满命档要算「非 UP 四星里角色的占比」，而这随版本变化（角色与武器等概率），故不给 */
     weaponCard.appendChild(el('p', 'stat-card__note',
-      '满命值按非 UP 四星均为角色计，是上界。'));
+      '武器池也会出四星角色；非 UP 四星中角色与武器等概率，占比随版本变化，故不列满命档。'));
     glareCards.appendChild(weaponCard);
 
     glare.appendChild(glareCards);
