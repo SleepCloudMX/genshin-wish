@@ -192,9 +192,10 @@
     /* 说明紧接导语，与正文同为无框文字；读数与入口再各自成区 */
     var acc = el('section', 'accuracy');
     acc.innerHTML =
-      '<p>官方仅公布三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
-      '角色池综合不歪率 55.000%；逐抽概率未公布。本站的逐抽参数取自社区总结的模型，' +
-      '与官方实现存在少量差异（武器池较角色池更明显），结果仅供参考。' +
+      '<p>官方仅公示三项综合概率：角色池出金 1.600%、武器池出金 1.850%、' +
+      '角色池不歪 55.000%；逐抽概率和捕获明光具体机制未公布。本站的逐抽参数取自社区总结的模型，' +
+      '与官方实现存在少量差异，以官方数据为准，结果仅供参考。除舍入误差（可忽略），' +
+      '本站的唯一误差为模型误差，非蒙特卡洛、无方法误差。' +
       '<a class="accuracy__more" href="#/about">误差来源与适用范围 →</a></p>';
     page.appendChild(homeSection('数据准确度', acc, true));
 
@@ -340,14 +341,21 @@
       '四星武器固定 2 星辉，故 1.1933 要求四星全为已满命角色，是上界。'));
     glareCards.appendChild(charCard);
 
+    /* 武器池也会出四星角色（75% 当期 UP 武器 + 25% 角色），故读数同样分两档 */
     var weaponCard = el('div', 'stat-card');
     weaponCard.innerHTML = '<p class="stat-card__k">武器池</p>';
-    weaponCard.appendChild(derivRow('1.1050', '与账号状态无关', '×',
-      '每抽平均返还 \\(14.500\\%\\times\\frac{2}{5}+1.850\\%\\times\\frac{10}{5}=0.095\\) 抽；' +
+    weaponCard.appendChild(derivRow('1.1050', '四星角色均未满命', '×',
+      '四星一律 2 星辉（武器不因满精炼增加），每抽平均返还 ' +
+      '\\(14.500\\%\\times\\frac{2}{5}+1.850\\%\\times\\frac{10}{5}=0.095\\) 抽；' +
       '\\(1+0.095+0.095^{2}+\\cdots=\\frac{1}{1-0.095}=1.1050\\)。'));
-    weaponCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.475 星辉'));
+    weaponCard.appendChild(derivRow('1.1322', '四星角色均已满命', '×',
+      '四星 75% 为当期 UP 武器（2 星辉）、25% 为非 UP 四星（角色满命时 5 星辉），' +
+      '每抽平均返还 \\(14.500\\%\\times\\frac{0.75\\times2+0.25\\times5}{5}' +
+      '+1.850\\%\\times\\frac{10}{5}=0.1168\\) 抽；' +
+      '\\(1+0.1168+0.1168^{2}+\\cdots=\\frac{1}{1-0.1168}=1.1322\\)。'));
+    weaponCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.475 / 0.584 星辉'));
     weaponCard.appendChild(el('p', 'stat-card__note',
-      '武器不因满精炼增加星辉：四星固定 2、五星固定 10，故只有一个读数。'));
+      '满命值按非 UP 四星均为角色计，是上界。'));
     glareCards.appendChild(weaponCard);
 
     glare.appendChild(glareCards);
