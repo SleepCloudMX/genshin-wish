@@ -184,10 +184,14 @@
             xLabel: '抽到的定轨目标数',
             agg: function (b) { return '目标 ' + b.label + ' 把（不细分歪出数）'; },
             total: function (b) { return '恰好 ' + b.label + ' 把定轨目标'; },
-            seg: function (sg) { return '歪出 ' + sg.s + ' 个'; }
+            seg: function (sg) { return '歪出 ' + sg.s + ' 个'; },
+            conditional: true,
+            segName: '歪出数'
           });
           host.appendChild(P.note('柱高为恰好抽到 n 把定轨目标的概率，柱内按歪出的五星数分色' +
-            '（同一歪出数在各柱同色）。歪出的可能是另一把限定或常驻：未中目标会使命定值 +1、' +
+            '（同一歪出数在各柱同色）。悬浮框中各歪出数的读数为条件概率：' +
+            '在恰好抽到该柱目标数的条件下，各行占比合计 100%。' +
+            '歪出的可能是另一把限定或常驻：未中目标会使命定值 +1、' +
             '下一金必为目标，歪出常驻还会让下一金必为限定。概率不足 0.01% 的目标数不单独画柱，' +
             (spec.merged ? '超过 ' + rules.maxBars + ' 根时只留概率之和最大的连续 ' +
                            (rules.maxBars - 2) + ' 项，' : '') +
