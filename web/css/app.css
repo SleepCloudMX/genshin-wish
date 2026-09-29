@@ -347,7 +347,7 @@ a.statcmp__tag { font-weight: 600; }
 .deriv:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .deriv__pop {
   position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
-  width: max-content; max-width: min(520px, 84vw);
+  width: max-content; max-width: min(552px, 86vw);
   padding: var(--sp-3) var(--sp-4);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-sm); box-shadow: var(--shadow-1);
