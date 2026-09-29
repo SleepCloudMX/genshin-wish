@@ -336,6 +336,26 @@ a:hover { text-decoration: underline; }
 .statcmp__tag { font-size: var(--fs-xs); color: var(--text-dim); text-align: right; }
 a.statcmp__tag { font-weight: 600; }
 
+/* 首页「期望抽数」的小表：行 = 目标，列 = 期望 / 50% / 90% / 99% 分位 */
+.stattable {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--fs-sm); font-variant-numeric: tabular-nums;
+}
+.stattable th {
+  padding: 0 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 500;
+  color: var(--text-dim); text-align: right; white-space: nowrap;
+}
+.stattable th:first-child { text-align: left; }
+.stattable tbody tr { border-top: 1px solid var(--border); }
+.stattable tbody th {
+  padding: var(--sp-2) 0; font-family: var(--font); font-size: var(--fs-sm);
+  font-weight: 500; color: var(--text-dim); text-align: left; white-space: nowrap;
+}
+.stattable td { padding: var(--sp-2) 0; text-align: right; font-family: var(--mono); }
+.stattable__v { font-size: var(--fs-base); }
+.stattable__u { margin-left: 3px; font-size: var(--fs-xs); color: var(--text-dim); }
+.stattable__e .stattable__v { font-size: var(--fs-xl); font-weight: 650; color: var(--gold-strong); }
+
 /* 首页「星辉等效抽数」：段内导语与脚注 */
 .home__lead { margin-bottom: var(--sp-4); font-size: var(--fs-sm); color: var(--text-dim); }
 .home__foot { margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--text-dim); }
@@ -363,6 +383,9 @@ a.statcmp__tag { font-weight: 600; }
 .deriv__pop::before {
   content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px;
 }
+/* 下方放不下时由 placePop 挂到数值上方，桥跟着挪到底边 */
+.deriv--up .deriv__pop { top: auto; bottom: calc(100% + 8px); }
+.deriv--up .deriv__pop::before { top: auto; bottom: -8px; }
 .deriv__body { display: block; opacity: 0; transition: opacity var(--dur) ease-out; }
 .deriv__body.is-ready { opacity: 1; }
 

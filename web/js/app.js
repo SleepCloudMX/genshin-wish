@@ -211,47 +211,70 @@
     var one = C.stableUpDistribution(1);
     var seven = C.stableUpDistribution(7);
     var modelPerGold = C.stats.expected(C.gold.getGoldPdfs('character', 1)[1]);
+    var weapon1 = C.weaponUpDistribution(C.makeWeaponState({}), 1);
+    var weapon5 = C.weaponUpDistribution(C.makeWeaponState({}), 5);
+
+    function quantiles(d) {
+      return [0.5, 0.9, 0.99].map(function (a) { return String(d.quantile(a)); });
+    }
 
     var card1 = el('div', 'stat-card');
-    card1.appendChild(el('p', 'stat-card__k', '抽到 1 个限定'));
-    card1.appendChild(derivRow(OFFICIAL_PER_UP.toFixed(3), '按官方综合概率', '抽',
-      '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
+    card1.appendChild(el('p', 'stat-card__k', '角色池'));
+    card1.appendChild(statTable([
+      {
+        label: '1 个限定',
+        cells: [{ v: one.expected.toFixed(2), box: {
+          tex: '软保底的逐抽出金概率：' +
+            '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
+            '0.6\\%+6\\%(i-73), & 74\\le i\\le89,\\\\ 100\\%, & i=90.\\end{cases}$$' +
+            '期望不必卷积，等于各抽仍未出金的概率之和：' +
+            '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30$$' +
+            '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
+          code: [
+            'p = [0.006] * 73 + [0.006 + 0.06*(i - 73) for i in range(74, 90)] + [1.]',
+            's, e = 1.0, 0.0',
+            'for pi in p:',
+            '    e += s          # 期望 = Σ P(第 n 抽仍未出金)',
+            '    s *= 1 - pi',
+            'print(round(e, 6))  # 62.297332'
+          ].join('\n')
+        } }].concat(quantiles(one).map(function (q) { return { v: q }; }))
+      },
+      {
+        label: '满命',
+        cells: [{ v: seven.expected.toFixed(1) }]
+          .concat(quantiles(seven).map(function (q) { return { v: q }; }))
+      }
+    ]));
+    var offNote = el('p', 'stat-card__h');
+    offNote.appendChild(doc.createTextNode('官方综合概率口径：1 个限定 '));
+    var offBox = el('span', 'deriv');
+    offBox.appendChild(el('span', null, OFFICIAL_PER_UP.toFixed(3) + ' 抽'));
+    attachPop(offBox, '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
       '\\(\\frac{1}{2-55.000\\%}=1.45\\) 个金，单金 ' +
       '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
-      '\\(1.45\\times62.5=90.625\\) 抽。'));
-    card1.appendChild(derivRow(one.expected.toFixed(2), '按玩家总结的概率机制', '抽',
-      '软保底的逐抽出金概率：' +
-      '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
-      '0.6\\%+6\\%(i-73), & 74\\le i\\le89,\\\\ 100\\%, & i=90.\\end{cases}$$' +
-      '期望不必卷积，等于各抽仍未出金的概率之和：' +
-      '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=62.30$$' +
-      '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
-      { href: '#/about', code: [
-        'p = [0.006] * 73 + [0.006 + 0.06*(i - 73) for i in range(74, 90)] + [1.]',
-        's, e = 1.0, 0.0',
-        'for pi in p:',
-        '    e += s          # 期望 = Σ P(第 n 抽仍未出金)',
-        '    s *= 1 - pi',
-        'print(round(e, 6))  # 62.297332'
-      ].join('\n') }));
-    card1.appendChild(el('p', 'stat-card__h', '不考虑捕获明光时：' +
+      '\\(1.45\\times62.5=90.625\\) 抽。');
+    offNote.appendChild(offBox);
+    offNote.appendChild(doc.createTextNode('；不考虑捕获明光时 ' +
       OFFICIAL_PER_UP_NO_RAD.toFixed(2) + ' 抽（官方公示）／ ' +
-      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）'));
+      (modelPerGold * 1.5).toFixed(2) + ' 抽（玩家总结）。'));
+    card1.appendChild(offNote);
+    card1.appendChild(el('p', 'stat-card__note',
+      '满命 = 7 个限定；表中数值按玩家总结的概率机制测算。'));
     stats.appendChild(card1);
 
-    [
-      ['抽到 7 个限定（满命）', seven.expected.toFixed(1),
-       '中位数 ' + seven.quantile(0.5) + ' 抽'],
-      ['90% 的玩家满命需要', String(seven.quantile(0.9)),
-       '99% 分位 ' + seven.quantile(0.99) + ' 抽']
-    ].forEach(function (row) {
-      var card = el('div', 'stat-card');
-      card.innerHTML = '<p class="stat-card__k">' + row[0] + '</p>' +
-        cmpRow(row[1], '按玩家总结的概率机制', '#/about') +
-        '<p class="stat-card__h">' + row[2] + '</p>' +
-        '<p class="stat-card__note">官方未公示具体概率，无法计算</p>';
-      stats.appendChild(card);
-    });
+    var card2 = el('div', 'stat-card');
+    card2.appendChild(el('p', 'stat-card__k', '武器池'));
+    card2.appendChild(statTable([
+      { label: '1 把', cells: [{ v: weapon1.expected.toFixed(1) }]
+          .concat(quantiles(weapon1).map(function (q) { return { v: q }; })) },
+      { label: '满精', cells: [{ v: weapon5.expected.toFixed(1) }]
+          .concat(quantiles(weapon5).map(function (q) { return { v: q }; })) }
+    ]));
+    card2.appendChild(el('p', 'stat-card__note',
+      '满精 = 5 把；按定轨不取消、命定值 0、未垫抽的模型测算。'));
+    stats.appendChild(card2);
+
     page.appendChild(homeSection('期望抽数', stats));
 
     /* 星辉兑换：抽卡返还的无主星辉可再换抽数，上面的读数都没计入。
@@ -317,23 +340,23 @@
     stage.appendChild(page);
   }
 
-  /* 首页对比行：数值在左，口径说明在右下角 */
-  function cmpRow(value, tag, href, unit) {
-    var tagHtml = href
-      ? '<a class="statcmp__tag" href="' + href + '">' + tag + '</a>'
-      : '<span class="statcmp__tag">' + tag + '</span>';
-    return '<div class="statcmp"><span class="statcmp__v">' + value +
-           '<span class="statcmp__u">' + (unit || '抽') + '</span></span>' + tagHtml + '</div>';
-  }
-
-  /* 靠右的卡片放不下就往左挂：浮层是 absolute + visibility 隐藏，量得到宽度 */
+  /* 靠边就换边：右侧放不下往左挂，下方放不下且上方放得下才翻上去
+     （浮层是 absolute + visibility 隐藏，尺寸量得到，不必先显形） */
   function placePop(box) {
     var pop = box.querySelector('.deriv__pop');
+    box.classList.remove('deriv--up');
     pop.style.left = '0';
     pop.style.right = 'auto';
-    if (pop.getBoundingClientRect().right > global.innerWidth - 12) {
+    var r = pop.getBoundingClientRect();
+    if (r.right > global.innerWidth - 12) {
       pop.style.left = 'auto';
       pop.style.right = '0';
+      r = pop.getBoundingClientRect();
+    }
+    /* 翻上去要真放得下（浮层高 + 上下留白 ≤ 数值的上沿），否则不如留在下方 */
+    if (r.bottom > global.innerHeight - 12 &&
+        r.height + 20 <= box.getBoundingClientRect().top) {
+      box.classList.add('deriv--up');
     }
   }
 
@@ -365,23 +388,17 @@
     }
   }
 
-  /* 带推导悬浮的读数行：数值虚线下划线，悬停（或键盘聚焦，含「复制」按钮）时显示推导。
-     opts.code 追加一段可复制的 python，opts.href 让口径说明变成链接。
+  /* 把推导浮层挂到 box 上（box 的内容由调用方放好）：数值虚线下划线，悬停（或键盘聚焦，
+     含「复制」按钮）时排版推导。tex 可含 LaTeX，opts.code 追加一段可复制的 python。
      MathJax 是 vendor 里的大文件，进入该区域才预热、真正悬停才排版 */
-  function derivRow(value, tag, unit, tex, opts) {
+  function attachPop(box, tex, opts) {
     opts = opts || {};
-    var row = el('div', 'statcmp');
-    var box = el('span', 'deriv');
     box.tabIndex = 0;
-    box.innerHTML = '<span class="statcmp__v">' + value +
-                    '<span class="statcmp__u">' + unit + '</span></span>' +
-                    '<span class="deriv__pop"><span class="deriv__body">' +
-                    '<span class="deriv__tex">' + tex + '</span>' +
-                    (opts.code ? '<span class="deriv__code"></span>' : '') +
-                    '</span></span>';
-    var body = box.querySelector('.deriv__body');
+    var pop = el('span', 'deriv__pop');
+    var body = el('span', 'deriv__body');
+    body.appendChild(el('span', 'deriv__tex', tex));
     if (opts.code) {
-      var codeBox = box.querySelector('.deriv__code');
+      var codeBox = el('span', 'deriv__code');
       var code = doc.createElement('code');
       code.textContent = opts.code;
       var btn = doc.createElement('button');
@@ -391,15 +408,63 @@
       btn.onclick = function () { copyCode(opts.code, code); };
       codeBox.appendChild(code);
       codeBox.appendChild(btn);
+      body.appendChild(codeBox);
     }
+    pop.appendChild(body);
+    box.appendChild(pop);
+    var show = function () { typesetOnce(box, body); placePop(box); };
+    box.addEventListener('mouseenter', show);
+    box.addEventListener('focusin', show);
+    return box;
+  }
+
+  /* 带推导悬浮的读数行：数值在左，口径说明在右 */
+  function derivRow(value, tag, unit, tex, opts) {
+    opts = opts || {};
+    var row = el('div', 'statcmp');
+    var box = el('span', 'deriv');
+    var v = el('span', 'statcmp__v', value);
+    v.appendChild(el('span', 'statcmp__u', unit));
+    box.appendChild(v);
+    attachPop(box, tex, opts);
     row.appendChild(box);
     var tagNode = el(opts.href ? 'a' : 'span', 'statcmp__tag');
     if (opts.href) tagNode.href = opts.href;
     tagNode.textContent = tag;
     row.appendChild(tagNode);
-    box.addEventListener('mouseenter', function () { typesetOnce(box, body); placePop(box); });
-    box.addEventListener('focusin', function () { typesetOnce(box, body); placePop(box); });
     return row;
+  }
+
+  /* 首页读数表：行 = 目标，列 = 期望 / 50% / 90% / 99% 分位；
+     rows = [{ label, cells: [{ v, box? }] }]，box = { tex, code } 时该格可悬停看推导 */
+  function statTable(rows) {
+    var table = el('table', 'stattable');
+    var head = el('thead');
+    var hr = el('tr');
+    hr.appendChild(el('th'));
+    ['期望', '50% 分位', '90% 分位', '99% 分位'].forEach(function (h, i) {
+      hr.appendChild(el('th', i === 0 ? 'stattable__e' : null, h));
+    });
+    head.appendChild(hr);
+    table.appendChild(head);
+
+    var tbody = el('tbody');
+    rows.forEach(function (r) {
+      var tr = el('tr');
+      tr.appendChild(el('th', null, r.label));
+      r.cells.forEach(function (c, i) {
+        var td = el('td', i === 0 ? 'stattable__e' : null);
+        var holder = el('span', c.box ? 'deriv' : null);
+        holder.appendChild(el('span', 'stattable__v', c.v));
+        holder.appendChild(el('span', 'stattable__u', '抽'));
+        if (c.box) attachPop(holder, c.box.tex, { code: c.box.code });
+        td.appendChild(holder);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    return table;
   }
 
   function renderPlaceholder(stage, id) {
