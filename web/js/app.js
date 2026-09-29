@@ -298,12 +298,12 @@
     card2.appendChild(el('p', 'stat-card__k', '武器池'));
     card2.appendChild(statTable([
       {
-        label: '1 把（按官方公示综合概率）',
+        label: '1 把定轨（按官方公示综合概率）',
         cells: [cell(sig5(OFFICIAL_WEAPON_UP), OFFICIAL_WEAPON_TEX),
                 unknown(), unknown(), unknown()]
       },
       {
-        label: '1 把' + MODEL,
+        label: '1 把定轨' + MODEL,
         cells: [cell(sig5(weapon1.expected),
           '软保底的逐抽出金概率（63 抽起 +7%，74 抽起 +3.5%）：' + PITY_WEAPON +
           SUM_TEX + '53.250$$' +
@@ -338,7 +338,8 @@
       '\\(1+0.162+0.162^{2}+\\cdots=\\frac{1}{1-0.162}=1.1933\\)。'));
     charCard.appendChild(el('p', 'stat-card__h', '每抽平均返还 0.42 / 0.81 星辉'));
     charCard.appendChild(el('p', 'stat-card__note',
-      '四星武器固定 2 星辉，故 1.1933 要求四星全为已满命角色，是上界。'));
+      '四星武器固定 2 星辉，且四星中角色与武器的占比随版本变化：' +
+      '1.1933 以四星全为已满命角色为前提，是上界。'));
     glareCards.appendChild(charCard);
 
     var weaponCard = el('div', 'stat-card');
