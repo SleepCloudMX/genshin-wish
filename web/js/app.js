@@ -249,7 +249,7 @@
     var PITY_WEAPON = '$$p_i=\\begin{cases}0.7\\%, & i\\le62,\\\\ ' +
       '0.7\\%+7\\%(i-62), & 63\\le i\\le73,\\\\ ' +
       '77.7\\%+3.5\\%(i-73), & 74\\le i\\le79,\\\\ 100\\%, & i=80.\\end{cases}$$';
-    var SUM_TEX = '期望不必卷积，等于各抽仍未出金的概率之和：' +
+    var SUM_TEX = '单金期望 = 各抽仍未出金的概率之和：' +
       '$$E=\\sum_{n\\ge0}\\prod_{i\\le n}(1-p_i)=';
     /* 代码只算「单金期望」那一项（与页面上的乘法分开），免得末位对不上 */
     function goldCode(pLine, comment) {
@@ -283,9 +283,8 @@
       },
       {
         label: '满命' + MODEL,
-        cells: [cell(seven.expected.toFixed(3),
-          '7 个 UP 平均消耗 \\(7\\times1.45=10.15\\) 个金：' +
-          '\\(10.15\\times62.297\\approx632.3\\) 抽。')].concat(quantiles(seven))
+        cells: [cell(seven.expected.toFixed(3), '\\(90.334\\times7=632.338\\) 抽。')]
+          .concat(quantiles(seven))
       }
     ]));
     stats.appendChild(card1);
@@ -308,9 +307,8 @@
       },
       {
         label: '满精' + MODEL,
-        cells: [cell(weapon5.expected.toFixed(3),
-          '满精 5 把平均消耗 \\(5\\times1.625=8.125\\) 个金：' +
-          '\\(8.125\\times53.250\\approx432.7\\) 抽。')].concat(quantiles(weapon5))
+        cells: [cell(weapon5.expected.toFixed(3), '\\(86.532\\times5=432.660\\) 抽。')]
+          .concat(quantiles(weapon5))
       }
     ]));
     stats.appendChild(card2);
