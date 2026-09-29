@@ -232,6 +232,8 @@
     function cell(v, tex, code) {
       return tex ? { v: v, box: { tex: tex, code: code } } : { v: v };
     }
+    /* 期望一律 5 位有效数字：既保住 90.625 这类精确值，也不再暗示精确到千分之一抽 */
+    function sig5(v) { return String(Number(v.toPrecision(5))); }
 
     /* 「官方公示」两行的推导：都只用官方数据（角色池 1.600% / 55.000%，武器池 1.850% / 37.5% 命中） */
     var OFFICIAL_UP_TEX = '综合不歪率 55.000% 已计入大保底：每个 UP 平均消耗 ' +
@@ -272,18 +274,18 @@
     card1.appendChild(statTable([
       {
         label: '1 个限定（按官方公示综合概率）',
-        cells: [cell(OFFICIAL_PER_UP.toFixed(3), OFFICIAL_UP_TEX), unknown(), unknown(), unknown()]
+        cells: [cell(sig5(OFFICIAL_PER_UP), OFFICIAL_UP_TEX), unknown(), unknown(), unknown()]
       },
       {
         label: '1 个限定' + MODEL,
-        cells: [cell(one.expected.toFixed(3),
+        cells: [cell(sig5(one.expected),
           '软保底的逐抽出金概率：' + PITY_CHAR + SUM_TEX + '62.297$$' +
           '再乘每个 UP 的 1.45 个金：\\(62.297\\times1.45\\approx90.334\\) 抽。',
           CHAR_GOLD_CODE)].concat(quantiles(one))
       },
       {
         label: '满命' + MODEL,
-        cells: [cell(seven.expected.toFixed(3), '\\(90.334\\times7=632.338\\) 抽。')]
+        cells: [cell(sig5(seven.expected), '\\(90.334\\times7\\approx632.32\\) 抽。')]
           .concat(quantiles(seven))
       }
     ]));
@@ -294,12 +296,12 @@
     card2.appendChild(statTable([
       {
         label: '1 把（按官方公示综合概率）',
-        cells: [cell(OFFICIAL_WEAPON_UP.toFixed(3), OFFICIAL_WEAPON_TEX),
+        cells: [cell(sig5(OFFICIAL_WEAPON_UP), OFFICIAL_WEAPON_TEX),
                 unknown(), unknown(), unknown()]
       },
       {
         label: '1 把' + MODEL,
-        cells: [cell(weapon1.expected.toFixed(3),
+        cells: [cell(sig5(weapon1.expected),
           '软保底的逐抽出金概率（63 抽起 +7%，74 抽起 +3.5%）：' + PITY_WEAPON +
           SUM_TEX + '53.250$$' +
           '再乘每个目标的 1.625 个金：\\(53.250\\times1.625=86.532\\) 抽。',
@@ -307,7 +309,7 @@
       },
       {
         label: '满精' + MODEL,
-        cells: [cell(weapon5.expected.toFixed(3), '\\(86.532\\times5=432.660\\) 抽。')]
+        cells: [cell(sig5(weapon5.expected), '\\(86.532\\times5=432.66\\) 抽。')]
           .concat(quantiles(weapon5))
       }
     ]));
