@@ -203,10 +203,11 @@
 
     /* 官方公布的综合概率：角色池出金 1.600%、综合不歪率 55.000%、武器池出金 1.850%。
        1.600% → 62.5 抽/金；不歪率 55.000% → 每 UP 需要 1/(2-0.55) = 1.45 个金。
-       无捕获明光时不歪率为 50% → 每 UP 1.5 个金。 */
+       武器池每金 37.5% 命中定轨目标，未中则命定值填满、下一金必中 → 每个目标 1.625 个金。 */
     var OFFICIAL_PER_GOLD = 1 / 0.016;              /* 62.5 抽 */
     var OFFICIAL_PER_UP = OFFICIAL_PER_GOLD * 1.45; /* 90.625 抽 */
     var OFFICIAL_PER_UP_NO_RAD = OFFICIAL_PER_GOLD * 1.5; /* 93.75 抽 */
+    var OFFICIAL_WEAPON_UP = (1 / 0.0185) * 1.625;  /* 87.838 抽 */
 
     var one = C.stableUpDistribution(1);
     var seven = C.stableUpDistribution(7);
@@ -219,7 +220,7 @@
     function unknown() {
       return { v: '未知', plain: true, box: { tex: NO_MECH, math: false } };
     }
-    var MODEL = '（<a href="#/about">玩家总结</a>）';
+    var MODEL = '（按<a href="#/about">玩家总结概率机制</a>）';
 
     /* 分位数（50% / 90% / 99%） */
     function quantiles(d) {
@@ -237,10 +238,10 @@
       '\\(\\frac{1}{2-55.000\\%}=1.45\\) 个金，单金 ' +
       '\\(\\frac{1}{1.600\\%}=62.5\\) 抽，于是 ' +
       '\\(1.45\\times62.5=90.625\\) 抽。';
-    var OFFICIAL_WEAPON_TEX = '综合出金率 1.850% → 单金 \\(\\frac{1}{1.850\\%}=54.05\\) 抽；' +
+    var OFFICIAL_WEAPON_TEX = '综合出金率 1.850% → 单金 \\(\\frac{1}{1.850\\%}=54.054\\) 抽；' +
       '每金命中定轨目标的概率 37.5%，未中使命定值填满、下一金必中，' +
       '故每个目标平均 \\(1+62.5\\%=1.625\\) 个金：' +
-      '\\(54.05\\times1.625=87.84\\) 抽。';
+      '\\(54.054\\times1.625=87.838\\) 抽。';
 
     /* 「玩家总结」两行的推导：单金期望按软保底逐抽概率求生存和 */
     var PITY_CHAR = '$$p_i=\\begin{cases}0.6\\%, & i\\le73,\\\\ ' +
@@ -270,20 +271,21 @@
     card1.appendChild(el('p', 'stat-card__k', '角色池'));
     card1.appendChild(statTable([
       {
-        label: '1 个限定（官方公示）',
+        label: '1 个限定（按官方公示综合概率）',
         cells: [cell(OFFICIAL_PER_UP.toFixed(3), OFFICIAL_UP_TEX), unknown(), unknown(), unknown()]
       },
       {
         label: '1 个限定' + MODEL,
-        cells: [cell(one.expected.toFixed(2),
-          '软保底的逐抽出金概率：' + PITY_CHAR + SUM_TEX + '62.30$$' +
-          '再乘每个 UP 的 1.45 个金：\\(62.30\\times1.45=90.33\\) 抽。',
+        cells: [cell(one.expected.toFixed(3),
+          '软保底的逐抽出金概率：' + PITY_CHAR + SUM_TEX + '62.297$$' +
+          '再乘每个 UP 的 1.45 个金：\\(62.297\\times1.45\\approx90.334\\) 抽。',
           CHAR_GOLD_CODE)].concat(quantiles(one))
       },
       {
         label: '满命' + MODEL,
-        cells: [cell(seven.expected.toFixed(1), '\\(90.33\\times7=632.3\\) 抽。')]
-          .concat(quantiles(seven))
+        cells: [cell(seven.expected.toFixed(3),
+          '7 个 UP 平均消耗 \\(7\\times1.45=10.15\\) 个金：' +
+          '\\(10.15\\times62.297\\approx632.3\\) 抽。')].concat(quantiles(seven))
       }
     ]));
     stats.appendChild(card1);
@@ -292,21 +294,23 @@
     card2.appendChild(el('p', 'stat-card__k', '武器池'));
     card2.appendChild(statTable([
       {
-        label: '1 把（官方公示）',
-        cells: [cell('87.84', OFFICIAL_WEAPON_TEX), unknown(), unknown(), unknown()]
+        label: '1 把（按官方公示综合概率）',
+        cells: [cell(OFFICIAL_WEAPON_UP.toFixed(3), OFFICIAL_WEAPON_TEX),
+                unknown(), unknown(), unknown()]
       },
       {
         label: '1 把' + MODEL,
-        cells: [cell(weapon1.expected.toFixed(1),
+        cells: [cell(weapon1.expected.toFixed(3),
           '软保底的逐抽出金概率（63 抽起 +7%，74 抽起 +3.5%）：' + PITY_WEAPON +
-          SUM_TEX + '53.25$$' +
-          '再乘每个目标的 1.625 个金：\\(53.25\\times1.625=86.53\\) 抽。',
+          SUM_TEX + '53.250$$' +
+          '再乘每个目标的 1.625 个金：\\(53.250\\times1.625=86.532\\) 抽。',
           WEAPON_GOLD_CODE)].concat(quantiles(weapon1))
       },
       {
         label: '满精' + MODEL,
-        cells: [cell(weapon5.expected.toFixed(1), '\\(86.53\\times5=432.7\\) 抽。')]
-          .concat(quantiles(weapon5))
+        cells: [cell(weapon5.expected.toFixed(3),
+          '满精 5 把平均消耗 \\(5\\times1.625=8.125\\) 个金：' +
+          '\\(8.125\\times53.250\\approx432.7\\) 抽。')].concat(quantiles(weapon5))
       }
     ]));
     stats.appendChild(card2);
