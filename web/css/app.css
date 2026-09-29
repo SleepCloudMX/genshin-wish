@@ -466,6 +466,19 @@ input[type="range"] {
 .tip__num { text-align: right; }
 .tip__dash { color: var(--text-dim); }
 
+/* 悬浮框里的柱内条件分布（P.segTip 的条件模式）：色块 + 横排小柱 + 读数
+   轨道给固定宽度，1fr 列在自适应宽度的浮层里才有确定的尺寸 */
+.tip__sub { margin: calc(-1 * var(--sp-1)) 0 var(--sp-1); font-size: var(--fs-xs); color: var(--text-dim); }
+.tip__segs {
+  display: grid; grid-template-columns: auto auto 1fr auto;
+  align-items: center; column-gap: 6px; row-gap: 3px;
+  font-family: var(--mono); font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.tip__seg-k { color: var(--text-dim); white-space: nowrap; }
+.tip__seg-bar { width: 92px; height: 7px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.tip__seg-bar i { display: block; height: 100%; border-radius: 2px; }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
   min-height: 38px; padding: 0 var(--sp-4);

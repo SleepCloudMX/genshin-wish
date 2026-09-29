@@ -174,7 +174,8 @@
     /* 堆叠柱状图：柱内按分段值分色（同一值在各柱同色，色带按该值在图中的出现区间拉伸，
        而不是按柱内排名；只为概率 ≥ 0.0001% 的分段建系列，更小的分段画出来也只是细边），
        柱顶标注该柱总概率，悬浮框由 segTip 拼装。
-       opts = { xLabel, agg(bar), total(bar), seg(segment), palette, maxWidth } */
+       opts = { xLabel, agg(bar), total(bar), seg(segment), palette, maxWidth,
+                conditional, segName }（后两个见 segTip） */
     stackBars: function (ctx, chart, bars, opts) {
       var palette = opts.palette || W.core.COLORS.stack;
       var seen = {};
@@ -185,11 +186,15 @@
       var sList = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
       var minS = sList.length ? sList[0] : 0;
       var maxS = sList.length ? sList[sList.length - 1] : 0;
+      /* 色带按分段值在图中的出现区间取色；悬浮框的色块复用同一个函数，保证与柱子同色 */
+      var colorOf = function (s) {
+        return W.core.stats.ramp(palette, maxS > minS ? (s - minS) / (maxS - minS) : 0);
+      };
       var width = opts.maxWidth || 34;
       var series = sList.map(function (s) {
         return {
           name: '', stack: 'up', maxWidth: width,
-          color: W.core.stats.ramp(palette, maxS > minS ? (s - minS) / (maxS - minS) : 0),
+          color: colorOf(s),
           values: bars.map(function (b) {
             if (!b.segs) return null;
             for (var k = 0; k < b.segs.length; k++) {
@@ -226,32 +231,67 @@
         }],
         yTickFormatter: function (v) { return (v * 100).toFixed(0) + '%'; },
         tooltipHtml: function (i) {
-          return P.segTip(bars[i], { agg: opts.agg, total: opts.total, seg: opts.seg });
+          return P.segTip(bars[i], {
+            agg: opts.agg, total: opts.total, seg: opts.seg,
+            conditional: opts.conditional, segName: opts.segName, colorOf: colorOf
+          });
         }
       });
     },
 
     /* 悬浮框：柱内各分段按概率降序、最多 top 项，其余（含不足 0.0001% 的）合并一行。
-       opts = { total(bar) → 标题, agg(bar) → 合并柱标题, seg(segment) → 行名, top } */
+       opts = { total(bar) → 标题, agg(bar) → 合并柱标题, seg(segment) → 行名, top }
+
+       条件模式（opts.conditional = true，配 segName 与 colorOf）：读数改为柱内条件概率——
+       给定该柱的目标数，分段占该柱的条件占比（各行合计 100%）；行序改为与柱内堆叠一致
+       （值从大到小、自上而下），行首带图中的分段色块，并画出横排小柱（宽度按本框内的
+       最大条件概率归一，数值照读）。仍只列概率最高的 top 项，其余合并成末尾一行。 */
     segTip: function (bar, opts) {
       var top = opts.top || P.BAR_RULES.top;
       if (!bar.segs) {
         return P.tip(opts.agg(bar), [['合计', P.pctAdaptive(bar.total)]]);
       }
-      var segs = bar.segs.slice().sort(function (a, b) { return b.p - a.p; });
-      var rows = [], rest = 0, shown = 0;
-      segs.forEach(function (sg, i) {
-        if (i < top && sg.p >= P.BAR_RULES.segMinP) {
-          rows.push([opts.seg(sg), P.pctAdaptive(sg.p)]);
-          shown++;
-        } else {
-          rest += sg.p;
-        }
+      var byP = bar.segs.slice().sort(function (a, b) { return b.p - a.p; });
+      var keep = {}, shown = 0, rest = 0;
+      byP.forEach(function (sg, i) {
+        if (i < top && sg.p >= P.BAR_RULES.segMinP) { keep[sg.s] = true; shown++; }
+        else rest += sg.p;
       });
-      if (shown < segs.length) {
-        rows.push(['其余 ' + (segs.length - shown) + ' 项', P.pctAdaptive(rest)]);
+
+      if (!opts.conditional) {
+        var rows = byP.slice(0, shown).map(function (sg) {
+          return [opts.seg(sg), P.pctAdaptive(sg.p)];
+        });
+        if (shown < byP.length) {
+          rows.push(['其余 ' + (byP.length - shown) + ' 项', P.pctAdaptive(rest)]);
+        }
+        return P.tip(opts.total(bar) + ' · ' + P.pctAdaptive(bar.total), rows);
       }
-      return P.tip(opts.total(bar) + ' · ' + P.pctAdaptive(bar.total), rows);
+
+      var denom = bar.total || 1;
+      var items = bar.segs.filter(function (sg) { return keep[sg.s]; })
+        .sort(function (a, b) { return b.s - a.s; })
+        .map(function (sg) { return { s: sg.s, p: sg.p / denom, c: opts.colorOf(sg.s) }; });
+      if (rest > 0) items.push({ s: null, p: rest / denom, c: 'var(--text-dim)' });
+
+      var maxP = 0;
+      items.forEach(function (it) { if (it.p > maxP) maxP = it.p; });
+      maxP = maxP || 1;
+      var cells = '';
+      items.forEach(function (it) {
+        var w = Math.max(it.p / maxP * 100, 1);
+        cells +=
+          '<span class="tip__sw" style="background:' + it.c + '"></span>' +
+          '<span class="tip__seg-k">' +
+            (it.s === null ? '其余 ' + (byP.length - shown) + ' 项' : opts.seg(it)) +
+          '</span>' +
+          '<span class="tip__seg-bar"><i style="width:' + w.toFixed(1) +
+            '%;background:' + it.c + '"></i></span>' +
+          '<span class="tip__num">' + P.pctAdaptive(it.p) + '</span>';
+      });
+      return '<p class="tip__t">' + opts.total(bar) + ' · ' + P.pctAdaptive(bar.total) + '</p>' +
+             '<p class="tip__sub">各' + opts.segName + '的占比（合计 100%）</p>' +
+             '<div class="tip__segs">' + cells + '</div>';
     },
 
     /* 轻提示：状态类反馈统一走这里（app.js 的外壳也用） */

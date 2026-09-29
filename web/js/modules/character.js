@@ -228,10 +228,13 @@
             xLabel: '抽到的限定角色数',
             agg: function (b) { return '限定 ' + b.label + ' 个（不细分常驻数）'; },
             total: function (b) { return '恰好 ' + b.label + ' 个限定'; },
-            seg: function (sg) { return '常驻 ' + sg.s + ' 个'; }
+            seg: function (sg) { return '常驻 ' + sg.s + ' 个'; },
+            conditional: true,
+            segName: '常驻数'
           });
           host.appendChild(P.note('柱高为恰好抽到 n 个限定角色的概率，柱内按常驻五星数分色' +
-            '（同一常驻数在各柱同色）。概率不足 0.01% 的限定数不单独画柱，' +
+            '（同一常驻数在各柱同色）。悬浮框中各常驻数的读数为条件概率：' +
+            '在恰好抽到该柱限定数的条件下，各行占比合计 100%。概率不足 0.01% 的限定数不单独画柱，' +
             (spec.merged ? '超过 ' + rules.maxBars + ' 根时只留概率之和最大的连续 ' +
                            (rules.maxBars - 2) + ' 项，' : '') +
             '两端分别并入「< n」「> m」两根（不细分常驻数，含区间外不足 0.01% 的部分）。' +
